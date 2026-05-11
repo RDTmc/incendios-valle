@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
-usuarios_table = dynamodb.Table('usuarios')
+users_table = dynamodb.Table('users')
 
 SECRET_KEY = os.environ.get('JWT_SECRET', 'incendios-valle-secret-key')
 
@@ -23,7 +23,7 @@ def lambda_handler(event, context):
                 return register(event)
         
         elif http_method == 'GET':
-            if '/usuarios/' in path:
+            if '/users/' in path:
                 user_id = path.split('/')[-1]
                 return get_user(user_id)
         
@@ -51,11 +51,14 @@ def login(event):
     
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     
-    response = usuarios_table.get_item(
-        Key={'email': email}
+    # Buscar por email usando GSI
+    response = users_table.query(
+        IndexName='email-index',
+        KeyConditionExpression='email = :email',
+        ExpressionAttributeValues={':email': email}
     )
     
-    user = response.get('Item')
+    user = response.get('Items', [None])[0]
     
     if not user or user.get('password_hash') != password_hash:
         return {
@@ -64,7 +67,7 @@ def login(event):
         }
     
     token = jwt.encode({
-        'user_id': user['email'],
+        'user_id': user['user_id'],
         'email': user['email'],
         'rol': user.get('rol', 'VECINO'),
         'exp': datetime.utcnow() + timedelta(hours=24)
@@ -76,7 +79,7 @@ def login(event):
         'body': json.dumps({
             'token': token,
             'user': {
-                'id': user['email'],
+                'user_id': user['user_id'],
                 'email': user['email'],
                 'rol': user.get('rol', 'VECINO'),
                 'nombre': user.get('nombre', '')
@@ -97,16 +100,25 @@ def register(event):
             'body': json.dumps({'error': 'Email and password required'})
         }
     
-    existing = usuarios_table.get_item(Key={'email': email})
-    if 'Item' in existing:
+    # Verificar si email ya existe
+    response = users_table.query(
+        IndexName='email-index',
+        KeyConditionExpression='email = :email',
+        ExpressionAttributeValues={':email': email}
+    )
+    
+    if response.get('Items'):
         return {
             'statusCode': 409,
             'body': json.dumps({'error': 'User already exists'})
         }
     
+    import uuid
+    user_id = str(uuid.uuid4())
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     
-    usuarios_table.put_item(Item={
+    users_table.put_item(Item={
+        'user_id': user_id,
         'email': email,
         'password_hash': password_hash,
         'nombre': nombre,
@@ -115,7 +127,7 @@ def register(event):
     })
     
     token = jwt.encode({
-        'user_id': email,
+        'user_id': user_id,
         'email': email,
         'rol': rol,
         'exp': datetime.utcnow() + timedelta(hours=24)
@@ -127,7 +139,7 @@ def register(event):
         'body': json.dumps({
             'token': token,
             'user': {
-                'id': email,
+                'user_id': user_id,
                 'email': email,
                 'rol': rol,
                 'nombre': nombre
@@ -136,7 +148,7 @@ def register(event):
     }
 
 def get_user(user_id):
-    response = usuarios_table.get_item(Key={'email': user_id})
+    response = users_table.get_item(Key={'user_id': user_id})
     user = response.get('Item')
     
     if not user:
@@ -149,7 +161,7 @@ def get_user(user_id):
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json'},
         'body': json.dumps({
-            'id': user['email'],
+            'user_id': user['user_id'],
             'email': user['email'],
             'rol': user.get('rol', 'VECINO'),
             'nombre': user.get('nombre', '')
