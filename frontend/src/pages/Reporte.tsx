@@ -146,7 +146,7 @@ export default function Reporte() {
               <textarea
                 value={reporte.descripcion}
                 onChange={(e) => setReporte({ ...reporte, descripcion: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 text-gray-900 placeholder-gray-400"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 bg-gray-900 text-white placeholder-gray-400"
                 placeholder="Describe lo que observas..."
                 rows={3}
               />
