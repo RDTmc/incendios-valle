@@ -42,8 +42,15 @@ export default function Reporte() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Enviar a Lambda ms-incidencias
-    navigate('/confirmar')
+    try {
+      // Simular envío (sin backend real)
+      console.log('Reporte enviado:', reporte)
+      // Navegar a confirmación
+      navigate('/confirmar')
+    } catch (err) {
+      console.error('Error al enviar:', err)
+      alert('Error al enviar reporte. Intenta de nuevo.')
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,7 +146,7 @@ export default function Reporte() {
               <textarea
                 value={reporte.descripcion}
                 onChange={(e) => setReporte({ ...reporte, descripcion: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 text-gray-900 placeholder-gray-400"
                 placeholder="Describe lo que observas..."
                 rows={3}
               />
