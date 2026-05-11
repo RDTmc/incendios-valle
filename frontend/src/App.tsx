@@ -26,7 +26,7 @@ export const useAuth = () => {
 function App() {
   const [user, setUser] = useState<{ id: string; email: string; rol: string } | null>(null)
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     // TODO: Implementar login con Lambda ms-usuarios
     setUser({ id: '1', email, rol: 'VECINO' })
   }
