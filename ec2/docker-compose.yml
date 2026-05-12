@@ -13,7 +13,7 @@ services:
       - JWT_SECRET=incendios-valle-secret-key
       - SYNC_TOKEN=incendios-sync-secret-token
     volumes:
-      - ~/incendios-data:/app/data
+      - /home/ec2-user/incendios-data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -31,6 +31,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_SERVER_ROOT_URL=http://${ELASTIC_IP:-localhost}:3000
     volumes:
-      - ~/incendios-data:/var/lib/grafana:ro
-      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+      - /home/ec2-user/incendios-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
     restart: unless-stopped
