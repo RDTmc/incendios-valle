@@ -14,8 +14,8 @@ export default function Login() {
     try {
       await login(email, password)
       navigate('/reporte')
-    } catch (error) {
-      alert('Error de autenticación')
+    } catch (error: any) {
+      alert(error.message || 'Error de autenticación')
     }
   }
 

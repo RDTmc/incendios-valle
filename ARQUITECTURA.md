@@ -22,7 +22,7 @@ incendios-valle/
 | DynamoDB | Tablas users, reports | Fuente de verdad |
 | Lambda | Funciones serverless | ms-usuarios, ms-incidencias |
 | EC2 | FastAPI + Grafana | t3.micro (LabRole) |
-| Elastic IP | IP fija para EC2 | ~$1.20 USD/mes |
+| Elastic IP | IP fija para EC2 | 3.227.186.158 |
 
 ## Flujo de Datos (Arquitectura)
 

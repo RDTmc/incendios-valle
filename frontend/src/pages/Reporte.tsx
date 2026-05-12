@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../App'
+import { API } from '../api'
 
 interface ReporteData {
   tipo: 'FORESTAL' | 'URBANO'
@@ -11,6 +13,7 @@ interface ReporteData {
 
 export default function Reporte() {
   const navigate = useNavigate()
+  const { user, token } = useAuth()
   const [reporte, setReporte] = useState<ReporteData>({
     tipo: 'FORESTAL',
     lat: null,
@@ -19,6 +22,7 @@ export default function Reporte() {
     foto: null
   })
   const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const getLocation = () => {
     if (navigator.geolocation) {
@@ -40,16 +44,32 @@ export default function Reporte() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!reporte.lat || !reporte.lng) {
+      alert('Por favor obtén tu ubicación primero')
+      return
+    }
+    if (!token || !user) {
+      alert('Sesión expirada. Inicia sesión de nuevo.')
+      navigate('/login')
+      return
+    }
+    setSubmitting(true)
     try {
-      // Simular envío (sin backend real)
-      console.log('Reporte enviado:', reporte)
-      // Navegar a confirmación
+      await API.createReport(token, {
+        user_id: user.user_id,
+        tipo: reporte.tipo,
+        latitud: reporte.lat,
+        longitud: reporte.lng,
+        descripcion: reporte.descripcion
+      })
       navigate('/confirmar')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al enviar:', err)
-      alert('Error al enviar reporte. Intenta de nuevo.')
+      alert(err.message || 'Error al enviar reporte. Intenta de nuevo.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -155,9 +175,10 @@ export default function Reporte() {
             {/* Botón enviar */}
             <button
               type="submit"
-              className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-3 rounded-lg"
+              disabled={submitting}
+              className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-3 rounded-lg disabled:opacity-50"
             >
-              Enviar Reporte
+              {submitting ? 'Enviando...' : 'Enviar Reporte'}
             </button>
           </form>
         </div>

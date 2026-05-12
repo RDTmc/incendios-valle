@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, createContext, useContext } from 'react'
+import { API } from './api'
 
 // Pages
 import Login from './pages/Login'
@@ -10,7 +11,8 @@ import Historial from './pages/Historial'
 
 // Context
 interface AuthContextType {
-  user: { id: string; email: string; rol: string } | null
+  user: { user_id: string; email: string; rol: string; nombre: string } | null
+  token: string | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
 }
@@ -24,19 +26,27 @@ export const useAuth = () => {
 }
 
 function App() {
-  const [user, setUser] = useState<{ id: string; email: string; rol: string } | null>(null)
+  const [user, setUser] = useState<{ user_id: string; email: string; rol: string; nombre: string } | null>(null)
+  const [token, setToken] = useState<string | null>(null)
 
-  const login = async (email: string, _password: string) => {
-    // TODO: Implementar login con Lambda ms-usuarios
-    setUser({ id: '1', email, rol: 'VECINO' })
+  const login = async (email: string, password: string) => {
+    const response = await API.login(email, password)
+    setToken(response.token)
+    setUser({
+      user_id: response.user.user_id,
+      email: response.user.email,
+      rol: response.user.rol,
+      nombre: response.user.nombre || ''
+    })
   }
 
   const logout = () => {
     setUser(null)
+    setToken(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
