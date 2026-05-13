@@ -1,11 +1,21 @@
 version: '3.8'
 
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: incendios-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - grafana
+    restart: unless-stopped
+
   api:
     image: incendios-api:latest
     container_name: incendios-api
-    ports:
-      - "8000:8000"
     environment:
       - AWS_REGION=us-east-1
       - DYNAMODB_TABLE_USERS=users
@@ -25,12 +35,15 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: incendios-grafana
-    ports:
-      - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_SERVER_ROOT_URL=http://${ELASTIC_IP:-localhost}:3000
+      - GF_SERVER_ROOT_URL=http://3.227.186.158/dashboard/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     volumes:
       - /home/ec2-user/incendios-data:/var/lib/grafana
       - ./grafana-provisioning:/etc/grafana/provisioning
     restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge

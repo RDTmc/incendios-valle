@@ -1,4 +1,4 @@
-const API_URL = 'http://3.227.186.158:8000'
+const API_URL = 'http://3.227.186.158/api'
 
 export const API = {
   login: async (email: string, password: string) => {
