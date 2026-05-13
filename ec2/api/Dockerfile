@@ -6,7 +6,8 @@ RUN pip install --no-cache-dir \
     fastapi \
     uvicorn[standard] \
     boto3 \
-    python-jose \
+    PyJWT \
+    cryptography \
     pydantic \
     python-multipart
 
