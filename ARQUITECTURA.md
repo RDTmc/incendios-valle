@@ -10,100 +10,152 @@ incendios-valle/
 │   └── ms-incidencias/          → AWS Lambda (reportes)
 ├── ec2/
 │   ├── api/                     → FastAPI (Docker)
+│   ├── nginx/                   → Configuración Nginx
+│   ├── grafana-provisioning/    → Datasources Grafana
 │   └── docker-compose.yml
-└── ARQUITECTURA.md              → Este archivo
+├── ARQUITECTURA.md              → Este archivo
+└── README.md
 ```
 
-## Servicios AWS
+## Servicios AWS - Estado Actual
 
-| Servicio | Uso | Notas |
-|----------|-----|-------|
-| S3 | Almacenamiento fotos | Bucket: incendios-valle-sol |
-| DynamoDB | Tablas users, reports | Fuente de verdad |
-| Lambda | Funciones serverless | ms-usuarios, ms-incidencias |
-| EC2 | FastAPI + Grafana | t3.micro (LabRole) |
-| Elastic IP | IP fija para EC2 | 3.227.186.158 |
+| Servicio | Uso | Estado | Notas |
+|----------|-----|--------|-------|
+| S3 | Almacenamiento fotos | ✅ Listo | Bucket: incendios-valle-sol |
+| DynamoDB | Tablas users, reports | ✅ Activo | Fuente de verdad en la nube |
+| Lambda | Funciones serverless | ⏳ Pendiente | ms-usuarios, ms-incidencias |
+| EC2 t3.micro | FastAPI + Grafana | ✅ Desplegado | Elastic IP: 3.227.186.158 |
+| Elastic IP | IP fija EC2 | ✅ Asociada | 3.227.186.158 |
+
+## Servicios Desplegados en EC2
+
+| Servicio | Puerto | Estado | URL Acceso |
+|----------|--------|--------|------------|
+| **Nginx** | 80 | ✅ Corriendo | http://3.227.186.158/ |
+| **FastAPI** | 8000 | ✅ Healthy | http://3.227.186.158/api/docs |
+| **Grafana** | 3000 | ✅ Corriendo | http://3.227.186.158/dashboard/ |
+
+### Credenciales
+
+- **Grafana**: usuario `admin`, contraseña configurable
+- **API**: Endpoints públicos en `/api/`
 
 ## Flujo de Datos (Arquitectura)
 
 ```
-App (PWA)
+App (PWA - Cloudflare)
     ↓
-DynamoDB (Fuente de verdad)
+Nginx (Puerto 80)
     ↓
-DynamoDB Streams
+FastAPI (Puerto 8000)
+    ↓
+DynamoDB (Fuente de verdad - AWS)
+    ↓
+DynamoDB Streams (pendiente)
     ↓
 Lambda Réplica (pendiente)
     ↓
-FastAPI (EC2)
-    ↓
-SQLite (caché solo lectura)
+SQLite (caché local)
     ↓
 Grafana (dashboards)
 ```
 
-## Flujo de Despliegue
+## Configuración de Volúmenes en EC2
 
-### 1. Frontend → Cloudflare Pages
-- Rama: main
-- Carpeta: frontend/
-- URL: https://incendios-valle.pages.dev
+| Carpeta | Contenido | Permisos |
+|---------|-----------|----------|
+| `/home/ec2-user/incendios-data/api/` | Datos persistentes API | ec2-user:ec2-user |
+| `/home/ec2-user/incendios-data/grafana/` | Datos Grafana, dashboards | 472:472 (Grafana user) |
 
-### 2. Lambdas → AWS Lambda
-- Carpeta: lambda/
-- Despliegue manual (zip + upload AWS Console)
+## nginx.conf - Configuración Activa
 
-### 3. API + Grafana → EC2 (BUILD MODE)
-- Compilar en PC local → docker build
-- Guardar imagen → docker save
-- Transferir a EC2 → scp
-- Cargar imagen → docker load
-- Ejecutar con volúmenes
+```nginx
+upstream api { server incendios-api:8000; }
+upstream grafana { server incendios-grafana:3000; }
+
+location /api/ { proxy_pass http://api/; ... }
+location /dashboard/ { proxy_pass http://grafana; ... }
+location = / { return 301 /dashboard/; }
+```
+
+## docker-compose.yml - Servicios Activos
+
+```yaml
+services:
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+
+  api:
+    image: incendios-api:latest
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs', timeout=2)"]
+    volumes:
+      - /home/ec2-user/incendios-data/api:/app/data
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "admin123"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SERVER_ROOT_URL: "http://3.227.186.158/dashboard/"
+    volumes:
+      - /home/ec2-user/incendios-data/grafana:/var/lib/grafana
+```
 
 ## Seguridad
 
-- ❌ NO credenciales .env en EC2 (usa LabRole)
-- ❌ NO git clone en EC2
-- ✅ Elastic IP fija (asociada a cuenta)
+- ✅ NO credenciales .env en EC2 (usa LabRole)
+- ✅ NO git clone en EC2 (imágenes pre-compiladas)
+- ✅ Elastic IP fija asociada
+- ✅ Healthcheck nativo (Python)
 - ❌ NO SonarQube en EC2 (ejecutar local)
-
-## Notas Importantes
-
-1. EC2 debe ser t3.micro (cuenta académica)
-2. Security Group: SSH solo desde tu IP
-3. VPC personalizada con subnet pública
-4. SQLite: volumen compartido entre FastAPI y Grafana
 
 ## Roadmap de Desarrollo
 
-| Week | Componente | Estado |
-|------|------------|--------|
-| 1 | AWS Setup (S3, DynamoDB, EC2) | ✅ |
-| 2 | PWA Frontend + Cloudflare | ✅ |
-| 3 | FastAPI + Docker EC2 | 🔄 BUILD |
-| 3 | Lambda ms-usuarios, ms-incidencias | ⏳ |
-| 4 | Lambda ms-notifications | ⏳ |
-| 4 | DynamoDB Streams + SQLite | ⏳ |
-| 5 | Grafana dashboards | ⏳ |
+| Week | Componente | Estado | Notas |
+|------|------------|--------|-------|
+| 1 | AWS Setup (S3, DynamoDB, EC2) | ✅ | VPC, SG, EC2, Elastic IP |
+| 2 | PWA Frontend + Cloudflare | ✅ | Deploy automático |
+| 3 | FastAPI + Docker EC2 | ✅ | Nginx, API, Grafana corriendo |
+| 3 | Lambda ms-usuarios, ms-incidencias | ⏳ | Código listo, pend. deployment |
+| 4 | Lambda ms-notifications | ⏳ | Pendiente desarrollo |
+| 4 | DynamoDB Streams + SQLite sync | ⏳ | Pendiente |
+| 5 | Grafana dashboards | ⏳ | Pendiente |
+| 5 | PWA → URL API actualizada | 🔄 | Pendiente actualizar en Cloudflare |
+
+## Comandos de Despliegue (EC2)
+
+```bash
+# En EC2 - Crear carpetas de datos
+sudo mkdir -p ~/incendios-data/api ~/incendios-data/grafana
+sudo chown -R 472:472 ~/incendios-data/grafana
+
+# Levantar servicios
+docker-compose up -d --force-recreate
+```
+
+## Notas Importantes
+
+1. EC2: t3.micro (cuenta académica)
+2. Security Group: SSH (22) desde IP admin, HTTP (80) público, HTTPS (443) pendiente
+3. VPC personalizada con subnet pública
+4. Grafana versión fija: 10.4.2 (no latest)
+5. API healthcheck: Python nativo (sin curl/wget)
+
+## Próximos Pasos
+
+1. Actualizar PWA en Cloudflare con URL API correcta
+2. Desplegar Lambdas (ms-usuarios, ms-incidencias)
+3. Configurar DynamoDB Streams
+4. Desarrollar Lambda de réplica (sync a SQLite)
+5. Crear dashboards en Grafana
 
 ---
 
-## Comandos BUILD (PC Local → EC2)
-
-```powershell
-# 1. Compilar imagen
-cd incendios-valle/ec2
-docker build -t incendios-api:latest ./api
-
-# 2. Guardar imagen
-docker save -o incendios-api.tar incendios-api:latest
-
-# 3. Transferir a EC2 (con Elastic IP)
-scp -i incendios-key.pem incendios-api.tar ec2-user@<ELASTIC-IP>:~/
-
-# 4. En EC2: cargar imagen
-docker load -i incendios-api.tar
-
-# 5. Ejecutar (con volúmenes)
-docker run -d -p 8000:8000 -v ./data:/app/data incendios-api:latest
-```
+*Documento actualizado: 16 Mayo 2026*
+*Proyecto: Valle del Sol - Gestión de Incendios*

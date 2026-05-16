@@ -11,7 +11,10 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
-app = FastAPI(title="Incendios API")
+app = FastAPI(
+    title="Incendios API",
+    root_path="/api"
+)
 
 app.add_middleware(
     CORSMiddleware,
