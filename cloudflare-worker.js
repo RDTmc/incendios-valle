@@ -2,32 +2,51 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Only proxy /api/* requests
+    // 1. Validar que la ruta comience con /api/
     if (!url.pathname.startsWith('/api/')) {
       return new Response('Not Found', { status: 404 });
     }
 
-    // Forward to EC2 backend
+    // 2. Construir la URL destino hacia la EC2 de AWS
     const backendUrl = `http://3.227.186.158${url.pathname}${url.search}`;
 
+    // 3. Clonar y ajustar las cabeceras
     const headers = new Headers(request.headers);
     headers.set('Host', '3.227.186.158');
 
+    // 4. Configurar las opciones de la petición de forma segura
+    const fetchOptions = {
+      method: request.method,
+      headers: headers,
+      redirect: 'follow'
+    };
+
+    // EVITA EL ERROR CRÍTICO: Solo añade el cuerpo si NO es un método GET o HEAD
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      fetchOptions.body = request.body;
+    }
+
     try {
-      const response = await fetch(backendUrl, {
-        method: request.method,
-        headers: headers,
-        body: request.body,
-        redirect: 'follow'
-      });
+      // 5. Realizar la petición real al backend en AWS
+      const response = await fetch(backendUrl, fetchOptions);
+
+      // 6. Clonar la respuesta para poder modificar cabeceras de CORS si fuera necesario
+      const newHeaders = new Headers(response.headers);
+      
+      // Asegurar que el navegador acepte la respuesta bajo el dominio de la PWA
+      newHeaders.set('Access-Control-Allow-Origin', '*');
+      newHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
+      newHeaders.set('Access-Control-Allow-Headers', '*');
 
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers
+        headers: newHeaders
       });
+
     } catch (err) {
-      return new Response('Backend unavailable', { status: 502 });
+      // Si la EC2 está apagada o FastAPI se cayó, devuelve un Bad Gateway limpio
+      return new Response(`Backend unavailable: ${err.message}`, { status: 502 });
     }
   }
 };
