@@ -1,3 +1,0 @@
-# Proxy API requests to EC2 (avoids Mixed Content)
-# Cloudflare Pages will forward /api/* to the backend
-/api/*  http://3.227.186.158/api/:splat  200
