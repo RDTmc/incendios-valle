@@ -340,6 +340,35 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
     except Exception as e:
         return f"error: {str(e)}"
 
+@app.get("/focos-activos")
+def get_focos_activos():
+    """Retorna focos de incendio activos para el mapa"""
+    try:
+        response = reports_table.scan(
+            FilterExpression='estado IN (:pendiente, :activo, :controlado)',
+            ExpressionAttributeValues={
+                ':pendiente': 'PENDIENTE',
+                ':activo': 'ACTIVO',
+                ':controlado': 'CONTROLADO'
+            }
+        )
+        items = response.get('Items', [])
+        
+        focos = []
+        for item in items:
+            focos.append({
+                'id': item.get('report_id', ''),
+                'lat': float(item.get('latitud', 0)),
+                'lng': float(item.get('longitud', 0)),
+                'estado': item.get('estado', 'DESCONOCIDO'),
+                'tipo': item.get('tipo', 'FORESTAL'),
+                'created_at': item.get('created_at', '')
+            })
+        
+        return focos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching focos: {str(e)}")
+
 # ==================== DASHBOARD DATA ====================
 
 @app.get("/dashboard/stats")
