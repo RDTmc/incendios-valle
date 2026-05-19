@@ -214,7 +214,7 @@ def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
         timestamp = datetime.now(timezone.utc).isoformat()
         
         item = {
-            'report_id': report_id,
+            'reports_id': report_id,
             'user_id': req.user_id,
             'tipo': req.tipo,
             'latitud': str(req.latitud),
@@ -263,7 +263,7 @@ def list_reports(estado: str = None, user_id: str = None, payload: dict = Depend
 @app.get("/reports/{report_id}")
 def get_report(report_id: str, payload: dict = Depends(verify_token)):
     try:
-        response = reports_table.get_item(Key={'report_id': report_id})
+        response = reports_table.get_item(Key={'reports_id': report_id})
         item = response.get('Item')
         if not item:
             raise HTTPException(status_code=404, detail="Report not found")
@@ -292,13 +292,13 @@ def update_report(report_id: str, estado: str = None, descripcion: str = None, p
         expr_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
         
         reports_table.update_item(
-            Key={'report_id': report_id},
+            Key={'reports_id': report_id},
             UpdateExpression=update_expr,
             ExpressionAttributeValues=expr_values,
             ExpressionAttributeNames=expr_names if expr_names else None
         )
         
-        response = reports_table.get_item(Key={'report_id': report_id})
+        response = reports_table.get_item(Key={'reports_id': report_id})
         return response.get('Item', {})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Update report error: {str(e)}")
@@ -316,7 +316,7 @@ def get_focos_activos():
         focos = []
         for item in items:
             focos.append({
-                'id': item.get('report_id', ''),
+                'id': item.get('reports_id', ''),
                 'lat': float(item.get('latitud', 0)),
                 'lng': float(item.get('longitud', 0)),
                 'estado': item.get('estado', 'DESCONOCIDO'),

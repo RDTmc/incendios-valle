@@ -3,13 +3,19 @@ import bcrypt
 import uuid
 from datetime import datetime, timezone
 
+# Homologamos la función matemática exacta de la API para evitar fallas de indexación espacial
+def encode_geohash(lat, lon):
+    lat_hash = int(lat * 1000000)
+    lon_hash = int(lon * 1000000)
+    return f"{lat_hash // 1000}-{lon_hash // 1000}"
+
 def seed():
     dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
     users_table = dynamodb.Table('users')
     reports_table = dynamodb.Table('reports')
 
-    # Crear usuario admin
-    admin_id = str(uuid.uuid4())
+    # Mantener el ID original del Admin para no romper la consistencia con SQLite/Grafana
+    admin_id = '81d02e8d-375c-40b9-9f1e-968be9a2c5ae'
     password_hash = bcrypt.hashpw('admin123'.encode(), bcrypt.gensalt()).decode()
     timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -23,12 +29,11 @@ def seed():
             'rol': 'ADMIN',
             'created_at': timestamp
         })
-        print(f"✅ Admin creado: admin@valledelsol.cl / admin123")
-        print(f"   user_id: {admin_id}")
+        print(f"Admin creado de forma consistente: admin@valledelsol.cl / admin123")
     except Exception as e:
-        print(f"❌ Error creando admin: {e}")
+        print(f"Error creando admin: {e}")
 
-    # Crear usuario vecino de prueba
+    # Crear usuario vecino de prueba (este sí puede ser dinámico)
     vecino_id = str(uuid.uuid4())
     password_hash_vecino = bcrypt.hashpw('vecino123'.encode(), bcrypt.gensalt()).decode()
 
@@ -42,12 +47,11 @@ def seed():
             'rol': 'VECINO',
             'created_at': timestamp
         })
-        print(f"✅ Vecino creado: vecino@valledelsol.cl / vecino123")
-        print(f"   user_id: {vecino_id}")
+        print(f" Vecino creado: vecino@valledelsol.cl / vecino123")
     except Exception as e:
         print(f"❌ Error creando vecino: {e}")
 
-    # Crear reportes de prueba para el mapa
+    # Crear reportes de prueba para el mapa con la georreferenciación correcta
     print("\nCreando reportes de prueba...")
     focos_prueba = [
         {'lat': -33.45, 'lng': -70.66, 'tipo': 'FORESTAL', 'estado': 'ACTIVO'},
@@ -57,10 +61,11 @@ def seed():
 
     for foco in focos_prueba:
         report_id = str(uuid.uuid4())
-        geohash = f"{int(foco['lat'] * 1000)}-{int(foco['lng'] * 1000)}"
+        # Acoplamos la misma firma de geohash que computa el Backend
+        geohash = encode_geohash(foco['lat'], foco['lng'])
         try:
             reports_table.put_item(Item={
-                'report_id': report_id,
+                'reports_id': report_id,
                 'user_id': vecino_id,
                 'tipo': foco['tipo'],
                 'latitud': str(foco['lat']),
@@ -71,14 +76,11 @@ def seed():
                 'created_at': timestamp,
                 'updated_at': timestamp
             })
-            print(f"✅ Reporte {foco['estado']}: {foco['lat']}, {foco['lng']}")
+            print(f" Reporte {foco['estado']} insertado (Geohash: {geohash})")
         except Exception as e:
-            print(f"❌ Error creando reporte: {e}")
+            print(f" Error creando reporte: {e}")
 
-    print("\n🎉 Seed completado!")
-    print("\nCredenciales de prueba:")
-    print("  Admin:   admin@valledelsol.cl / admin123")
-    print("  Vecino:  vecino@valledelsol.cl / vecino123")
+    print("\nSeed completado con éxito con hashing bcrypt estándar!")
 
 if __name__ == '__main__':
     seed()
