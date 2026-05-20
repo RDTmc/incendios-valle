@@ -14,6 +14,10 @@ services:
   api:
     image: incendios-api:latest
     container_name: incendios-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
     environment:
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_REGION=us-east-1
@@ -22,8 +26,8 @@ services:
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
       - DYNAMODB_TABLE_USERS=users
       - DYNAMODB_TABLE_REPORTS=reports
-      - JWT_SECRET=incendios-valle-secret-key
-      - SYNC_TOKEN=incendios-sync-secret-token
+      - JWT_SECRET=${JWT_SECRET}
+      - SYNC_TOKEN=${SYNC_TOKEN}
     volumes:
       - /home/ec2-user/incendios-data/api:/app/data  # Carpeta aislada para la API
     restart: unless-stopped
