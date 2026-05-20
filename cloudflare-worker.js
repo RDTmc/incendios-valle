@@ -1,69 +1,74 @@
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-
-    // 1. Definir la IP de tu AWS EC2 backend (Puerto 80 de Nginx)
     const backend = 'http://3.227.186.158';
-    
-    // 2. Mantener el prefijo /api intacto porque Nginx lo requiere para redirigir a FastAPI
     const targetPath = url.pathname;
     const targetUrl = `${backend}${targetPath}${url.search}`;
 
-    // 1. Dominio permitido (PWA en Cloudflare Pages)
+    // CORS estricto
     const ALLOWED_ORIGIN = 'https://incendios-valle.pages.dev';
-    
-    // 2. Validar Origin header
     const requestOrigin = request.headers.get('Origin');
     const isAllowed = requestOrigin === ALLOWED_ORIGIN;
 
-    // 3. Configurar cabeceras CORS restrictivas
     const corsHeaders = new Headers();
     corsHeaders.set('Access-Control-Allow-Origin', isAllowed ? ALLOWED_ORIGIN : 'null');
     corsHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
     corsHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     corsHeaders.set('Vary', 'Origin');
 
-    // 4. INTERCEPTACIÓN CRÍTICA: Manejar el Preflight OPTIONS de inmediato sin tocar AWS
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
-    
-    // 5. Clonar las cabeceras originales de la petición y ajustar el Host para AWS
+
+    // Rate Limiting: 10 requests/minuto por IP en /api/login
+    if (request.method === 'POST' && targetPath === '/api/login') {
+      const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const rateKey = `rate:${clientIP}:login`;
+      const current = await env.RATE_LIMITER.get(rateKey);
+      const count = current ? parseInt(current) : 0;
+
+      if (count >= 10) {
+        const errorHeaders = new Headers(corsHeaders);
+        errorHeaders.set('Content-Type', 'application/json');
+        errorHeaders.set('Retry-After', '60');
+
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Try again later.' }), {
+          status: 429,
+          headers: errorHeaders
+        });
+      }
+
+      ctx.waitUntil(env.RATE_LIMITER.put(rateKey, (count + 1).toString(), { expirationTtl: 60 }));
+    }
+
     const headers = new Headers(request.headers);
     headers.set('Host', '3.227.186.158');
-    
-    // 6. Configurar las opciones del fetch de forma segura
+
     const fetchOptions = {
       method: request.method,
       headers: headers,
       redirect: 'follow'
     };
-    
-    // Evitar adjuntar body en métodos que la especificación de red prohíbe (GET/HEAD)
+
     if (!['GET', 'HEAD'].includes(request.method)) {
       fetchOptions.body = request.body;
     }
-    
+
     try {
-      // 7. Enviar la petición real al backend en AWS
       const response = await fetch(targetUrl, fetchOptions);
-      
-      // 8. Clonar las cabeceras que vengan de AWS y fusionar las de CORS
       const responseHeaders = new Headers(response.headers);
       responseHeaders.set('Access-Control-Allow-Origin', isAllowed ? ALLOWED_ORIGIN : 'null');
       responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
       responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       responseHeaders.set('Vary', 'Origin');
-      
+
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
         headers: responseHeaders
       });
-      
     } catch (err) {
-      // Retornar error de pasarela con cabeceras CORS activas para que el frontend pueda leer el texto
-      return new Response(`Backend error via Worker: ${err.message}`, { 
+      return new Response(`Backend error via Worker: ${err.message}`, {
         status: 502,
         headers: corsHeaders
       });
