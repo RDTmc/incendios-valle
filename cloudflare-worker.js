@@ -9,11 +9,19 @@ export default {
     const targetPath = url.pathname;
     const targetUrl = `${backend}${targetPath}${url.search}`;
 
-    // 3. Configurar cabeceras base para CORS global
+    // 1. Dominio permitido (PWA en Cloudflare Pages)
+    const ALLOWED_ORIGIN = 'https://incendios-valle.pages.dev';
+    
+    // 2. Validar Origin header
+    const requestOrigin = request.headers.get('Origin');
+    const isAllowed = requestOrigin === ALLOWED_ORIGIN;
+
+    // 3. Configurar cabeceras CORS restrictivas
     const corsHeaders = new Headers();
-    corsHeaders.set('Access-Control-Allow-Origin', '*');
+    corsHeaders.set('Access-Control-Allow-Origin', isAllowed ? ALLOWED_ORIGIN : 'null');
     corsHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
     corsHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    corsHeaders.set('Vary', 'Origin');
 
     // 4. INTERCEPTACIÓN CRÍTICA: Manejar el Preflight OPTIONS de inmediato sin tocar AWS
     if (request.method === 'OPTIONS') {
@@ -42,9 +50,10 @@ export default {
       
       // 8. Clonar las cabeceras que vengan de AWS y fusionar las de CORS
       const responseHeaders = new Headers(response.headers);
-      responseHeaders.set('Access-Control-Allow-Origin', '*');
+      responseHeaders.set('Access-Control-Allow-Origin', isAllowed ? ALLOWED_ORIGIN : 'null');
       responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
       responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      responseHeaders.set('Vary', 'Origin');
       
       return new Response(response.body, {
         status: response.status,
