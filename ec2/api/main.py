@@ -24,10 +24,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuración DynamoDB
-dynamodb = boto3.resource('dynamodb')
-users_table = dynamodb.Table('users')
-reports_table = dynamodb.Table('reports')
+# Configuración DynamoDB - Inicialización por request para soportar rotación de credenciales AWS Academy
+def get_dynamodb_resource():
+    """Obtener recurso DynamoDB con credenciales frescas en cada request"""
+    return boto3.resource('dynamodb')
+
+def get_users_table():
+    return get_dynamodb_resource().Table('users')
+
+def get_reports_table():
+    return get_dynamodb_resource().Table('reports')
 
 # Configuración SQLite
 DB_PATH = "/app/data/incendios.db"
@@ -100,7 +106,7 @@ def encode_geohash(lat, lon):
     lon_hash = int(lon * 1000000)
     return f"{lat_hash // 1000}-{lon_hash // 1000}"
 
-def verify_token(authorization: str = None):
+def verify_token(authorization: Optional[str] = None):
     if not authorization:
         raise HTTPException(status_code=401, detail="No token provided")
     token = authorization.replace("Bearer ", "")
@@ -115,6 +121,7 @@ def verify_token(authorization: str = None):
 @app.post("/login")
 def login(req: LoginRequest):
     try:
+        users_table = get_users_table()
         response = users_table.query(
             IndexName='email-index',
             KeyConditionExpression='email = :email',
@@ -156,6 +163,7 @@ def login(req: LoginRequest):
 @app.post("/register")
 def register(req: RegisterRequest):
     try:
+        users_table = get_users_table()
         response = users_table.query(
             IndexName='email-index',
             KeyConditionExpression='email = :email',
@@ -210,6 +218,7 @@ def register(req: RegisterRequest):
 @app.post("/reports")
 def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
     try:
+        reports_table = get_reports_table()
         report_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc).isoformat()
         
@@ -240,8 +249,9 @@ def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=f"Create report error: {str(e)}")
 
 @app.get("/reports")
-def list_reports(estado: str = None, user_id: str = None, payload: dict = Depends(verify_token)):
+def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, payload: dict = Depends(verify_token)):
     try:
+        reports_table = get_reports_table()
         if user_id:
             response = reports_table.query(
                 IndexName='user-index',
@@ -263,6 +273,7 @@ def list_reports(estado: str = None, user_id: str = None, payload: dict = Depend
 @app.get("/reports/{report_id}")
 def get_report(report_id: str, payload: dict = Depends(verify_token)):
     try:
+        reports_table = get_reports_table()
         response = reports_table.get_item(Key={'reports_id': report_id})
         item = response.get('Item')
         if not item:
@@ -274,12 +285,13 @@ def get_report(report_id: str, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=f"Get report error: {str(e)}")
 
 @app.put("/reports/{report_id}")
-def update_report(report_id: str, estado: str = None, descripcion: str = None, payload: dict = Depends(verify_token)):
+def update_report(report_id: str, estado: Optional[str] = None, descripcion: Optional[str] = None, payload: dict = Depends(verify_token)):
     try:
+        reports_table = get_reports_table()
         update_expr = "SET "
         expr_values = {}
         expr_names = {}
-        
+
         if estado:
             update_expr += "#estado = :estado, "
             expr_values[':estado'] = estado
@@ -287,17 +299,21 @@ def update_report(report_id: str, estado: str = None, descripcion: str = None, p
         if descripcion:
             update_expr += "descripcion = :descripcion, "
             expr_values[':descripcion'] = descripcion
-        
+
         update_expr += "updated_at = :updated_at"
         expr_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
-        
-        reports_table.update_item(
-            Key={'reports_id': report_id},
-            UpdateExpression=update_expr,
-            ExpressionAttributeValues=expr_values,
-            ExpressionAttributeNames=expr_names if expr_names else None
-        )
-        
+
+        # P2-3: Never pass None to ExpressionAttributeNames - boto3 rejects it
+        update_kwargs = {
+            'Key': {'reports_id': report_id},
+            'UpdateExpression': update_expr,
+            'ExpressionAttributeValues': expr_values,
+        }
+        if expr_names:
+            update_kwargs['ExpressionAttributeNames'] = expr_names
+
+        reports_table.update_item(**update_kwargs)
+
         response = reports_table.get_item(Key={'reports_id': report_id})
         return response.get('Item', {})
     except Exception as e:
@@ -310,6 +326,7 @@ def health():
 @app.get("/focos-activos")
 def get_focos_activos():
     try:
+        reports_table = get_reports_table()
         response = reports_table.scan()
         items = response.get('Items', [])
         
