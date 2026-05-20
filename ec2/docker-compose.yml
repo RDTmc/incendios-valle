@@ -12,8 +12,7 @@ services:
     restart: unless-stopped
 
   api:
-    # REEMPLAZAR 'RDTmc' con tu usuario real de Docker Hub
-    image: RDTmc/incendios-api:latest
+    image: rdtmc/incendios-api:latest
     container_name: incendios-api
     ports:
       - "8000:8000"
