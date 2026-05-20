@@ -5,14 +5,15 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /home/ec2-user/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       api:
         condition: service_healthy  # Espera a que la API responda de verdad
     restart: unless-stopped
 
   api:
-    image: incendios-api:latest
+    # REEMPLAZAR 'RDTmc' con tu usuario real de Docker Hub
+    image: RDTmc/incendios-api:latest
     container_name: incendios-api
     ports:
       - "8000:8000"
@@ -33,7 +34,7 @@ services:
     restart: unless-stopped
     healthcheck:
       # Usamos python interno para verificar la salud de forma nativa sin depender de curl/wget
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs', timeout=2)"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -50,7 +51,7 @@ services:
       GF_INSTALL_PLUGINS: "frser-sqlite-datasource"  # Auto-instalar plugin SQLite
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
-      - ./grafana-provisioning:/etc/grafana/provisioning
+      - /home/ec2-user/grafana-provisioning:/etc/grafana/provisioning
     restart: unless-stopped
 
 networks:
