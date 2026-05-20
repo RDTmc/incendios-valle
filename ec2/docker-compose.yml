@@ -43,7 +43,7 @@ services:
     image: grafana/grafana:10.4.2  # Fijamos versión para evitar roturas de la comunidad 'latest'
     container_name: incendios-grafana
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: "admin123"  # Cambiar en producción real
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin123}
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: "3.227.186.158"
       GF_SERVER_ROOT_URL: "http://3.227.186.158/dashboard/"  # Barra final obligatoria
