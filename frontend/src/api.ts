@@ -1,5 +1,19 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
+// P3-2: Safe JSON parser to handle non-JSON responses (403 HTML, plain text, etc.)
+const safeJson = async (res: Response): Promise<any> => {
+  const contentType = res.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return res.json()
+  }
+  const text = await res.text()
+  try {
+    return JSON.parse(text)
+  } catch {
+    return { error: text || `HTTP ${res.status}` }
+  }
+}
+
 export const API = {
   login: async (email: string, password: string) => {
     const res = await fetch(`${API_URL}/login`, {
@@ -8,8 +22,8 @@ export const API = {
       body: JSON.stringify({ email, password })
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || 'Login failed')
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Login failed: HTTP ${res.status}`)
     }
     return res.json()
   },
@@ -21,8 +35,8 @@ export const API = {
       body: JSON.stringify({ email, password, nombre, rol: 'VECINO' })
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || 'Register failed')
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Register failed: HTTP ${res.status}`)
     }
     return res.json()
   },
@@ -37,8 +51,8 @@ export const API = {
       body: JSON.stringify(data)
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || 'Failed to create report')
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to create report: HTTP ${res.status}`)
     }
     return res.json()
   },
@@ -50,7 +64,10 @@ export const API = {
     const res = await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-    if (!res.ok) throw new Error('Failed to fetch reports')
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to fetch reports: HTTP ${res.status}`)
+    }
     return res.json()
   }
 }
