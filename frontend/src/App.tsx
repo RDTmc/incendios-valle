@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useState, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
 import { API } from './api'
 
 // Pages
@@ -26,8 +26,31 @@ export const useAuth = () => {
 }
 
 function App() {
-  const [user, setUser] = useState<{ user_id: string; email: string; rol: string; nombre: string } | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+  // P3-1: Initialize from localStorage for session persistence
+  const [user, setUser] = useState<{ user_id: string; email: string; rol: string; nombre: string } | null>(() => {
+    const saved = localStorage.getItem('incendios_user')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('incendios_token')
+  })
+
+  // P3-1: Sync to localStorage when auth state changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('incendios_user', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('incendios_user')
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('incendios_token', token)
+    } else {
+      localStorage.removeItem('incendios_token')
+    }
+  }, [token])
 
   const login = async (email: string, password: string) => {
     const response = await API.login(email, password)
@@ -49,12 +72,12 @@ function App() {
     <AuthContext.Provider value={{ user, token, login, logout }}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={user ? <Navigate to="/reporte" /> : <Login />} />
           <Route path="/reporte" element={user ? <Reporte /> : <Navigate to="/login" />} />
           <Route path="/confirmar" element={user ? <Confirmacion /> : <Navigate to="/login" />} />
           <Route path="/mapa" element={<MapaFocos />} />
           <Route path="/historial" element={user ? <Historial /> : <Navigate to="/login" />} />
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to={user ? "/reporte" : "/login"} />} />
         </Routes>
       </BrowserRouter>
     </AuthContext.Provider>
