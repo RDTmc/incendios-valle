@@ -41,8 +41,13 @@ export default {
       ctx.waitUntil(env.RATE_LIMITER.put(rateKey, (count + 1).toString(), { expirationTtl: 60 }));
     }
 
+    // Cloudflare bloquea peticiones con IP en header Host
+    // No seteamos Host explícitamente; dejamos el original de la request
     const headers = new Headers(request.headers);
-    headers.set('Host', '3.227.186.158');
+    // Eliminar headers que Cloudflare no permite reenviar
+    headers.delete('cf-connecting-ip');
+    headers.delete('cf-ray');
+    headers.delete('cf-visitor');
 
     const fetchOptions = {
       method: request.method,
