@@ -32,9 +32,8 @@ services:
       - /home/ec2-user/incendios-data/api:/app/data  # Carpeta aislada para la API
     restart: unless-stopped
     healthcheck:
-      # Usamos python interno para verificar la salud de forma nativa sin depender de curl/wget
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
-      interval: 15s
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5)"]
+      interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
