@@ -1,7 +1,8 @@
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const backend = 'http://3.227.186.158';
+    // cloudflared tunnel: apunte a api.keogh.lat en lugar de IP pública
+    const backend = 'https://api.keogh.lat';
     const targetPath = url.pathname;
     const targetUrl = `${backend}${targetPath}${url.search}`;
 
