@@ -14,7 +14,7 @@ interface Reporte {
 }
 
 export default function Historial() {
-  const { user, token } = useAuth()
+  const { user, token, logout } = useAuth()
   const navigate = useNavigate()
   const [reportes, setReportes] = useState<Reporte[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,8 +48,14 @@ export default function Historial() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="bg-white p-4 shadow">
+      <div className="bg-white p-4 shadow flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-800">Mis Reportes</h1>
+        <button
+          onClick={() => { logout(); navigate('/login') }}
+          className="text-sm text-red-600 hover:text-red-800 font-medium"
+        >
+          Cerrar Sesión
+        </button>
       </div>
 
       <div className="p-4 space-y-4">
