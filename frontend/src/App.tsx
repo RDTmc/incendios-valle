@@ -25,8 +25,27 @@ export const useAuth = () => {
   return context
 }
 
+// Componente Guard para rutas protegidas por rol
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
+  const { user, token } = useAuth()
+
+  if (!token || !user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.rol)) {
+    // Si el usuario no tiene el rol permitido, redirigir según su rol
+    if (user.rol === 'ADMIN') {
+      return <Navigate to="/admin" replace />
+    }
+    return <Navigate to="/vecino" replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
-  // P3-1: Initialize from localStorage for session persistence
+  // P3-1 + P3-5: Initialize from localStorage con role
   const [user, setUser] = useState<{ user_id: string; email: string; rol: string; nombre: string } | null>(() => {
     const saved = localStorage.getItem('incendios_user')
     return saved ? JSON.parse(saved) : null
@@ -35,7 +54,7 @@ function App() {
     return localStorage.getItem('incendios_token')
   })
 
-  // P3-1: Sync to localStorage when auth state changes
+  // P3-1 + P3-5: Sync to localStorage cuando cambia auth state
   useEffect(() => {
     if (user) {
       localStorage.setItem('incendios_user', JSON.stringify(user))
@@ -72,12 +91,37 @@ function App() {
     <AuthContext.Provider value={{ user, token, login, logout }}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={user ? <Navigate to="/reporte" /> : <Login />} />
-          <Route path="/reporte" element={user ? <Reporte /> : <Navigate to="/login" />} />
-          <Route path="/confirmar" element={user ? <Confirmacion /> : <Navigate to="/login" />} />
+          {/* Login: redirige si ya hay sesión */}
+          <Route path="/login" element={user ? <Navigate to={user.rol === 'ADMIN' ? '/admin' : '/reporte'} /> : <Login />} />
+          
+          {/* Rutas Admin */}
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <Historial />
+            </ProtectedRoute>
+          } />
+          
+          {/* Rutas Vecino */}
+          <Route path="/reporte" element={
+            <ProtectedRoute allowedRoles={['VECINO']}>
+              <Reporte />
+            </ProtectedRoute>
+          } />
+          <Route path="/confirmar" element={
+            <ProtectedRoute allowedRoles={['VECINO']}>
+              <Confirmacion />
+            </ProtectedRoute>
+          } />
           <Route path="/mapa" element={<MapaFocos />} />
-          <Route path="/historial" element={user ? <Historial /> : <Navigate to="/login" />} />
-          <Route path="/" element={<Navigate to={user ? "/reporte" : "/login"} />} />
+          <Route path="/historial" element={
+            <ProtectedRoute allowedRoles={['VECINO']}>
+              <Historial />
+            </ProtectedRoute>
+          } />
+          
+          {/* Rutas genéricas */}
+          <Route path="/vecino" element={<Navigate to="/reporte" replace />} />
+          <Route path="/" element={<Navigate to={user ? (user.rol === 'ADMIN' ? '/admin' : '/reporte') : '/login'} replace />} />
         </Routes>
       </BrowserRouter>
     </AuthContext.Provider>

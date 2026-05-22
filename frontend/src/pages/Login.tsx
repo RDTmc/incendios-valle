@@ -13,7 +13,7 @@ export default function Login() {
     e.preventDefault()
     try {
       await login(email, password)
-      navigate('/reporte')
+      // Navegación automática según rol (manejada por App.tsx)
     } catch (error: any) {
       alert(error.message || 'Error de autenticación')
     }
@@ -92,15 +92,7 @@ export default function Login() {
           </a>
         </div>
 
-        {/* Navegación temporal */}
-        <div className="mt-8 pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center mb-2">Navegación (demo):</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <button onClick={() => navigate('/reporte')} className="text-xs bg-gray-100 px-2 py-1 rounded">Reporte</button>
-            <button onClick={() => navigate('/mapa')} className="text-xs bg-gray-100 px-2 py-1 rounded">Mapa</button>
-            <button onClick={() => navigate('/historial')} className="text-xs bg-gray-100 px-2 py-1 rounded">Historial</button>
-          </div>
-        </div>
+        {/* Navegación demo ELIMINADA - Rutas protegidas por rol */}
       </div>
     </div>
   )
