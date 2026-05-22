@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function Confirmacion() {
   const navigate = useNavigate()
-  const [reportId] = useState('RPT-' + Math.random().toString(36).substr(2, 9).toUpperCase())
+  const location = useLocation()
+  const data = location.state as {
+    reporte: { report_id: string; estado: string; created_at: string }
+    lat: number
+    lng: number
+    tipo: string
+  } | null
 
-  // Simular ubicación
-  const [lat] = useState(-33.4489)
-  const [lng] = useState(-70.6693)
-
-  useEffect(() => {
-    // Aquí se mostraría el mapa de Google
-  }, [lat, lng])
+  const reportId = data?.reporte?.report_id ?? '---'
+  const lat = data?.lat ?? 0
+  const lng = data?.lng ?? 0
+  const tipo = data?.tipo ?? 'FORESTAL'
+  const createdAt = data?.reporte?.created_at ?? ''
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -43,8 +46,9 @@ export default function Confirmacion() {
             <ul className="text-sm text-gray-600 space-y-1">
               <li>📍 Latitud: {lat.toFixed(6)}</li>
               <li>📍 Longitud: {lng.toFixed(6)}</li>
-              <li>🔥 Tipo: Forestal</li>
-              <li>⏰ Estado: Pendiente de validación</li>
+              <li>🔥 Tipo: {tipo === 'FORESTAL' ? 'Forestal' : 'Urbano'}</li>
+              <li>⏰ Estado: {data?.reporte?.estado ?? 'Pendiente de validación'}</li>
+              {createdAt && <li>🕐 Creado: {new Date(createdAt).toLocaleString('es-CL')}</li>}
             </ul>
           </div>
 

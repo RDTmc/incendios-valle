@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.keogh.lat/api'
 
 // P3-2: Safe JSON parser to handle non-JSON responses (403 HTML, plain text, etc.)
 const safeJson = async (res: Response): Promise<any> => {
@@ -53,6 +53,15 @@ export const API = {
     if (!res.ok) {
       const err = await safeJson(res)
       throw new Error(err.error || err.detail || `Failed to create report: HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
+  getFocosActivos: async () => {
+    const res = await fetch(`${API_URL}/focos-activos`)
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to fetch focos: HTTP ${res.status}`)
     }
     return res.json()
   },

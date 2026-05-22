@@ -106,7 +106,7 @@ def encode_geohash(lat, lon):
     lon_hash = int(lon * 1000000)
     return f"{lat_hash // 1000}-{lon_hash // 1000}"
 
-def verify_token(authorization: Optional[str] = None):
+def verify_token(authorization: Optional[str] = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="No token provided")
     token = authorization.replace("Bearer ", "")

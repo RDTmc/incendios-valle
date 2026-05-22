@@ -13,7 +13,7 @@ interface ReporteData {
 
 export default function Reporte() {
   const navigate = useNavigate()
-  const { user, token } = useAuth()
+  const { user, token, logout } = useAuth()
   const [reporte, setReporte] = useState<ReporteData>({
     tipo: 'FORESTAL',
     lat: null,
@@ -57,14 +57,14 @@ export default function Reporte() {
     }
     setSubmitting(true)
     try {
-      await API.createReport(token, {
+      const result = await API.createReport(token, {
         user_id: user.user_id,
         tipo: reporte.tipo,
         latitud: reporte.lat,
         longitud: reporte.lng,
         descripcion: reporte.descripcion
       })
-      navigate('/confirmar')
+      navigate('/confirmar', { state: { reporte: result, lat: reporte.lat, lng: reporte.lng, tipo: reporte.tipo } })
     } catch (err: any) {
       console.error('Error al enviar:', err)
       alert(err.message || 'Error al enviar reporte. Intenta de nuevo.')
@@ -83,7 +83,15 @@ export default function Reporte() {
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-lg mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-xl font-bold text-gray-800 mb-6">Reportar Incendio</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl font-bold text-gray-800">Reportar Incendio</h1>
+            <button
+              onClick={() => { logout(); navigate('/login') }}
+              className="text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Tipo de incendio */}
