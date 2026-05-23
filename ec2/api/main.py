@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -10,6 +10,7 @@ import uuid
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from s3_service import upload_image
 
 app = FastAPI(
     title="Incendios API",
@@ -67,11 +68,18 @@ def init_db():
             longitud TEXT,
             geohash TEXT,
             descripcion TEXT,
+            foto_url TEXT DEFAULT '',
             estado TEXT,
             created_at TEXT,
             updated_at TEXT
         )
     ''')
+    # Migración: agregar columna foto_url si no existe (BD existentes)
+    try:
+        cursor.execute("ALTER TABLE reports ADD COLUMN foto_url TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass  # Ya existe
+
     conn.commit()
     conn.close()
 
@@ -95,6 +103,7 @@ class ReportRequest(BaseModel):
     latitud: float
     longitud: float
     descripcion: str = ""
+    foto_url: str = ""
 
 class SyncRequest(BaseModel):
     table: str
@@ -116,7 +125,27 @@ def verify_token(authorization: Optional[str] = Header(None)):
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+ALLOWED_MIME = {"image/jpeg", "image/png"}
+MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
+
 # ==================== ENDPOINTS ====================
+
+@app.post("/reports/upload")
+def upload_report_image(file: UploadFile = File(...)):
+    try:
+        if file.content_type not in ALLOWED_MIME:
+            raise HTTPException(status_code=400, detail="Solo se permiten imágenes JPEG o PNG")
+
+        contents = file.file.read()
+        if len(contents) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="La imagen no debe superar los 2MB")
+
+        url = upload_image(contents, file.content_type)
+        return {"foto_url": url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir imagen: {str(e)}")
 
 @app.post("/login")
 def login(req: LoginRequest):
@@ -230,6 +259,7 @@ def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
             'longitud': str(req.longitud),
             'geohash': encode_geohash(req.latitud, req.longitud),
             'descripcion': req.descripcion,
+            'foto_url': req.foto_url,
             'estado': 'PENDIENTE',
             'created_at': timestamp,
             'updated_at': timestamp
@@ -410,12 +440,12 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
             if operation in ['INSERT', 'MODIFY']:
                 cursor.execute('''
                     INSERT OR REPLACE INTO reports
-                    (report_id, user_id, tipo, latitud, longitud, geohash, descripcion, estado, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (report_id, user_id, tipo, latitud, longitud, geohash, descripcion, foto_url, estado, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (data.get('report_id'), data.get('user_id'), data.get('tipo'),
                       data.get('latitud'), data.get('longitud'), data.get('geohash'),
-                      data.get('descripcion'), data.get('estado'),
-                      data.get('created_at'), data.get('updated_at')))
+                      data.get('descripcion'), data.get('foto_url', ''),
+                      data.get('estado'), data.get('created_at'), data.get('updated_at')))
             result = "report synced"
         else:
             result = "unknown table"
