@@ -24,16 +24,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuración DynamoDB - Inicialización por request para soportar rotación de credenciales AWS Academy
-def get_dynamodb_resource():
-    """Obtener recurso DynamoDB con credenciales frescas en cada request"""
-    return boto3.resource('dynamodb')
-
-def get_users_table():
-    return get_dynamodb_resource().Table('users')
-
-def get_reports_table():
-    return get_dynamodb_resource().Table('reports')
+# Configuración DynamoDB
+dynamodb = boto3.resource('dynamodb')
+users_table = dynamodb.Table('users')
+reports_table = dynamodb.Table('reports')
 
 # Configuración SQLite
 DB_PATH = "/app/data/incendios.db"
@@ -106,7 +100,7 @@ def encode_geohash(lat, lon):
     lon_hash = int(lon * 1000000)
     return f"{lat_hash // 1000}-{lon_hash // 1000}"
 
-def verify_token(authorization: Optional[str] = Header(None)):
+def verify_token(authorization: str = None):
     if not authorization:
         raise HTTPException(status_code=401, detail="No token provided")
     token = authorization.replace("Bearer ", "")
@@ -121,7 +115,6 @@ def verify_token(authorization: Optional[str] = Header(None)):
 @app.post("/login")
 def login(req: LoginRequest):
     try:
-        users_table = get_users_table()
         response = users_table.query(
             IndexName='email-index',
             KeyConditionExpression='email = :email',
@@ -163,7 +156,6 @@ def login(req: LoginRequest):
 @app.post("/register")
 def register(req: RegisterRequest):
     try:
-        users_table = get_users_table()
         response = users_table.query(
             IndexName='email-index',
             KeyConditionExpression='email = :email',
@@ -218,7 +210,6 @@ def register(req: RegisterRequest):
 @app.post("/reports")
 def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
     try:
-        reports_table = get_reports_table()
         report_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc).isoformat()
         
@@ -249,9 +240,8 @@ def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=f"Create report error: {str(e)}")
 
 @app.get("/reports")
-def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, payload: dict = Depends(verify_token)):
+def list_reports(estado: str = None, user_id: str = None, payload: dict = Depends(verify_token)):
     try:
-        reports_table = get_reports_table()
         if user_id:
             response = reports_table.query(
                 IndexName='user-index',
@@ -273,7 +263,6 @@ def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, pa
 @app.get("/reports/{report_id}")
 def get_report(report_id: str, payload: dict = Depends(verify_token)):
     try:
-        reports_table = get_reports_table()
         response = reports_table.get_item(Key={'reports_id': report_id})
         item = response.get('Item')
         if not item:
@@ -285,13 +274,12 @@ def get_report(report_id: str, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=f"Get report error: {str(e)}")
 
 @app.put("/reports/{report_id}")
-def update_report(report_id: str, estado: Optional[str] = None, descripcion: Optional[str] = None, payload: dict = Depends(verify_token)):
+def update_report(report_id: str, estado: str = None, descripcion: str = None, payload: dict = Depends(verify_token)):
     try:
-        reports_table = get_reports_table()
         update_expr = "SET "
         expr_values = {}
         expr_names = {}
-
+        
         if estado:
             update_expr += "#estado = :estado, "
             expr_values[':estado'] = estado
@@ -299,21 +287,17 @@ def update_report(report_id: str, estado: Optional[str] = None, descripcion: Opt
         if descripcion:
             update_expr += "descripcion = :descripcion, "
             expr_values[':descripcion'] = descripcion
-
+        
         update_expr += "updated_at = :updated_at"
         expr_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
-
-        # P2-3: Never pass None to ExpressionAttributeNames - boto3 rejects it
-        update_kwargs = {
-            'Key': {'reports_id': report_id},
-            'UpdateExpression': update_expr,
-            'ExpressionAttributeValues': expr_values,
-        }
-        if expr_names:
-            update_kwargs['ExpressionAttributeNames'] = expr_names
-
-        reports_table.update_item(**update_kwargs)
-
+        
+        reports_table.update_item(
+            Key={'reports_id': report_id},
+            UpdateExpression=update_expr,
+            ExpressionAttributeValues=expr_values,
+            ExpressionAttributeNames=expr_names if expr_names else None
+        )
+        
         response = reports_table.get_item(Key={'reports_id': report_id})
         return response.get('Item', {})
     except Exception as e:
@@ -323,51 +307,9 @@ def update_report(report_id: str, estado: Optional[str] = None, descripcion: Opt
 def health():
     return {"status": "ok"}
 
-@app.get("/public/dashboard-stats")
-def public_dashboard_stats():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT estado, COUNT(*) FROM reports GROUP BY estado")
-        by_estado = {row[0]: row[1] for row in cursor.fetchall()}
-        cursor.execute("SELECT tipo, COUNT(*) FROM reports GROUP BY tipo")
-        by_tipo = {row[0]: row[1] for row in cursor.fetchall()}
-        conn.close()
-        return {
-            "focos_activos": by_estado.get("ACTIVO", 0) + by_estado.get("PENDIENTE", 0),
-            "estado_pendiente": by_estado.get("PENDIENTE", 0),
-            "estado_activo": by_estado.get("ACTIVO", 0),
-            "estado_controlado": by_estado.get("CONTROLADO", 0),
-            "estado_extinguido": by_estado.get("EXTINGUIDO", 0),
-            "tipo_forestal": by_tipo.get("FORESTAL", 0),
-            "tipo_urbano": by_tipo.get("URBANO", 0)
-        }
-    except Exception as e:
-        return {"focos_activos": 0, "estado_pendiente": 0, "estado_activo": 0, "estado_controlado": 0, "estado_extinguido": 0, "tipo_forestal": 0, "tipo_urbano": 0, "error": str(e)}
-
-@app.get("/public/map-coordinates")
-def public_map_coordinates():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT latitud, longitud, tipo, estado FROM reports")
-        rows = cursor.fetchall()
-        conn.close()
-        peso = {"ACTIVO": 3, "PENDIENTE": 2, "CONTROLADO": 1, "EXTINGUIDO": 0}
-        return [{
-            "lat": float(r[0]),
-            "lng": float(r[1]),
-            "tipo": r[2],
-            "estado": r[3],
-            "intensidad": peso.get(r[3], 1)
-        } for r in rows if r[0] and r[1]]
-    except Exception as e:
-        return {"error": str(e)}
-
 @app.get("/focos-activos")
 def get_focos_activos():
     try:
-        reports_table = get_reports_table()
         response = reports_table.scan()
         items = response.get('Items', [])
         
@@ -404,7 +346,7 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
                     INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at)
                     VALUES (?, ?, ?, ?, ?)
                 ''', (data.get('user_id'), data.get('email'), data.get('nombre'),
-                      data.get('rol', 'VECINO'), data.get('created_at')))
+              data.get('rol', 'VECINO'), data.get('created_at')))
             result = "user synced"
         elif table == 'reports':
             if operation in ['INSERT', 'MODIFY']:
