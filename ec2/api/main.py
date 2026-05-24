@@ -13,7 +13,7 @@ from pathlib import Path
 from lambda_service import upload_image
 
 ALLOWED_MIME = {"image/jpeg", "image/png"}
-MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB (la compresión se maneja en frontend)
 
 app = FastAPI(
     title="Incendios API",
