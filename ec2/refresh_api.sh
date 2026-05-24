@@ -26,14 +26,12 @@ docker-compose up -d --no-deps --force-recreate api
 
 sleep 10
 
-echo -e "\n Aplicando parches en caliente (S3, public endpoints)..."
-# Verificar que el contenedor está corriendo
+echo -e "\n Aplicando parches en caliente (main.py completo + s3_service)..."
+# El --force-recreate crea un contenedor NUEVO desde la imagen (Mayo 20).
+# Inyectamos el main.py completo con todos los endpoints modernos.
 if docker inspect incendios-api --format "{{.State.Status}}" | grep -q running; then
-    # Patch 1: s3_service.py
+    docker cp /home/ec2-user/main_fixed_v2.py incendios-api:/app/main.py
     docker cp /home/ec2-user/s3_service.py incendios-api:/app/s3_service.py
-    # Patch 2: public endpoints + upload endpoint + foto_url
-    docker cp /home/ec2-user/patch_s3_upload.py incendios-api:/tmp/patch_s3_upload.py
-    docker exec incendios-api python3 /tmp/patch_s3_upload.py
     docker restart incendios-api
     sleep 5
     echo -e "\n Parches aplicados correctamente."
