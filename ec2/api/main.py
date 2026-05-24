@@ -12,6 +12,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from s3_service import upload_image
 
+ALLOWED_MIME = {"image/jpeg", "image/png"}
+MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
+
 app = FastAPI(
     title="Incendios API",
     root_path="/api"
@@ -124,9 +127,6 @@ def verify_token(authorization: Optional[str] = Header(None)):
         return payload
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
-
-ALLOWED_MIME = {"image/jpeg", "image/png"}
-MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
 
 # ==================== ENDPOINTS ====================
 
