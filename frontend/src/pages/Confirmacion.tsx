@@ -8,6 +8,7 @@ export default function Confirmacion() {
     lat: number
     lng: number
     tipo: string
+    fotoUrl?: string
   } | null
 
   const reportId = data?.reporte?.report_id ?? '---'
@@ -15,6 +16,7 @@ export default function Confirmacion() {
   const lng = data?.lng ?? 0
   const tipo = data?.tipo ?? 'FORESTAL'
   const createdAt = data?.reporte?.created_at ?? ''
+  const fotoUrl = data?.fotoUrl ?? ''
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -39,6 +41,18 @@ export default function Confirmacion() {
               <p className="text-xs text-gray-500">(Mapa de Google)</p>
             </div>
           </div>
+
+          {/* Foto subida */}
+          {fotoUrl && (
+            <div className="mb-6">
+              <img
+                src={fotoUrl}
+                alt="Foto del incendio"
+                className="w-full rounded-lg shadow-md object-cover max-h-64"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            </div>
+          )}
 
           {/* Detalles */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">

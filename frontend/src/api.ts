@@ -41,7 +41,22 @@ export const API = {
     return res.json()
   },
 
-  createReport: async (token: string, data: { user_id: string; tipo: string; latitud: number; longitud: number; descripcion: string }) => {
+  uploadImage: async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${API_URL}/reports/upload`, {
+      method: 'POST',
+      body: formData
+    })
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Upload failed: HTTP ${res.status}`)
+    }
+    const result = await res.json()
+    return result.foto_url
+  },
+
+  createReport: async (token: string, data: { user_id: string; tipo: string; latitud: number; longitud: number; descripcion: string; foto_url?: string }) => {
     const res = await fetch(`${API_URL}/reports`, {
       method: 'POST',
       headers: { 

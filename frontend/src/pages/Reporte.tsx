@@ -8,7 +8,8 @@ interface ReporteData {
   lat: number | null
   lng: number | null
   descripcion: string
-  foto: File | null
+  fotoUrl: string
+  fotoName: string
 }
 
 export default function Reporte() {
@@ -19,9 +20,11 @@ export default function Reporte() {
     lat: null,
     lng: null,
     descripcion: '',
-    foto: null
+    fotoUrl: '',
+    fotoName: ''
   })
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const getLocation = () => {
@@ -57,14 +60,18 @@ export default function Reporte() {
     }
     setSubmitting(true)
     try {
-      const result = await API.createReport(token, {
+      const payload: any = {
         user_id: user.user_id,
         tipo: reporte.tipo,
         latitud: reporte.lat,
         longitud: reporte.lng,
         descripcion: reporte.descripcion
-      })
-      navigate('/confirmar', { state: { reporte: result, lat: reporte.lat, lng: reporte.lng, tipo: reporte.tipo } })
+      }
+      if (reporte.fotoUrl) {
+        payload.foto_url = reporte.fotoUrl
+      }
+      const result = await API.createReport(token, payload)
+      navigate('/confirmar', { state: { reporte: result, lat: reporte.lat, lng: reporte.lng, tipo: reporte.tipo, fotoUrl: reporte.fotoUrl } })
     } catch (err: any) {
       console.error('Error al enviar:', err)
       alert(err.message || 'Error al enviar reporte. Intenta de nuevo.')
@@ -73,9 +80,17 @@ export default function Reporte() {
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setReporte({ ...reporte, foto: e.target.files[0] })
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await API.uploadImage(file)
+      setReporte({ ...reporte, fotoUrl: url, fotoName: file.name })
+    } catch (err: any) {
+      alert(err.message || 'Error al subir imagen. Intenta de nuevo.')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -156,10 +171,13 @@ export default function Reporte() {
                   accept="image/*"
                   capture="environment"
                   onChange={handleFileChange}
+                  disabled={uploading}
                   className="hidden"
                 />
-                {reporte.foto ? (
-                  <span className="text-green-600">📷 {reporte.foto.name}</span>
+                {uploading ? (
+                  <span className="text-blue-600">⏳ Subiendo imagen...</span>
+                ) : reporte.fotoUrl ? (
+                  <span className="text-green-600">✅ {reporte.fotoName}</span>
                 ) : (
                   <span className="text-gray-500">📷 Tomar foto</span>
                 )}
