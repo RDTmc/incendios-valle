@@ -10,7 +10,7 @@ import uuid
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from s3_service import upload_image
+from lambda_service import upload_image
 
 ALLOWED_MIME = {"image/jpeg", "image/png"}
 MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
