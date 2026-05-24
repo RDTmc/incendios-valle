@@ -2,7 +2,8 @@ import boto3
 import os
 import uuid
 
-S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "incendios-valle-uploads")
+S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "incendios-valle-sol")
+PRESIGNED_EXPIRY = 7200  # 2 horas
 
 def get_s3_client():
     return boto3.client("s3")
@@ -17,4 +18,8 @@ def upload_image(file_bytes: bytes, content_type: str) -> str:
         Body=file_bytes,
         ContentType=content_type,
     )
-    return f"https://{S3_BUCKET}.s3.amazonaws.com/{key}"
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": S3_BUCKET, "Key": key},
+        ExpiresIn=PRESIGNED_EXPIRY,
+    )
