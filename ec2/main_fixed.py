@@ -321,6 +321,8 @@ def get_focos_activos():
                 'lng': float(item.get('longitud', 0)),
                 'estado': item.get('estado', 'DESCONOCIDO'),
                 'tipo': item.get('tipo', 'FORESTAL'),
+                'descripcion': item.get('descripcion', ''),
+                'foto_url': item.get('foto_url', ''),
                 'created_at': item.get('created_at', '')
             })
         
