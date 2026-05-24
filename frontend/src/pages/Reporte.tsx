@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../App'
 import { API } from '../api'
+import { compressImage } from '../util/image'
 
 interface ReporteData {
   tipo: 'FORESTAL' | 'URBANO'
@@ -85,7 +86,9 @@ export default function Reporte() {
     if (!file) return
     setUploading(true)
     try {
-      const url = await API.uploadImage(file)
+      const compressed = await compressImage(file)
+      const optimized = new File([compressed], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' })
+      const url = await API.uploadImage(optimized)
       setReporte({ ...reporte, fotoUrl: url, fotoName: file.name })
     } catch (err: any) {
       alert(err.message || 'Error al subir imagen. Intenta de nuevo.')
