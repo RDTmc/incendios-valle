@@ -437,6 +437,25 @@ def get_focos_activos():
             })
         
         return focos
+    except Exception:
+        pass  # Fallback a SQLite
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT report_id, latitud, longitud, tipo, estado, descripcion, foto_url, created_at FROM reports")
+        rows = cursor.fetchall()
+        conn.close()
+        return [{
+            'id': r[0] or '',
+            'lat': float(r[1]) if r[1] else 0,
+            'lng': float(r[2]) if r[2] else 0,
+            'tipo': r[3] or 'FORESTAL',
+            'estado': r[4] or 'DESCONOCIDO',
+            'descripcion': r[5] or '',
+            'foto_url': r[6] or '',
+            'created_at': r[7] or ''
+        } for r in rows if r[1] and r[2]]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching focos: {str(e)}")
 

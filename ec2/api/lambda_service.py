@@ -1,26 +1,16 @@
-import boto3
-import json
-import base64
 import os
+import uuid
+from pathlib import Path
 
-LAMBDA_FUNCTION_NAME = os.environ.get("LAMBDA_FUNCTION_NAME", "upload-proxy")
+UPLOAD_DIR = Path("/app/data/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-def get_lambda_client():
-    return boto3.client("lambda")
+BASE_URL = os.environ.get("UPLOAD_BASE_URL", "https://api.keogh.lat/uploads")
 
 def upload_image(file_bytes: bytes, content_type: str) -> str:
-    client = get_lambda_client()
-    payload = {
-        "body": base64.b64encode(file_bytes).decode("utf-8"),
-        "content_type": content_type,
-    }
-    response = client.invoke(
-        FunctionName=LAMBDA_FUNCTION_NAME,
-        InvocationType="RequestResponse",
-        Payload=json.dumps(payload),
-    )
-    result = json.loads(response["Payload"].read().decode("utf-8"))
-    if result.get("statusCode") != 200:
-        raise Exception(result.get("body", "Lambda invocation failed"))
-    body = json.loads(result["body"])
-    return body["foto_url"]
+    ext = "jpg" if content_type == "image/jpeg" else "png"
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    filepath = UPLOAD_DIR / filename
+    with open(filepath, "wb") as f:
+        f.write(file_bytes)
+    return f"{BASE_URL}/{filename}"

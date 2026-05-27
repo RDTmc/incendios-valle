@@ -1,25 +1,16 @@
-import boto3
 import os
 import uuid
+from pathlib import Path
 
-S3_BUCKET = os.environ.get("AWS_S3_BUCKET", "incendios-valle-sol")
-PRESIGNED_EXPIRY = 7200  # 2 horas
+UPLOAD_DIR = Path("/app/data/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-def get_s3_client():
-    return boto3.client("s3")
+BASE_URL = os.environ.get("UPLOAD_BASE_URL", "https://api.keogh.lat/uploads")
 
 def upload_image(file_bytes: bytes, content_type: str) -> str:
     ext = "jpg" if content_type == "image/jpeg" else "png"
-    key = f"reportes/{uuid.uuid4().hex}.{ext}"
-    client = get_s3_client()
-    client.put_object(
-        Bucket=S3_BUCKET,
-        Key=key,
-        Body=file_bytes,
-        ContentType=content_type,
-    )
-    return client.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": S3_BUCKET, "Key": key},
-        ExpiresIn=PRESIGNED_EXPIRY,
-    )
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    filepath = UPLOAD_DIR / filename
+    with open(filepath, "wb") as f:
+        f.write(file_bytes)
+    return f"{BASE_URL}/{filename}"

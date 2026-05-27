@@ -29,7 +29,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SYNC_TOKEN=${SYNC_TOKEN}
       - AWS_S3_BUCKET=${AWS_S3_BUCKET}
-      - LAMBDA_FUNCTION_NAME=upload-proxy
+      - UPLOAD_BASE_URL=https://api.keogh.lat/uploads
     volumes:
       - /home/ec2-user/incendios-data/api:/app/data  # Carpeta aislada para la API
     restart: unless-stopped
