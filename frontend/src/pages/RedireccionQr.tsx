@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const URL_BASE = 'https://incendios-valle.pages.dev'
-const INTENT_ANDROID =
-  'intent://incendios-valle.pages.dev/' +
-  '?utm_source=afiche_municipal&utm_medium=qr' +
-  '#Intent;scheme=https;package=com.android.chrome;end'
+const UTM = '?utm_source=afiche_municipal&utm_medium=qr'
 
 function esAndroid(): boolean {
   return /android/i.test(navigator.userAgent)
@@ -18,18 +15,15 @@ export default function RedireccionQr() {
   useEffect(() => {
     if (esAndroid()) {
       setEstado('android')
-      // Fuerza salida del visor interno abriendo Chrome nativo
-      window.location.href = INTENT_ANDROID
-      // Fallback: si intent:// no funciona, redirige HTTP tras 2s
+      window.location.href = `intent://incendios-valle.pages.dev/${UTM}#Intent;scheme=https;package=com.android.chrome;end`
       const fallback = setTimeout(() => {
-        window.location.href = `${URL_BASE}/login`
+        window.location.href = `${URL_BASE}/login${UTM}`
       }, 2000)
       return () => clearTimeout(fallback)
     }
 
-    // iOS u otros → redirección limpia al login
     setEstado('redirigiendo')
-    navigate('/login', { replace: true })
+    navigate(`/login${UTM}`, { replace: true })
   }, [navigate])
 
   return (
