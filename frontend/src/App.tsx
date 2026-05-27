@@ -9,6 +9,7 @@ import Confirmacion from './pages/Confirmacion'
 import MapaFocos from './pages/MapaFocos'
 import Historial from './pages/Historial'
 import RedireccionQr from './pages/RedireccionQr'
+import AfichePreview from './pages/AfichePreview'
 
 // Componentes
 import AvisoNavegadorEmbebido from './components/AvisoNavegadorEmbebido'
@@ -102,6 +103,9 @@ function App() {
           
           {/* Ruta QR: redirección inteligente según SO */}
           <Route path="/qr" element={<RedireccionQr />} />
+          
+          {/* Dev: prototipo del afiche municipal */}
+          <Route path="/dev-afiche" element={<AfichePreview />} />
           
           {/* Rutas Admin */}
           <Route path="/admin" element={
