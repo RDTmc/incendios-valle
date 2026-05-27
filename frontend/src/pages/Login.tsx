@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AlertTriangle } from 'lucide-react'
 import { useAuth } from '../App'
 
 export default function Login() {
@@ -13,7 +14,6 @@ export default function Login() {
     e.preventDefault()
     try {
       await login(email, password)
-      // Navegación automática según rol (manejada por App.tsx)
     } catch (error: any) {
       alert(error.message || 'Error de autenticación')
     }
@@ -23,9 +23,11 @@ export default function Login() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-fire-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl">🔥</span>
-          </div>
+          <img
+            src="/logo-muni.png"
+            alt="Municipalidad de Valle del Sol"
+            className="mx-auto h-32 w-auto mb-4"
+          />
           <h1 className="text-2xl font-bold text-gray-800">Incendios Valle del Sol</h1>
           <p className="text-gray-500">Sistema de Gestión de Emergencias</p>
         </div>
@@ -33,9 +35,10 @@ export default function Login() {
         {/* Acceso rápido anónimo */}
         <button
           onClick={() => navigate('/reporte')}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg transition-colors mb-6 text-lg shadow-md"
+          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg transition-colors mb-6 text-lg shadow-md flex items-center justify-center gap-2"
         >
-          🚨 Reporte de Emergencia Rápido (Anónimo)
+          <AlertTriangle className="w-5 h-5" />
+          Reporte de Emergencia Rápido (Anónimo)
         </button>
 
         <div className="relative mb-6">

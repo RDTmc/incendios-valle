@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Trees, Home, MapPin, Camera, ShieldCheck, AlertTriangle } from 'lucide-react'
 import { useAuth } from '../App'
 import { API } from '../api'
 import { compressImage } from '../util/image'
@@ -107,12 +108,13 @@ export default function Reporte() {
       <div className="max-w-lg mx-auto">
         {/* Indicador de estado */}
         {isAnonymous ? (
-          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-3 mb-4 rounded text-sm font-medium">
-            🚨 Reporte de Emergencia Rápido (Anónimo)
+          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-3 mb-4 rounded text-sm font-medium flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 shrink-0" />
+            Reporte de Emergencia Rápido (Anónimo)
           </div>
         ) : (
           <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-3 mb-4 rounded text-sm font-medium flex items-center justify-between">
-            <span>🟢 Vecino Verificado: {user?.nombre || user?.email}</span>
+            <span className="flex items-center gap-1"><ShieldCheck className="w-5 h-5 text-green-600" /> Vecino Verificado: {user?.nombre || user?.email}</span>
             <button
               onClick={() => { logout(); navigate('/login') }}
               className="text-sm text-red-600 hover:text-red-800 font-medium ml-2"
@@ -141,7 +143,8 @@ export default function Reporte() {
                       : 'border-gray-200'
                   }`}
                 >
-                  🌲 Forestal
+                  <Trees className="w-5 h-5 inline-block mr-1" />
+                  Forestal
                 </button>
                 <button
                   type="button"
@@ -152,7 +155,8 @@ export default function Reporte() {
                       : 'border-gray-200'
                   }`}
                 >
-                  🏠 Urbano
+                  <Home className="w-5 h-5 inline-block mr-1" />
+                  Urbano
                 </button>
               </div>
             </div>
@@ -168,7 +172,7 @@ export default function Reporte() {
                 disabled={loading}
                 className="w-full py-3 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
               >
-                {loading ? 'Obteniendo ubicación...' : '📍 Obtener Mi Ubicación'}
+                {loading ? 'Obteniendo ubicación...' : <><MapPin className="w-5 h-5 inline-block mr-1" /> Obtener Mi Ubicación</>}
               </button>
               {reporte.lat && reporte.lng && (
                 <p className="mt-2 text-sm text-green-600">
@@ -196,7 +200,7 @@ export default function Reporte() {
                 ) : reporte.fotoUrl ? (
                   <span className="text-green-600">✅ {reporte.fotoName}</span>
                 ) : (
-                  <span className="text-gray-500">📷 Tomar foto</span>
+                  <span className="text-gray-500"><Camera className="w-5 h-5 inline-block mr-1" /> Tomar foto</span>
                 )}
               </label>
             </div>
