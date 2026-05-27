@@ -9,6 +9,9 @@ import Confirmacion from './pages/Confirmacion'
 import MapaFocos from './pages/MapaFocos'
 import Historial from './pages/Historial'
 
+// Componentes
+import AvisoNavegadorEmbebido from './components/AvisoNavegadorEmbebido'
+
 // Context
 interface AuthContextType {
   user: { user_id: string; email: string; rol: string; nombre: string } | null
@@ -90,6 +93,7 @@ function App() {
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout }}>
+      <AvisoNavegadorEmbebido />
       <BrowserRouter>
         <Routes>
           {/* Login: redirige si ya hay sesión */}
