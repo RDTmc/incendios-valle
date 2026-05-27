@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo-muni.png'],
       manifest: {
         name: 'Incendios Valle del Sol',
         short_name: 'Incendios',
