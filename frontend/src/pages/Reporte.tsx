@@ -104,66 +104,66 @@ export default function Reporte() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-lg mx-auto">
+    <div className="h-screen overflow-hidden bg-gray-100">
+      <div className="h-full flex flex-col max-w-lg mx-auto p-4">
         {/* Indicador de estado */}
         {isAnonymous ? (
-          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-3 mb-4 rounded text-sm font-medium flex items-center gap-2">
-            <Flame className="w-5 h-5 shrink-0 animate-pulse" />
+          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-2 mb-2 rounded text-xs font-medium flex items-center gap-2 shrink-0">
+            <Flame className="w-4 h-4 shrink-0 animate-pulse" />
             <span>Reporte de Emergencia Rápido</span>
-            <span className="text-xs font-normal opacity-70 ml-auto">Anónimo</span>
+            <span className="text-[10px] font-normal opacity-70 ml-auto">Anónimo</span>
           </div>
         ) : (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-3 mb-4 rounded text-sm font-medium flex items-center justify-between">
-            <span className="flex items-center gap-1"><ShieldCheck className="w-5 h-5 text-green-600" /> Vecino Verificado: {user?.nombre || user?.email}</span>
+          <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-2 mb-2 rounded text-xs font-medium flex items-center justify-between shrink-0">
+            <span className="flex items-center gap-1 truncate"><ShieldCheck className="w-4 h-4 text-green-600 shrink-0" /> {user?.nombre || user?.email}</span>
             <button
               onClick={() => { logout(); navigate('/login') }}
-              className="text-sm text-red-600 hover:text-red-800 font-medium ml-2"
+              className="text-xs text-red-600 hover:text-red-800 font-medium ml-2 shrink-0"
             >
-              Cerrar Sesión
+              Cerrar
             </button>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="w-full flex justify-center mb-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 flex-1 min-h-0 overflow-y-auto">
+          <div className="w-full flex justify-center mb-2">
             <img
               src="/logo-muni.png"
               alt="Municipalidad de Valle del Sol"
               className="h-44 md:h-52 w-auto object-contain"
             />
           </div>
-          <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">Reportar Incendio</h1>
+          <h1 className="text-lg font-bold text-gray-800 mb-3 text-center">Reportar Incendio</h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {/* Tipo de incendio */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Tipo de Incendio
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setReporte({ ...reporte, tipo: 'FORESTAL' })}
-                  className={`p-3 rounded-lg border-2 ${
+                  className={`p-2 rounded-lg border-2 text-sm ${
                     reporte.tipo === 'FORESTAL' 
                       ? 'border-fire-500 bg-fire-50' 
                       : 'border-gray-200'
                   }`}
                 >
-                  <Trees className="w-5 h-5 inline-block mr-1" />
+                  <Trees className="w-4 h-4 inline-block mr-1" />
                   Forestal
                 </button>
                 <button
                   type="button"
                   onClick={() => setReporte({ ...reporte, tipo: 'URBANO' })}
-                  className={`p-3 rounded-lg border-2 ${
+                  className={`p-2 rounded-lg border-2 text-sm ${
                     reporte.tipo === 'URBANO' 
                       ? 'border-fire-500 bg-fire-50' 
                       : 'border-gray-200'
                   }`}
                 >
-                  <Home className="w-5 h-5 inline-block mr-1" />
+                  <Home className="w-4 h-4 inline-block mr-1" />
                   Urbano
                 </button>
               </div>
@@ -171,19 +171,19 @@ export default function Reporte() {
 
             {/* Ubicación */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Ubicación
               </label>
               <button
                 type="button"
                 onClick={getLocation}
                 disabled={loading}
-                className="w-full py-3 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                className="w-full py-2 px-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 text-sm"
               >
-                {loading ? 'Obteniendo ubicación...' : <><MapPin className="w-5 h-5 inline-block mr-1" /> Obtener Mi Ubicación</>}
+                {loading ? 'Obteniendo ubicación...' : <><MapPin className="w-4 h-4 inline-block mr-1" /> Obtener Mi Ubicación</>}
               </button>
               {reporte.lat && reporte.lng && (
-                <p className="mt-2 text-sm text-green-600">
+                <p className="mt-1 text-xs text-green-600">
                   ✅ Ubicación: {reporte.lat.toFixed(4)}, {reporte.lng.toFixed(4)}
                 </p>
               )}
@@ -191,10 +191,10 @@ export default function Reporte() {
 
             {/* Cámara / Foto */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Fotografía
               </label>
-              <label className="w-full py-3 px-4 border-2 border-dashed border-gray-300 rounded-lg block text-center cursor-pointer hover:border-fire-500">
+              <label className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg block text-center cursor-pointer hover:border-fire-500 text-sm">
                 <input
                   type="file"
                   accept="image/*"
@@ -204,26 +204,26 @@ export default function Reporte() {
                   className="hidden"
                 />
                 {uploading ? (
-                  <span className="text-blue-600">⏳ Subiendo imagen...</span>
+                  <span className="text-blue-600">⏳ Subiendo...</span>
                 ) : reporte.fotoUrl ? (
                   <span className="text-green-600">✅ {reporte.fotoName}</span>
                 ) : (
-                  <span className="text-gray-500"><Camera className="w-5 h-5 inline-block mr-1" /> Tomar foto</span>
+                  <span className="text-gray-500"><Camera className="w-4 h-4 inline-block mr-1" /> Tomar foto</span>
                 )}
               </label>
             </div>
 
             {/* Descripción */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Descripción (opcional)
               </label>
               <textarea
                 value={reporte.descripcion}
                 onChange={(e) => setReporte({ ...reporte, descripcion: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 bg-gray-900 text-white placeholder-gray-400"
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 bg-gray-900 text-white placeholder-gray-400 text-sm"
                 placeholder="Describe lo que observas..."
-                rows={3}
+                rows={2}
               />
             </div>
 
@@ -231,7 +231,7 @@ export default function Reporte() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-3 rounded-lg disabled:opacity-50"
+              className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-2 rounded-lg disabled:opacity-50 text-sm"
             >
               {submitting ? 'Enviando...' : 'Enviar Reporte'}
             </button>
@@ -239,10 +239,10 @@ export default function Reporte() {
         </div>
 
         {isAnonymous && (
-          <div className="mt-4 text-center">
+          <div className="mt-2 text-center shrink-0">
             <button
               onClick={() => navigate('/login')}
-              className="text-sm text-fire-500 hover:underline"
+              className="text-xs text-fire-500 hover:underline"
             >
               ¿Ya tienes cuenta? Inicia sesión aquí
             </button>

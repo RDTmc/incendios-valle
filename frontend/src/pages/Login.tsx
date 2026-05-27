@@ -20,33 +20,33 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-full flex justify-center mb-6">
+    <div className="h-screen overflow-hidden bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <div className="text-center mb-4">
+          <div className="w-full flex justify-center mb-3">
             <img
               src="/logo-muni.png"
               alt="Municipalidad de Valle del Sol"
               className="h-56 md:h-64 w-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Incendios Valle del Sol</h1>
-          <p className="text-gray-500">Sistema de Gestión de Emergencias</p>
+          <h1 className="text-xl font-bold text-gray-800">Incendios Valle del Sol</h1>
+          <p className="text-sm text-gray-500">Sistema de Gestión de Emergencias</p>
         </div>
 
         {/* Acceso rápido anónimo */}
         <button
           onClick={() => navigate('/reporte')}
-          className="flex items-center justify-center gap-3 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 mb-6"
+          className="flex items-center justify-center gap-3 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 mb-4"
         >
           <Flame className="w-6 h-6 animate-pulse shrink-0" />
           <span className="flex flex-col items-start leading-tight">
-            <span>Reportar Emergencia Rápida</span>
-            <span className="text-xs font-normal opacity-80">Anónimo · Sin registro</span>
+            <span className="text-sm">Reportar Emergencia Rápida</span>
+            <span className="text-[10px] font-normal opacity-80">Anónimo · Sin registro</span>
           </span>
         </button>
 
-        <div className="relative mb-6">
+        <div className="relative mb-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300" />
           </div>
@@ -55,7 +55,7 @@ export default function Login() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Correo electrónico
@@ -111,7 +111,7 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
           <p className="text-xs text-gray-400">
             Al reportar de forma anónima se registrará un identificador único de dispositivo.
           </p>
