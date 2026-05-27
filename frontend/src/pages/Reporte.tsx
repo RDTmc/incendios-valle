@@ -126,11 +126,13 @@ export default function Reporte() {
         )}
 
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <img
-            src="/logo-muni.png"
-            alt="Municipalidad de Valle del Sol"
-            className="mx-auto h-36 md:h-44 w-auto mb-6"
-          />
+          <div className="w-full flex justify-center mb-6">
+            <img
+              src="/logo-muni.png"
+              alt="Municipalidad de Valle del Sol"
+              className="h-44 md:h-52 w-auto object-contain"
+            />
+          </div>
           <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">Reportar Incendio</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">

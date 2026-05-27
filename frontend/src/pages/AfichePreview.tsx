@@ -7,11 +7,13 @@ export default function AfichePreview() {
 
         {/* Encabezado */}
         <div className="bg-fire-500 p-6 text-center text-white">
-          <img
-            src="/logo-muni.png"
-            alt="Municipalidad de Valle del Sol"
-            className="mx-auto h-20 w-auto mb-3 brightness-0 invert"
-          />
+          <div className="w-full flex justify-center mb-6">
+            <img
+              src="/logo-muni.png"
+              alt="Municipalidad de Valle del Sol"
+              className="h-56 md:h-64 w-auto object-contain brightness-0 invert"
+            />
+          </div>
           <h1 className="text-xl font-bold">Incendios Valle del Sol</h1>
           <p className="text-sm opacity-90">Reporte Ciudadano de Emergencia</p>
         </div>

@@ -23,11 +23,13 @@ export default function Login() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <img
-            src="/logo-muni.png"
-            alt="Municipalidad de Valle del Sol"
-            className="mx-auto h-44 md:h-52 w-auto mb-8"
-          />
+          <div className="w-full flex justify-center mb-6">
+            <img
+              src="/logo-muni.png"
+              alt="Municipalidad de Valle del Sol"
+              className="h-56 md:h-64 w-auto object-contain"
+            />
+          </div>
           <h1 className="text-2xl font-bold text-gray-800">Incendios Valle del Sol</h1>
           <p className="text-gray-500">Sistema de Gestión de Emergencias</p>
         </div>
