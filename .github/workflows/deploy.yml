@@ -47,29 +47,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ─── Paso A: Identificación ────────────────────────────────────
-      - name: Get runner public IP
-        id: get-ip
-        run: |
-          IP=$(curl -s https://ifconfig.me)
-          echo "ip=$IP" >> "$GITHUB_OUTPUT"
-          echo "Runner IP: $IP"
-
-      # ─── Paso B: Apertura temporal del puerto 22 ────────────────────
-      - name: Authorize runner IP in Security Group
-        run: |
-          aws ec2 authorize-security-group-ingress \
-            --group-id ${{ secrets.AWS_SG_ID }} \
-            --protocol tcp \
-            --port 22 \
-            --cidr ${{ steps.get-ip.outputs.ip }}/32
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-
-      # ─── Paso C: SSH + refresh_api.sh ──────────────────────────────
+      # ─── Paso B: SSH + refresh_api.sh ──────────────────────────────
+      # Nota: Security Group abierto permanentemente para el túnel
+      # Cloudflare. Se eliminaron pasos Authorize/Revoke SG porque
+      # voc-cancel-cred de AWS Academy bloquea ec2:* operations.
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -85,18 +66,3 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-
-      # ─── Paso D: Cierre garantizado (incluso si falla el paso C) ──
-      - name: Revoke runner IP from Security Group
-        if: always()
-        run: |
-          aws ec2 revoke-security-group-ingress \
-            --group-id ${{ secrets.AWS_SG_ID }} \
-            --protocol tcp \
-            --port 22 \
-            --cidr ${{ steps.get-ip.outputs.ip }}/32
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
