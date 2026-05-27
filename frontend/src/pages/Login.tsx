@@ -26,7 +26,7 @@ export default function Login() {
           <img
             src="/logo-muni.png"
             alt="Municipalidad de Valle del Sol"
-            className="mx-auto h-32 w-auto mb-4"
+            className="mx-auto h-44 md:h-52 w-auto mb-8"
           />
           <h1 className="text-2xl font-bold text-gray-800">Incendios Valle del Sol</h1>
           <p className="text-gray-500">Sistema de Gestión de Emergencias</p>
