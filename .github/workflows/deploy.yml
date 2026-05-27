@@ -6,6 +6,7 @@ on:
     paths:
       - 'ec2/api/**'
       - 'ec2/docker-compose.yml'
+      - 'ec2/refresh_api.sh'
       - '.github/workflows/deploy.yml'
 
 env:
@@ -46,15 +47,56 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to EC2 via SSH
+      # ─── Paso A: Identificación ────────────────────────────────────
+      - name: Get runner public IP
+        id: get-ip
+        run: |
+          IP=$(curl -s https://ifconfig.me)
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "Runner IP: $IP"
+
+      # ─── Paso B: Apertura temporal del puerto 22 ────────────────────
+      - name: Authorize runner IP in Security Group
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.get-ip.outputs.ip }}/32
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
+      # ─── Paso C: SSH + refresh_api.sh ──────────────────────────────
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ec2-user
-            docker compose pull api
-            docker compose up -d api
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        script: |
+          cd /home/ec2-user
+          chmod +x ./refresh_api.sh
+          ./refresh_api.sh
 
-
+      # ─── Paso D: Cierre garantizado (incluso si falla el paso C) ──
+      - name: Revoke runner IP from Security Group
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.get-ip.outputs.ip }}/32
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
