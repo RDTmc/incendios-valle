@@ -105,35 +105,41 @@ export default function Reporte() {
 
   return (
     <div className="h-screen overflow-hidden bg-gray-100">
-      <div className="h-full flex flex-col max-w-lg mx-auto p-4">
-        {/* Indicador de estado */}
-        {isAnonymous ? (
-          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-2 mb-2 rounded text-xs font-medium flex items-center gap-2 shrink-0">
-            <Flame className="w-4 h-4 shrink-0 animate-pulse" />
-            <span>Reporte de Emergencia Rápido</span>
-            <span className="text-[10px] font-normal opacity-70 ml-auto">Anónimo</span>
-          </div>
-        ) : (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-2 mb-2 rounded text-xs font-medium flex items-center justify-between shrink-0">
-            <span className="flex items-center gap-1 truncate"><ShieldCheck className="w-4 h-4 text-green-600 shrink-0" /> {user?.nombre || user?.email}</span>
-            <button
-              onClick={() => { logout(); navigate('/login') }}
-              className="text-xs text-red-600 hover:text-red-800 font-medium ml-2 shrink-0"
-            >
-              Cerrar
-            </button>
-          </div>
-        )}
+      <div className="h-full flex flex-col max-w-lg mx-auto">
 
-        <div className="bg-white rounded-lg shadow-lg p-4 flex-1 min-h-0 overflow-y-auto">
-          <div className="w-full flex justify-center mb-2">
+        {/* Cabecera institucional roja */}
+        <div className="bg-fire-500 text-center text-white shrink-0">
+          <div className="w-full flex justify-center py-3">
             <img
               src="/logo-muni.png"
               alt="Municipalidad de Valle del Sol"
-              className="h-44 md:h-52 w-auto object-contain"
+              className="h-44 md:h-52 w-auto object-contain brightness-0 invert"
             />
           </div>
-          <h1 className="text-lg font-bold text-gray-800 mb-3 text-center">Reportar Incendio</h1>
+          <h1 className="text-lg font-bold pb-3">Reportar Incendio</h1>
+        </div>
+
+        <div className="p-4 flex-1 min-h-0 overflow-y-auto">
+          {/* Indicador de estado */}
+          {isAnonymous ? (
+            <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-2 mb-2 rounded text-xs font-medium flex items-center gap-2">
+              <Flame className="w-4 h-4 shrink-0 animate-pulse" />
+              <span>Reporte de Emergencia Rápido</span>
+              <span className="text-[10px] font-normal opacity-70 ml-auto">Anónimo</span>
+            </div>
+          ) : (
+            <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-2 mb-2 rounded text-xs font-medium flex items-center justify-between">
+              <span className="flex items-center gap-1 truncate"><ShieldCheck className="w-4 h-4 text-green-600 shrink-0" /> {user?.nombre || user?.email}</span>
+              <button
+                onClick={() => { logout(); navigate('/login') }}
+                className="text-xs text-red-600 hover:text-red-800 font-medium ml-2 shrink-0"
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg shadow-lg p-4">
 
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Tipo de incendio */}
@@ -239,7 +245,7 @@ export default function Reporte() {
         </div>
 
         {isAnonymous && (
-          <div className="mt-2 text-center shrink-0">
+          <div className="mt-2 text-center">
             <button
               onClick={() => navigate('/login')}
               className="text-xs text-fire-500 hover:underline"
@@ -249,6 +255,7 @@ export default function Reporte() {
           </div>
         )}
       </div>
+    </div>
     </div>
   )
 }
