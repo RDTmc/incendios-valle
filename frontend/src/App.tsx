@@ -8,6 +8,7 @@ import Reporte from './pages/Reporte'
 import Confirmacion from './pages/Confirmacion'
 import MapaFocos from './pages/MapaFocos'
 import Historial from './pages/Historial'
+import RedireccionQr from './pages/RedireccionQr'
 
 // Componentes
 import AvisoNavegadorEmbebido from './components/AvisoNavegadorEmbebido'
@@ -98,6 +99,9 @@ function App() {
         <Routes>
           {/* Login: redirige si ya hay sesión */}
           <Route path="/login" element={user ? <Navigate to={user.rol === 'ADMIN' ? '/admin' : '/reporte'} /> : <Login />} />
+          
+          {/* Ruta QR: redirección inteligente según SO */}
+          <Route path="/qr" element={<RedireccionQr />} />
           
           {/* Rutas Admin */}
           <Route path="/admin" element={
