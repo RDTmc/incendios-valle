@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trees, Home, MapPin, Camera, ShieldCheck, Flame } from 'lucide-react'
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import { useAuth } from '../App'
 import { API } from '../api'
 import { compressImage } from '../util/image'
@@ -13,6 +15,21 @@ interface ReporteData {
   descripcion: string
   fotoUrl: string
   fotoName: string
+}
+
+function createUserMarkerIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:#2563eb;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28]
+  })
+}
+
+function MapController({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap()
+  map.setView([lat, lng], 15, { animate: true })
+  return null
 }
 
 export default function Reporte() {
@@ -28,27 +45,45 @@ export default function Reporte() {
     fotoName: ''
   })
   const [loading, setLoading] = useState(false)
+  const [gpsError, setGpsError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const getLocation = () => {
-    if (navigator.geolocation) {
-      setLoading(true)
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setReporte({
-            ...reporte,
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          })
-          setLoading(false)
-        },
-        (error) => {
-          console.error('Error getting location:', error)
-          setLoading(false)
-        }
-      )
+    if (!navigator.geolocation) {
+      setGpsError('Tu dispositivo no soporta geolocalización')
+      return
     }
+    setLoading(true)
+    setGpsError(null)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setReporte({
+          ...reporte,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        })
+        setLoading(false)
+        setGpsError(null)
+      },
+      (error) => {
+        setLoading(false)
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGpsError('Permiso de ubicación denegado. Actívalo en los ajustes del dispositivo.')
+            break
+          case error.POSITION_UNAVAILABLE:
+            setGpsError('GPS no disponible. Verifica que esté activado.')
+            break
+          case error.TIMEOUT:
+            setGpsError('La obtención de ubicación tardó demasiado. Intenta en un área abierta.')
+            break
+          default:
+            setGpsError('Error al obtener ubicación. Intenta de nuevo.')
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,8 +187,8 @@ export default function Reporte() {
                   type="button"
                   onClick={() => setReporte({ ...reporte, tipo: 'FORESTAL' })}
                   className={`p-2 rounded-lg border-2 text-sm ${
-                    reporte.tipo === 'FORESTAL' 
-                      ? 'border-fire-500 bg-fire-50' 
+                    reporte.tipo === 'FORESTAL'
+                      ? 'border-fire-500 bg-fire-50'
                       : 'border-gray-200'
                   }`}
                 >
@@ -164,8 +199,8 @@ export default function Reporte() {
                   type="button"
                   onClick={() => setReporte({ ...reporte, tipo: 'URBANO' })}
                   className={`p-2 rounded-lg border-2 text-sm ${
-                    reporte.tipo === 'URBANO' 
-                      ? 'border-fire-500 bg-fire-50' 
+                    reporte.tipo === 'URBANO'
+                      ? 'border-fire-500 bg-fire-50'
                       : 'border-gray-200'
                   }`}
                 >
@@ -188,10 +223,39 @@ export default function Reporte() {
               >
                 {loading ? 'Obteniendo ubicación...' : <><MapPin className="w-4 h-4 inline-block mr-1" /> Obtener Mi Ubicación</>}
               </button>
+              {gpsError && (
+                <p className="mt-1 text-xs text-red-600 flex items-start gap-1">
+                  <span>⚠️</span> {gpsError}
+                </p>
+              )}
               {reporte.lat && reporte.lng && (
                 <p className="mt-1 text-xs text-green-600">
                   ✅ Ubicación: {reporte.lat.toFixed(4)}, {reporte.lng.toFixed(4)}
                 </p>
+              )}
+
+              {/* Mapa compacto de previsualización */}
+              {reporte.lat && reporte.lng && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 h-40">
+                  <MapContainer
+                    center={[reporte.lat, reporte.lng]}
+                    zoom={15}
+                    className="w-full h-full"
+                    zoomControl={false}
+                    dragging={false}
+                    scrollWheelZoom={false}
+                    doubleClickZoom={false}
+                    touchZoom={false}
+                    keyboard={false}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <MapController lat={reporte.lat} lng={reporte.lng} />
+                    <Marker position={[reporte.lat, reporte.lng]} icon={createUserMarkerIcon()} />
+                  </MapContainer>
+                </div>
               )}
             </div>
 

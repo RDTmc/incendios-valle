@@ -28,3 +28,10 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* Leaflet map container needs explicit height */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
