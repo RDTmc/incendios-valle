@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../App'
 import { API } from '../api'
 import { compressImage } from '../util/image'
+import { getDeviceId } from '../util/device'
 
 interface ReporteData {
   tipo: 'FORESTAL' | 'URBANO'
@@ -16,6 +17,7 @@ interface ReporteData {
 export default function Reporte() {
   const navigate = useNavigate()
   const { user, token, logout } = useAuth()
+  const isAnonymous = !token || !user
   const [reporte, setReporte] = useState<ReporteData>({
     tipo: 'FORESTAL',
     lat: null,
@@ -54,15 +56,9 @@ export default function Reporte() {
       alert('Por favor obtén tu ubicación primero')
       return
     }
-    if (!token || !user) {
-      alert('Sesión expirada. Inicia sesión de nuevo.')
-      navigate('/login')
-      return
-    }
     setSubmitting(true)
     try {
       const payload: any = {
-        user_id: user.user_id,
         tipo: reporte.tipo,
         latitud: reporte.lat,
         longitud: reporte.lng,
@@ -71,8 +67,17 @@ export default function Reporte() {
       if (reporte.fotoUrl) {
         payload.foto_url = reporte.fotoUrl
       }
-      const result = await API.createReport(token, payload)
-      navigate('/confirmar', { state: { reporte: result, lat: reporte.lat, lng: reporte.lng, tipo: reporte.tipo, fotoUrl: reporte.fotoUrl } })
+
+      let result: any
+      if (isAnonymous) {
+        payload.device_id = getDeviceId()
+        result = await API.createReportAnonimo(payload)
+      } else {
+        payload.user_id = user!.user_id
+        result = await API.createReport(token!, payload)
+      }
+
+      navigate('/confirmar', { state: { reporte: result, lat: reporte.lat, lng: reporte.lng, tipo: reporte.tipo, fotoUrl: reporte.fotoUrl, isAnonymous } })
     } catch (err: any) {
       console.error('Error al enviar:', err)
       alert(err.message || 'Error al enviar reporte. Intenta de nuevo.')
@@ -100,16 +105,25 @@ export default function Reporte() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-lg mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-bold text-gray-800">Reportar Incendio</h1>
+        {/* Indicador de estado */}
+        {isAnonymous ? (
+          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-3 mb-4 rounded text-sm font-medium">
+            🚨 Reporte de Emergencia Rápido (Anónimo)
+          </div>
+        ) : (
+          <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-3 mb-4 rounded text-sm font-medium flex items-center justify-between">
+            <span>🟢 Vecino Verificado: {user?.nombre || user?.email}</span>
             <button
               onClick={() => { logout(); navigate('/login') }}
-              className="text-sm text-red-600 hover:text-red-800 font-medium"
+              className="text-sm text-red-600 hover:text-red-800 font-medium ml-2"
             >
               Cerrar Sesión
             </button>
           </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h1 className="text-xl font-bold text-gray-800 mb-6">Reportar Incendio</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Tipo de incendio */}
@@ -211,6 +225,17 @@ export default function Reporte() {
             </button>
           </form>
         </div>
+
+        {isAnonymous && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => navigate('/login')}
+              className="text-sm text-fire-500 hover:underline"
+            >
+              ¿Ya tienes cuenta? Inicia sesión aquí
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -93,5 +93,18 @@ export const API = {
       throw new Error(err.error || err.detail || `Failed to fetch reports: HTTP ${res.status}`)
     }
     return res.json()
+  },
+
+  createReportAnonimo: async (data: { tipo: string; latitud: number; longitud: number; descripcion: string; foto_url?: string; device_id: string }) => {
+    const res = await fetch(`${API_URL}/reportar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to create anonymous report: HTTP ${res.status}`)
+    }
+    return res.json()
   }
 }

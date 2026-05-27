@@ -101,12 +101,13 @@ class RegisterRequest(BaseModel):
     rol: str = "VECINO"
 
 class ReportRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     tipo: str = "INCENDIO"
     latitud: float
     longitud: float
     descripcion: str = ""
     foto_url: str = ""
+    device_id: Optional[str] = None
 
 class SyncRequest(BaseModel):
     table: str
@@ -127,6 +128,15 @@ def verify_token(authorization: Optional[str] = Header(None)):
         return payload
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+def verify_token_optional(authorization: Optional[str] = Header(None)):
+    if not authorization:
+        return None
+    token = authorization.replace("Bearer ", "")
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    except jwt.InvalidTokenError:
+        return None
 
 # ==================== ENDPOINTS ====================
 
@@ -245,15 +255,23 @@ def register(req: RegisterRequest):
         raise HTTPException(status_code=500, detail=f"Register error: {str(e)}")
 
 @app.post("/reports")
-def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
+def create_report(req: ReportRequest, payload: Optional[dict] = Depends(verify_token_optional)):
     try:
+        if not payload:
+            if not req.device_id:
+                raise HTTPException(status_code=400, detail="device_id requerido para reportes anónimos")
+            user_id = "ANONIMO"
+        else:
+            user_id = req.user_id or payload.get('user_id', 'ANONIMO')
+        
         reports_table = get_reports_table()
         report_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc).isoformat()
         
         item = {
             'reports_id': report_id,
-            'user_id': req.user_id,
+            'user_id': user_id,
+            'device_id': req.device_id or '',
             'tipo': req.tipo,
             'latitud': str(req.latitud),
             'longitud': str(req.longitud),
@@ -277,6 +295,10 @@ def create_report(req: ReportRequest, payload: dict = Depends(verify_token)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Create report error: {str(e)}")
+
+@app.post("/reportar")
+def reportar_anonimo(req: ReportRequest, payload: Optional[dict] = Depends(verify_token_optional)):
+    return create_report(req, payload)
 
 @app.get("/reports")
 def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, payload: dict = Depends(verify_token)):

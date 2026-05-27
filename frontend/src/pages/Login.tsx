@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../App'
 
 export default function Login() {
@@ -6,7 +7,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const { login } = useAuth()
-
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,6 +28,23 @@ export default function Login() {
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Incendios Valle del Sol</h1>
           <p className="text-gray-500">Sistema de Gestión de Emergencias</p>
+        </div>
+
+        {/* Acceso rápido anónimo */}
+        <button
+          onClick={() => navigate('/reporte')}
+          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg transition-colors mb-6 text-lg shadow-md"
+        >
+          🚨 Reporte de Emergencia Rápido (Anónimo)
+        </button>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">O inicia sesión</span>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -86,12 +104,10 @@ export default function Login() {
         </form>
 
         <div className="mt-6 text-center">
-          <a href="#" className="text-sm text-fire-500 hover:underline">
-            ¿Olvidaste tu contraseña?
-          </a>
+          <p className="text-xs text-gray-400">
+            Al reportar de forma anónima se registrará un identificador único de dispositivo.
+          </p>
         </div>
-
-        {/* Navegación demo ELIMINADA - Rutas protegidas por rol */}
       </div>
     </div>
   )

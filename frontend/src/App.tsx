@@ -26,10 +26,11 @@ export const useAuth = () => {
 }
 
 // Componente Guard para rutas protegidas por rol
-const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
+const ProtectedRoute = ({ children, allowedRoles, allowAnonymous }: { children: React.ReactNode; allowedRoles?: string[]; allowAnonymous?: boolean }) => {
   const { user, token } = useAuth()
 
   if (!token || !user) {
+    if (allowAnonymous) return <>{children}</>
     return <Navigate to="/login" replace />
   }
 
@@ -101,14 +102,14 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* Rutas Vecino */}
+          {/* Rutas Vecino (accesibles también para anónimos) */}
           <Route path="/reporte" element={
-            <ProtectedRoute allowedRoles={['VECINO']}>
+            <ProtectedRoute allowedRoles={['VECINO']} allowAnonymous>
               <Reporte />
             </ProtectedRoute>
           } />
           <Route path="/confirmar" element={
-            <ProtectedRoute allowedRoles={['VECINO']}>
+            <ProtectedRoute allowedRoles={['VECINO']} allowAnonymous>
               <Confirmacion />
             </ProtectedRoute>
           } />
