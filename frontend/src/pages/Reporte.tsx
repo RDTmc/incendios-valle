@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trees, Home, MapPin, Camera, ShieldCheck, AlertTriangle } from 'lucide-react'
+import { Trees, Home, MapPin, Camera, ShieldCheck, Flame } from 'lucide-react'
 import { useAuth } from '../App'
 import { API } from '../api'
 import { compressImage } from '../util/image'
@@ -109,8 +109,9 @@ export default function Reporte() {
         {/* Indicador de estado */}
         {isAnonymous ? (
           <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-3 mb-4 rounded text-sm font-medium flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 shrink-0" />
-            Reporte de Emergencia Rápido (Anónimo)
+            <Flame className="w-5 h-5 shrink-0 animate-pulse" />
+            <span>Reporte de Emergencia Rápido</span>
+            <span className="text-xs font-normal opacity-70 ml-auto">Anónimo</span>
           </div>
         ) : (
           <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-3 mb-4 rounded text-sm font-medium flex items-center justify-between">
@@ -125,7 +126,12 @@ export default function Reporte() {
         )}
 
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-xl font-bold text-gray-800 mb-6">Reportar Incendio</h1>
+          <img
+            src="/logo-muni.png"
+            alt="Municipalidad de Valle del Sol"
+            className="mx-auto h-36 md:h-44 w-auto mb-6"
+          />
+          <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">Reportar Incendio</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Tipo de incendio */}

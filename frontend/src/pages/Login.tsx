@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle } from 'lucide-react'
+import { Flame } from 'lucide-react'
 import { useAuth } from '../App'
 
 export default function Login() {
@@ -26,7 +26,7 @@ export default function Login() {
           <img
             src="/logo-muni.png"
             alt="Municipalidad de Valle del Sol"
-            className="mx-auto h-32 w-auto mb-4"
+            className="mx-auto h-44 md:h-52 w-auto mb-8"
           />
           <h1 className="text-2xl font-bold text-gray-800">Incendios Valle del Sol</h1>
           <p className="text-gray-500">Sistema de Gestión de Emergencias</p>
@@ -35,10 +35,13 @@ export default function Login() {
         {/* Acceso rápido anónimo */}
         <button
           onClick={() => navigate('/reporte')}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg transition-colors mb-6 text-lg shadow-md flex items-center justify-center gap-2"
+          className="flex items-center justify-center gap-3 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 mb-6"
         >
-          <AlertTriangle className="w-5 h-5" />
-          Reporte de Emergencia Rápido (Anónimo)
+          <Flame className="w-6 h-6 animate-pulse shrink-0" />
+          <span className="flex flex-col items-start leading-tight">
+            <span>Reportar Emergencia Rápida</span>
+            <span className="text-xs font-normal opacity-80">Anónimo · Sin registro</span>
+          </span>
         </button>
 
         <div className="relative mb-6">

@@ -1,8 +1,10 @@
-"""Generate PWA icons for Incendios Valle del Sol."""
-from PIL import Image, ImageDraw, ImageFont
+"""Generate PWA icons for Incendios Valle del Sol.
+Uses the official municipal logo instead of the old red ellipse."""
+from PIL import Image
 from pathlib import Path
 
 PUBLIC = Path(__file__).parent.parent / "frontend" / "public"
+LOGO = Path(__file__).parent / "logo-muni-valle-del-sol.png"
 PUBLIC.mkdir(parents=True, exist_ok=True)
 
 SIZES = {
@@ -11,34 +13,21 @@ SIZES = {
     "apple-touch-icon.png": 180,
 }
 
-
-def make_icon(size):
-    img = Image.new("RGBA", (size, size), (239, 68, 68, 255))
-    draw = ImageDraw.Draw(img)
-    # White circle in center
-    margin = size // 6
-    draw.ellipse(
-        [margin, margin, size - margin, size - margin],
-        fill=(255, 255, 255, 240),
-    )
-    # Simple flame shape using text
-    try:
-        font = ImageFont.truetype("segoeui.ttf", size // 2)
-    except Exception:
-        font = ImageFont.load_default()
-    # Center the fire emoji / text
-    text = "🔥"
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    tx = (size - tw) // 2 - bbox[0]
-    ty = (size - th) // 2 - bbox[1]
-    draw.text((tx, ty), text, font=font, fill=(200, 50, 50, 255))
-    return img
-
+logo = Image.open(LOGO).convert("RGBA")
 
 for name, sz in SIZES.items():
+    resized = logo.resize((sz, sz), Image.LANCZOS)
     path = PUBLIC / name
-    make_icon(sz).save(path)
+    resized.save(path)
     print(f"  {path.name} ({sz}x{sz}) — {path.stat().st_size} bytes")
 
-print("Done — all icons generated.")
+# Generate multi-resolution favicon.ico (16, 32, 48)
+ico_sizes = [16, 32, 48]
+ico_images = []
+for sz in ico_sizes:
+    ico_images.append(logo.resize((sz, sz), Image.LANCZOS))
+ico_path = PUBLIC / "favicon.ico"
+ico_images[0].save(ico_path, format="ICO", sizes=[(s, s) for s in ico_sizes])
+print(f"  favicon.ico ({', '.join(str(s) for s in ico_sizes)} px) — {ico_path.stat().st_size} bytes")
+
+print("Done — all icons regenerated from municipal logo.")
