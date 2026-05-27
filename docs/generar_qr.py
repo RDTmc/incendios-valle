@@ -1,26 +1,20 @@
-"""Genera códigos QR para la campaña municipal de Incendios Valle del Sol."""
+"""Genera el código QR oficial único para Incendios Valle del Sol."""
 import qrcode
 from pathlib import Path
 
-BASE = "https://incendios-valle.pages.dev"
-URL_CAMPANNA = f"{BASE}/?utm_source=afiche_municipal&utm_medium=qr"
-INTENT_ANDROID = (
-    "intent://incendios-valle.pages.dev/"
-    "?utm_source=afiche_municipal&utm_medium=qr"
-    "#Intent;scheme=https;package=com.android.chrome;end"
-)
+URL_QR = "https://incendios-valle.pages.dev/qr?utm_source=afiche_municipal&utm_medium=qr"
 
 DOCS = Path(__file__).parent
+RUTA_SALIDA = DOCS / "qr-pwa-incendios.png"
 
-pares = [
-    ("qr-pwa-incendios.png", URL_CAMPANNA, "URL canónica con UTM"),
-    ("qr-pwa-android-intent.png", INTENT_ANDROID, "Intent Android (abre en Chrome)"),
-]
+# Eliminar variante intent si existe
+ruta_intent = DOCS / "qr-pwa-android-intent.png"
+if ruta_intent.exists():
+    ruta_intent.unlink()
+    print(f"  Eliminado: {ruta_intent.name}")
 
-for nombre, url, desc in pares:
-    ruta = DOCS / nombre
-    img = qrcode.make(url)
-    img.save(ruta)
-    print(f"  {nombre} — {ruta.stat().st_size} bytes | {desc}")
-
-print("\nListo — ambos QR generados.")
+img = qrcode.make(URL_QR)
+img.save(RUTA_SALIDA)
+print(f"  {RUTA_SALIDA.name} — {RUTA_SALIDA.stat().st_size} bytes")
+print(f"  Destino: {URL_QR}")
+print("  Listo — QR único y universal.")
