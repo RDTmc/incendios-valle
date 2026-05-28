@@ -70,6 +70,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  optimizeDeps: {
+    include: ['mapbox-gl']
+  },
   server: {
     port: 5173,
     host: true
