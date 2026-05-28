@@ -9,6 +9,7 @@ import { API } from '../api'
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const VALLE_DEL_SOL: [number, number] = [-33.4489, -70.6693]
 const RADIO_MAX_KM = 50
+const HORAS_VENTANA = 24
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371
@@ -53,12 +54,6 @@ const estadoDot = (estado: string) => {
 
 const tipoLabel = (tipo: string) =>
   tipo.toLowerCase() === 'forestal' ? 'Forestal' : 'Urbano'
-
-function isSeedData(f: FocoActivo): boolean {
-  if (f.descripcion && /reporte\s+de\s+prueba/i.test(f.descripcion)) return true
-  if (Math.abs(f.lat + 33.45) < 0.01 && Math.abs(f.lng + 70.66) < 0.01 && !f.foto_url) return true
-  return false
-}
 
 function FlyToCenter({ target }: { target: [number, number] | null }) {
   const { current: map } = useMap()
@@ -165,8 +160,13 @@ export default function MapaFocos() {
   }, [])
 
   const focosFiltrados = useMemo(() => {
+    const corte = Date.now() - HORAS_VENTANA * 60 * 60 * 1000
+
     const candidatos = focos
-      .filter(f => !isSeedData(f))
+      .filter(f => {
+        const t = new Date(f.created_at).getTime()
+        return !isNaN(t) && t >= corte
+      })
       .filter(f => { const e = f.estado.toUpperCase(); return e === 'ACTIVO' || e === 'PENDIENTE' })
       .filter(f => haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) <= RADIO_MAX_KM)
       .sort((a, b) => {
