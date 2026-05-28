@@ -417,6 +417,48 @@ def public_map_coordinates():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/public/cluster-stats")
+def public_cluster_stats():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        corte = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        cursor.execute(
+            "SELECT report_id, latitud, longitud FROM reports WHERE created_at >= ?",
+            (corte,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        clusters = []
+        for i in range(len(rows)):
+            for j in range(i + 1, len(rows)):
+                lat_i, lng_i = float(rows[i][1]), float(rows[i][2])
+                lat_j, lng_j = float(rows[j][1]), float(rows[j][2])
+                if abs(lat_i - lat_j) < 0.0005 and abs(lng_i - lng_j) < 0.0005:
+                    clusters.append([rows[i][0], rows[j][0]])
+        return {"clusters": len(clusters), "pares": clusters}
+    except Exception as e:
+        return {"clusters": 0, "pares": [], "error": str(e)}
+
+@app.get("/public/stale-pendientes")
+def public_stale_pendientes():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT report_id, created_at,
+                   ROUND((julianday('now') - julianday(created_at)) * 1440) AS minutos
+            FROM reports
+            WHERE estado = 'PENDIENTE'
+              AND (julianday('now') - julianday(created_at)) * 1440 > 30
+            ORDER BY minutos DESC
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        return [{"report_id": r[0], "created_at": r[1], "minutos": int(r[2])} for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/focos-activos")
 def get_focos_activos():
     try:
