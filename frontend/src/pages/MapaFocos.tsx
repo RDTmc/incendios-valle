@@ -158,7 +158,7 @@ export default function MapaFocos() {
           </div>
         )}
 
-        <div className="w-full h-[calc(100vh-120px)] md:h-full z-0">
+        <div className="relative w-full h-[calc(100vh-280px)] md:h-[calc(100vh-180px)] z-0">
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
