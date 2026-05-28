@@ -417,7 +417,6 @@ def public_map_coordinates():
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/api/public/cluster-stats")
 @app.get("/public/cluster-stats")
 def public_cluster_stats():
     try:
@@ -441,7 +440,6 @@ def public_cluster_stats():
     except Exception as e:
         return {"clusters": 0, "pares": [], "error": str(e)}
 
-@app.get("/api/public/stale-pendientes")
 @app.get("/public/stale-pendientes")
 def public_stale_pendientes():
     try:
