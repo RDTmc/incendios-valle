@@ -424,18 +424,39 @@ def get_focos_activos():
         response = reports_table.scan()
         items = response.get('Items', [])
         
+        # Coordenadas de la zona de operación (Valle del Sol, Chile central)
+        LAT_MIN, LAT_MAX = -34.5, -32.5
+        LNG_MIN, LNG_MAX = -71.5, -69.5
+        
         focos = []
         for item in items:
+            raw_lat = item.get('latitud')
+            raw_lng = item.get('longitud')
+            
+            if not raw_lat or not raw_lng:
+                continue
+            try:
+                lat = float(raw_lat)
+                lng = float(raw_lng)
+            except (ValueError, TypeError):
+                continue
+            if lat == 0 and lng == 0:
+                continue
+            if not (LAT_MIN <= lat <= LAT_MAX and LNG_MIN <= lng <= LNG_MAX):
+                continue
+            
             focos.append({
                 'id': item.get('reports_id', ''),
-                'lat': float(item.get('latitud', 0)),
-                'lng': float(item.get('longitud', 0)),
+                'lat': lat,
+                'lng': lng,
                 'estado': item.get('estado', 'DESCONOCIDO'),
                 'tipo': item.get('tipo', 'FORESTAL'),
                 'descripcion': item.get('descripcion', ''),
                 'foto_url': item.get('foto_url', ''),
                 'created_at': item.get('created_at', '')
             })
+        
+        focos.sort(key=lambda f: f['created_at'], reverse=True)
         
         return focos
     except Exception as e:
