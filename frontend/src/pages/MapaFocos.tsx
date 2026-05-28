@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import Map, { Marker, Popup, GeolocateControl, useMap, MapRef } from 'react-map-gl'
+import Map, { Marker, Popup, GeolocateControl, useMap } from 'react-map-gl/mapbox'
+import type { MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useLocation } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
@@ -157,6 +158,7 @@ export default function MapaFocos() {
           </div>
         )}
 
+        <div className="w-full h-[calc(100vh-120px)] md:h-full z-0">
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
@@ -167,7 +169,6 @@ export default function MapaFocos() {
             longitude: centerTo ? centerTo[1] : VALLE_DEL_SOL[1],
             zoom: centerTo ? 14 : 12
           }}
-          className="w-full h-[calc(100vh-120px)] md:h-full z-0"
           onClick={() => setSelectedFoco(null)}
         >
           <GeolocateControl position="top-right" trackUserLocation />
@@ -213,6 +214,7 @@ export default function MapaFocos() {
             </Popup>
           )}
         </Map>
+        </div>
 
         <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
           <h3 className="text-sm font-semibold mb-2">Leyenda:</h3>
