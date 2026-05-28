@@ -123,12 +123,14 @@ export default function MapaFocos() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedFoco, setSelectedFoco] = useState<FocoActivo | null>(null)
-  const [misReportesCount] = useState(() => {
+  const [misIds] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem('mis_reportes_ids')
-      return stored ? JSON.parse(stored).length : 0
-    } catch { return 0 }
+      return stored ? JSON.parse(stored) : []
+    } catch { return [] }
   })
+  const misReportesCount = misIds.length
+  const misIdSet = new Set(misIds)
 
   useEffect(() => {
     const ab = new AbortController()
@@ -174,16 +176,25 @@ export default function MapaFocos() {
       })
 
     const top5 = candidatos.slice(0, 5)
+    const top5Ids = new Set(top5.map(f => f.id))
 
-    if (highlightId) {
+    if (highlightId && !top5Ids.has(highlightId)) {
       const highlight = candidatos.find(f => f.id === highlightId)
-      if (highlight && !top5.some(f => f.id === highlightId)) {
+      if (highlight) {
         top5.push(highlight)
+        top5Ids.add(highlightId)
+      }
+    }
+
+    for (const f of candidatos) {
+      if (misIdSet.has(f.id) && !top5Ids.has(f.id)) {
+        top5.push(f)
+        top5Ids.add(f.id)
       }
     }
 
     return top5
-  }, [focos, highlightId])
+  }, [focos, highlightId, misIds])
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
