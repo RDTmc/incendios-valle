@@ -34,6 +34,7 @@ interface FocoActivo {
 const estadoColor = (estado: string) => {
   switch (estado.toUpperCase()) {
     case 'ACTIVO':     return 'bg-red-100 text-red-700'
+    case 'PENDIENTE':  return 'bg-amber-100 text-amber-700'
     case 'CONTROLADO': return 'bg-orange-100 text-orange-700'
     case 'EXTINGUIDO': return 'bg-green-100 text-green-700'
     default:           return 'bg-gray-100 text-gray-700'
@@ -43,6 +44,7 @@ const estadoColor = (estado: string) => {
 const estadoDot = (estado: string) => {
   switch (estado.toUpperCase()) {
     case 'ACTIVO':     return '#dc2626'
+    case 'PENDIENTE':  return '#d97706'
     case 'CONTROLADO': return '#f97316'
     case 'EXTINGUIDO': return '#16a34a'
     default:           return '#9ca3af'
@@ -150,7 +152,7 @@ export default function MapaFocos() {
 
   const focosFiltrados = useMemo(() => {
     const candidatos = focos
-      .filter(f => f.estado.toUpperCase() === 'ACTIVO')
+      .filter(f => { const e = f.estado.toUpperCase(); return e === 'ACTIVO' || e === 'PENDIENTE' })
       .filter(f => haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) <= RADIO_MAX_KM)
       .sort((a, b) => {
         const dA = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], a.lat, a.lng)
@@ -174,7 +176,7 @@ export default function MapaFocos() {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="bg-fire-500 text-white p-4 shrink-0">
         <h1 className="text-lg font-bold">Mapa de Focos Activos</h1>
-        <p className="text-sm opacity-90">{loading ? 'Cargando...' : `${focosFiltrados.length} focos activos cercanos`}</p>
+        <p className="text-sm opacity-90">{loading ? 'Cargando...' : `${focosFiltrados.length} focos cercanos`}</p>
       </div>
 
       <div className="flex-1 relative min-h-0">
@@ -266,6 +268,10 @@ export default function MapaFocos() {
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#dc2626' }} />
             <span className="text-xs">Activo</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#d97706' }} />
+            <span className="text-xs">Pendiente</span>
           </div>
         </div>
       </div>
