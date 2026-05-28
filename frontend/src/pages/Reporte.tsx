@@ -51,6 +51,13 @@ export default function Reporte() {
   const [gpsError, setGpsError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [misReportesCount] = useState(() => {
+    try {
+      const stored = localStorage.getItem('mis_reportes_ids')
+      return stored ? JSON.parse(stored).length : 0
+    } catch { return 0 }
+  })
+  const slotsLlenos = misReportesCount >= 5
 
   const getLocation = () => {
     if (!navigator.geolocation) {
@@ -115,6 +122,12 @@ export default function Reporte() {
         payload.user_id = user!.user_id
         result = await API.createReport(token!, payload)
       }
+
+      try {
+        const ids = JSON.parse(localStorage.getItem('mis_reportes_ids') || '[]')
+        ids.push(result.report_id)
+        localStorage.setItem('mis_reportes_ids', JSON.stringify(ids))
+      } catch {}
 
       navigate('/confirmar', { state: { reporte: result, lat: reporte.lat, lng: reporte.lng, tipo: reporte.tipo, fotoUrl: reporte.fotoUrl, isAnonymous } })
     } catch (err: any) {
@@ -300,14 +313,28 @@ export default function Reporte() {
               />
             </div>
 
+            {/* Indicador slots disponibles */}
+            <div className="flex justify-between items-center text-xs text-gray-500">
+              <span>Reportes activos: {misReportesCount}/5</span>
+              {slotsLlenos && (
+                <span className="text-red-600 font-medium">Límite alcanzado</span>
+              )}
+            </div>
+
             {/* Botón enviar */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-2 rounded-lg disabled:opacity-50 text-sm"
-            >
-              {submitting ? 'Enviando...' : 'Enviar Reporte'}
-            </button>
+            {slotsLlenos ? (
+              <div className="w-full bg-gray-300 text-gray-600 font-semibold py-2 rounded-lg text-sm text-center">
+                Has alcanzado el límite máximo de 5 reportes simultáneos para evitar saturación del servicio.
+              </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-2 rounded-lg disabled:opacity-50 text-sm"
+              >
+                {submitting ? 'Enviando...' : 'Enviar Reporte'}
+              </button>
+            )}
           </form>
         </div>
 

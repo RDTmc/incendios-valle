@@ -54,6 +54,12 @@ const estadoDot = (estado: string) => {
 const tipoLabel = (tipo: string) =>
   tipo.toLowerCase() === 'forestal' ? 'Forestal' : 'Urbano'
 
+function isSeedData(f: FocoActivo): boolean {
+  if (f.descripcion && /reporte\s+de\s+prueba/i.test(f.descripcion)) return true
+  if (Math.abs(f.lat + 33.45) < 0.01 && Math.abs(f.lng + 70.66) < 0.01 && !f.foto_url) return true
+  return false
+}
+
 function FlyToCenter({ target }: { target: [number, number] | null }) {
   const { current: map } = useMap()
   useEffect(() => {
@@ -117,6 +123,12 @@ export default function MapaFocos() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedFoco, setSelectedFoco] = useState<FocoActivo | null>(null)
+  const [misReportesCount] = useState(() => {
+    try {
+      const stored = localStorage.getItem('mis_reportes_ids')
+      return stored ? JSON.parse(stored).length : 0
+    } catch { return 0 }
+  })
 
   useEffect(() => {
     const ab = new AbortController()
@@ -152,6 +164,7 @@ export default function MapaFocos() {
 
   const focosFiltrados = useMemo(() => {
     const candidatos = focos
+      .filter(f => !isSeedData(f))
       .filter(f => { const e = f.estado.toUpperCase(); return e === 'ACTIVO' || e === 'PENDIENTE' })
       .filter(f => haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) <= RADIO_MAX_KM)
       .sort((a, b) => {
@@ -174,9 +187,14 @@ export default function MapaFocos() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <div className="bg-fire-500 text-white p-4 shrink-0">
-        <h1 className="text-lg font-bold">Mapa de Focos Activos</h1>
-        <p className="text-sm opacity-90">{loading ? 'Cargando...' : `${focosFiltrados.length} focos cercanos`}</p>
+      <div className="bg-fire-500 text-white p-4 shrink-0 flex justify-between items-start">
+        <div>
+          <h1 className="text-lg font-bold">Mapa de Focos Activos</h1>
+          <p className="text-sm opacity-90">{loading ? 'Cargando...' : `${focosFiltrados.length} focos cercanos`}</p>
+        </div>
+        <div className="bg-white/20 rounded-full px-2.5 py-1 text-xs whitespace-nowrap">
+          Slots: {misReportesCount}/5
+        </div>
       </div>
 
       <div className="flex-1 relative min-h-0">
