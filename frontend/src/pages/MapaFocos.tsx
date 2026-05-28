@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Map, { Marker, Popup, GeolocateControl, useMap, MapRef } from 'react-map-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 import { useLocation } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { API } from '../api'
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const VALLE_DEL_SOL: [number, number] = [-33.4489, -70.6693]
 
 interface FocoActivo {
@@ -40,51 +40,44 @@ const estadoDot = (estado: string) => {
 const tipoLabel = (tipo: string) =>
   tipo.toLowerCase() === 'forestal' ? 'Forestal' : 'Urbano'
 
-function createMarkerIcon(color: string, highlight?: boolean) {
-  const size = highlight ? 44 : 32
-  return L.divIcon({
-    className: '',
-    html: `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:${color};border-radius:50%;border:${highlight ? '4px solid #fff' : '3px solid #fff'};box-shadow:${highlight ? '0 0 0 3px rgba(37,99,235,0.5), 0 2px 6px rgba(0,0,0,0.3)' : '0 2px 6px rgba(0,0,0,0.3)'}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="${highlight ? 20 : 16}" height="${highlight ? 20 : 16}"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size],
-    popupAnchor: [0, -size - 4]
-  })
-}
-
-function CenterOnTarget({ target }: { target: [number, number] | null }) {
-  const map = useMap()
+function FlyToCenter({ target }: { target: [number, number] | null }) {
+  const { current: map } = useMap()
   useEffect(() => {
-    if (target) {
-      map.setView(target, 14, { animate: true })
+    if (target && map) {
+      map.flyTo({ center: [target[1], target[0]], zoom: 14, duration: 1500 })
     }
   }, [map, target])
   return null
 }
 
-function MapResizer({ focos }: { focos: FocoActivo[] }) {
-  const map = useMap()
-  useEffect(() => {
-    setTimeout(() => map.invalidateSize(), 200)
-  }, [map, focos.length])
-  return null
-}
-
-function UserLocation({ onCenter }: { onCenter: (lat: number, lng: number) => void }) {
-  const map = useMap()
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords
-          map.setView([latitude, longitude], 13)
-          onCenter(latitude, longitude)
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      )
-    }
-  }, [map, onCenter])
-  return null
+function FocoMarker({ foco, highlight, onClick }: { foco: FocoActivo; highlight: boolean; onClick: () => void }) {
+  const color = estadoDot(foco.estado)
+  const size = highlight ? 44 : 32
+  return (
+    <Marker longitude={foco.lng} latitude={foco.lat} anchor="bottom" onClick={onClick}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size,
+          height: size,
+          background: color,
+          borderRadius: '50%',
+          border: highlight ? '4px solid #fff' : '3px solid #fff',
+          boxShadow: highlight
+            ? '0 0 0 3px rgba(37,99,235,0.5), 0 2px 6px rgba(0,0,0,0.3)'
+            : '0 2px 6px rgba(0,0,0,0.3)',
+          cursor: 'pointer',
+          transition: 'all 0.2s'
+        }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width={highlight ? 20 : 16} height={highlight ? 20 : 16}>
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+      </div>
+    </Marker>
+  )
 }
 
 export default function MapaFocos() {
@@ -93,10 +86,11 @@ export default function MapaFocos() {
   const centerTo = state?.centerTo ?? null
   const highlightId = state?.highlightId ?? null
 
+  const mapRef = useRef<MapRef>(null)
   const [focos, setFocos] = useState<FocoActivo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [mapCenter, setMapCenter] = useState<[number, number]>(centerTo ?? VALLE_DEL_SOL)
+  const [selectedFoco, setSelectedFoco] = useState<FocoActivo | null>(null)
 
   useEffect(() => {
     const ab = new AbortController()
@@ -124,6 +118,12 @@ export default function MapaFocos() {
       .finally(() => setLoading(false))
   }
 
+  const flyToFoco = useCallback((foco: FocoActivo) => {
+    if (mapRef.current) {
+      mapRef.current.flyTo({ center: [foco.lng, foco.lat], zoom: 14, duration: 1000 })
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="bg-fire-500 text-white p-4 shrink-0">
@@ -148,7 +148,7 @@ export default function MapaFocos() {
           </div>
         )}
 
-        {loading && (
+        {loading && !error && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-fire-500 mx-auto mb-3" />
@@ -157,50 +157,62 @@ export default function MapaFocos() {
           </div>
         )}
 
-        <MapContainer
-          center={mapCenter}
-          zoom={12}
+        <Map
+          ref={mapRef}
+          mapboxAccessToken={MAPBOX_TOKEN}
+          style={{ width: '100%', height: '100%' }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          initialViewState={{
+            latitude: centerTo ? centerTo[0] : VALLE_DEL_SOL[0],
+            longitude: centerTo ? centerTo[1] : VALLE_DEL_SOL[1],
+            zoom: centerTo ? 14 : 12
+          }}
           className="w-full h-[calc(100vh-120px)] md:h-full z-0"
-          zoomControl={true}
+          onClick={() => setSelectedFoco(null)}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {centerTo ? (
-            <CenterOnTarget target={centerTo} />
-          ) : (
-            <UserLocation onCenter={(lat, lng) => setMapCenter([lat, lng])} />
-          )}
-          <MapResizer focos={focos} />
+          <GeolocateControl position="top-right" trackUserLocation />
+
+          <FlyToCenter target={centerTo} />
+
           {focos.map((foco) => (
-            <Marker
+            <FocoMarker
               key={foco.id}
-              position={[foco.lat, foco.lng]}
-              icon={createMarkerIcon(estadoDot(foco.estado), foco.id === highlightId)}
-            >
-              <Popup>
-                <div className="min-w-[180px] text-sm">
-                  <p className="font-semibold text-base mb-1">{tipoLabel(foco.tipo)}</p>
-                  {foco.descripcion && (
-                    <p className="text-gray-700 mb-1 leading-tight">{foco.descripcion}</p>
-                  )}
-                  {foco.foto_url && (
-                    <img
-                      src={foco.foto_url}
-                      alt="Foto del incendio"
-                      className="w-full h-28 object-cover rounded mt-1"
-                      loading="lazy"
-                    />
-                  )}
-                  <span className={`inline-block mt-1.5 px-2 py-0.5 rounded text-xs font-medium ${estadoColor(foco.estado)}`}>
-                    {foco.estado}
-                  </span>
-                </div>
-              </Popup>
-            </Marker>
+              foco={foco}
+              highlight={foco.id === highlightId}
+              onClick={() => setSelectedFoco(foco)}
+            />
           ))}
-        </MapContainer>
+
+          {selectedFoco && (
+            <Popup
+              longitude={selectedFoco.lng}
+              latitude={selectedFoco.lat}
+              anchor="bottom"
+              onClose={() => setSelectedFoco(null)}
+              closeButton={true}
+              closeOnClick={false}
+              offset={[0, -8]}
+            >
+              <div className="min-w-[180px] text-sm">
+                <p className="font-semibold text-base mb-1">{tipoLabel(selectedFoco.tipo)}</p>
+                {selectedFoco.descripcion && (
+                  <p className="text-gray-700 mb-1 leading-tight">{selectedFoco.descripcion}</p>
+                )}
+                {selectedFoco.foto_url && (
+                  <img
+                    src={selectedFoco.foto_url}
+                    alt="Foto del incendio"
+                    className="w-full h-28 object-cover rounded mt-1"
+                    loading="lazy"
+                  />
+                )}
+                <span className={`inline-block mt-1.5 px-2 py-0.5 rounded text-xs font-medium ${estadoColor(selectedFoco.estado)}`}>
+                  {selectedFoco.estado}
+                </span>
+              </div>
+            </Popup>
+          )}
+        </Map>
 
         <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
           <h3 className="text-sm font-semibold mb-2">Leyenda:</h3>
@@ -230,7 +242,7 @@ export default function MapaFocos() {
             {focos.map((foco) => (
               <div
                 key={foco.id}
-                onClick={() => setMapCenter([foco.lat, foco.lng])}
+                onClick={() => flyToFoco(foco)}
                 className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                   foco.id === highlightId
                     ? 'bg-blue-50 ring-2 ring-blue-400'
