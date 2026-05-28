@@ -161,39 +161,47 @@ export default function MapaFocos() {
 
   const focosFiltrados = useMemo(() => {
     const corte = Date.now() - HORAS_VENTANA * 60 * 60 * 1000
+    const VALID_ESTADOS = new Set(['ACTIVO', 'PENDIENTE'])
 
-    const candidatos = focos
-      .filter(f => {
-        const t = new Date(f.created_at).getTime()
-        return !isNaN(t) && t >= corte
-      })
-      .filter(f => { const e = f.estado.toUpperCase(); return e === 'ACTIVO' || e === 'PENDIENTE' })
-      .filter(f => haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) <= RADIO_MAX_KM)
-      .sort((a, b) => {
-        const dA = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], a.lat, a.lng)
-        const dB = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], b.lat, b.lng)
-        return dA - dB
-      })
+    const misReportes: FocoActivo[] = []
+    const comunidad: FocoActivo[] = []
 
-    const top5 = candidatos.slice(0, 5)
-    const top5Ids = new Set(top5.map(f => f.id))
+    for (const f of focos) {
+      if (misIdSet.has(f.id)) {
+        misReportes.push(f)
+        continue
+      }
+      if (!VALID_ESTADOS.has(f.estado.toUpperCase())) continue
+      if (haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) > RADIO_MAX_KM) continue
+      const t = new Date(f.created_at).getTime()
+      if (isNaN(t) || t < corte) continue
+      comunidad.push(f)
+    }
 
-    if (highlightId && !top5Ids.has(highlightId)) {
-      const highlight = candidatos.find(f => f.id === highlightId)
+    comunidad.sort((a, b) => {
+      const dA = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], a.lat, a.lng)
+      const dB = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], b.lat, b.lng)
+      return dA - dB
+    })
+
+    const resultado = comunidad.slice(0, 5)
+    const idsEnResultado = new Set(resultado.map(f => f.id))
+
+    for (const f of misReportes) {
+      if (!idsEnResultado.has(f.id)) {
+        resultado.push(f)
+        idsEnResultado.add(f.id)
+      }
+    }
+
+    if (highlightId && !idsEnResultado.has(highlightId)) {
+      const highlight = focos.find(f => f.id === highlightId)
       if (highlight) {
-        top5.push(highlight)
-        top5Ids.add(highlightId)
+        resultado.push(highlight)
       }
     }
 
-    for (const f of candidatos) {
-      if (misIdSet.has(f.id) && !top5Ids.has(f.id)) {
-        top5.push(f)
-        top5Ids.add(f.id)
-      }
-    }
-
-    return top5
+    return resultado
   }, [focos, highlightId, misIds])
 
   return (
