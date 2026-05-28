@@ -75,7 +75,9 @@ export default function Confirmacion() {
               Nuevo Reporte
             </button>
             <button
-              onClick={() => navigate('/mapa')}
+              onClick={() => navigate('/mapa', {
+                state: { centerTo: [lat, lng], highlightId: reportId }
+              })}
               className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg"
             >
               Ver Mapa de Focos

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { useLocation } from 'react-router-dom'
+import { MapPin } from 'lucide-react'
 import { API } from '../api'
 
 const VALLE_DEL_SOL: [number, number] = [-33.4489, -70.6693]
@@ -37,17 +39,28 @@ const estadoDot = (estado: string) => {
 const tipoLabel = (tipo: string) =>
   tipo.toLowerCase() === 'forestal' ? 'Forestal' : 'Urbano'
 
-function createMarkerIcon(color: string) {
+function createMarkerIcon(color: string, highlight?: boolean) {
+  const size = highlight ? 44 : 32
   return L.divIcon({
     className: '',
-    html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:${color};border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -36]
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;background:${color};border-radius:50%;border:${highlight ? '4px solid #fff' : '3px solid #fff'};box-shadow:${highlight ? '0 0 0 3px rgba(37,99,235,0.5), 0 2px 6px rgba(0,0,0,0.3)' : '0 2px 6px rgba(0,0,0,0.3)'}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="${highlight ? 20 : 16}" height="${highlight ? 20 : 16}"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size - 4]
   })
 }
 
-function LocationUpdater({ onCenter }: { onCenter: (lat: number, lng: number) => void }) {
+function CenterOnTarget({ target }: { target: [number, number] | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (target) {
+      map.setView(target, 14, { animate: true })
+    }
+  }, [map, target])
+  return null
+}
+
+function UserLocation({ onCenter }: { onCenter: (lat: number, lng: number) => void }) {
   const map = useMap()
   useEffect(() => {
     if (navigator.geolocation) {
@@ -66,10 +79,15 @@ function LocationUpdater({ onCenter }: { onCenter: (lat: number, lng: number) =>
 }
 
 export default function MapaFocos() {
+  const location = useLocation()
+  const state = location.state as { centerTo?: [number, number]; highlightId?: string } | null
+  const centerTo = state?.centerTo ?? null
+  const highlightId = state?.highlightId ?? null
+
   const [focos, setFocos] = useState<FocoActivo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [mapCenter, setMapCenter] = useState<[number, number]>(VALLE_DEL_SOL)
+  const [mapCenter, setMapCenter] = useState<[number, number]>(centerTo ?? VALLE_DEL_SOL)
 
   useEffect(() => {
     const ab = new AbortController()
@@ -140,12 +158,16 @@ export default function MapaFocos() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <LocationUpdater onCenter={(lat, lng) => setMapCenter([lat, lng])} />
+          {centerTo ? (
+            <CenterOnTarget target={centerTo} />
+          ) : (
+            <UserLocation onCenter={(lat, lng) => setMapCenter([lat, lng])} />
+          )}
           {focos.map((foco) => (
             <Marker
               key={foco.id}
               position={[foco.lat, foco.lng]}
-              icon={createMarkerIcon(estadoDot(foco.estado))}
+              icon={createMarkerIcon(estadoDot(foco.estado), foco.id === highlightId)}
             >
               <Popup>
                 <div className="min-w-[180px] text-sm">
@@ -198,11 +220,31 @@ export default function MapaFocos() {
             {focos.map((foco) => (
               <div
                 key={foco.id}
-                className="flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100"
+                onClick={() => setMapCenter([foco.lat, foco.lng])}
+                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                  foco.id === highlightId
+                    ? 'bg-blue-50 ring-2 ring-blue-400'
+                    : 'bg-gray-50 hover:bg-gray-100'
+                }`}
               >
+                {foco.foto_url ? (
+                  <img
+                    src={foco.foto_url}
+                    alt=""
+                    className="w-10 h-10 rounded object-cover shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded bg-gray-200 shrink-0 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-gray-400" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ backgroundColor: estadoDot(foco.estado) }} />
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full mr-1"
+                      style={{ backgroundColor: estadoDot(foco.estado) }}
+                    />
                     {tipoLabel(foco.tipo)}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
@@ -210,7 +252,7 @@ export default function MapaFocos() {
                     {foco.descripcion && ` — ${foco.descripcion.slice(0, 40)}${foco.descripcion.length > 40 ? '…' : ''}`}
                   </p>
                 </div>
-                <span className={`ml-2 px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${estadoColor(foco.estado)}`}>
+                <span className={`ml-auto px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${estadoColor(foco.estado)}`}>
                   {foco.estado}
                 </span>
               </div>
