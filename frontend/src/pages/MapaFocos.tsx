@@ -8,7 +8,7 @@ import { API } from '../api'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const VALLE_DEL_SOL: [number, number] = [-33.4489, -70.6693]
-const RADIO_MAX_KM = 50
+const RADIO_MAX_KM = 100
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371
