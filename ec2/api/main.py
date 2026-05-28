@@ -296,6 +296,7 @@ def create_report(req: ReportRequest, payload: Optional[dict] = Depends(verify_t
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Create report error: {str(e)}")
 
+@app.post("/api/reportar")
 @app.post("/reportar")
 def reportar_anonimo(req: ReportRequest, payload: Optional[dict] = Depends(verify_token_optional)):
     return create_report(req, payload)
