@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { useLocation } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { API } from '../api'
@@ -159,7 +160,7 @@ export default function MapaFocos() {
         <MapContainer
           center={mapCenter}
           zoom={12}
-          className="w-full h-full"
+          className="w-full h-[calc(100vh-120px)] md:h-full z-0"
           zoomControl={true}
         >
           <TileLayer
