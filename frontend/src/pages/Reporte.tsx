@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trees, Home, MapPin, Camera, ShieldCheck, Flame } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
@@ -28,7 +28,10 @@ function createUserMarkerIcon() {
 
 function MapController({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap()
-  map.setView([lat, lng], 15, { animate: true })
+  useEffect(() => {
+    map.setView([lat, lng], 15, { animate: true })
+    setTimeout(() => map.invalidateSize(), 200)
+  }, [map, lat, lng])
   return null
 }
 

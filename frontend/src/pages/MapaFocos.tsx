@@ -60,6 +60,14 @@ function CenterOnTarget({ target }: { target: [number, number] | null }) {
   return null
 }
 
+function MapResizer({ focos }: { focos: FocoActivo[] }) {
+  const map = useMap()
+  useEffect(() => {
+    setTimeout(() => map.invalidateSize(), 200)
+  }, [map, focos.length])
+  return null
+}
+
 function UserLocation({ onCenter }: { onCenter: (lat: number, lng: number) => void }) {
   const map = useMap()
   useEffect(() => {
@@ -122,7 +130,7 @@ export default function MapaFocos() {
         <p className="text-sm opacity-90">{loading ? 'Cargando...' : `${focos.length} focos en tiempo real`}</p>
       </div>
 
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0">
         {error && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20">
             <div className="text-center max-w-xs">
@@ -163,6 +171,7 @@ export default function MapaFocos() {
           ) : (
             <UserLocation onCenter={(lat, lng) => setMapCenter([lat, lng])} />
           )}
+          <MapResizer focos={focos} />
           {focos.map((foco) => (
             <Marker
               key={foco.id}
