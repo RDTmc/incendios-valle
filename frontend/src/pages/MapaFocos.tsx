@@ -63,6 +63,18 @@ function FlyToCenter({ target }: { target: [number, number] | null }) {
 }
 
 function FocoMarker({ foco, highlight, onClick }: { foco: FocoActivo; highlight: boolean; onClick: () => void }) {
+  if (highlight && foco.foto_url) {
+    return (
+      <Marker longitude={foco.lng} latitude={foco.lat} anchor="bottom" onClick={onClick}>
+        <div className="relative" style={{ cursor: 'pointer' }}>
+          <div className="absolute -inset-3 rounded-full bg-blue-500/30 animate-ping" />
+          <div className="relative w-14 h-14 rounded-full ring-4 ring-blue-500 shadow-lg overflow-hidden bg-white">
+            <img src={foco.foto_url} alt="" className="w-full h-full object-cover" />
+          </div>
+        </div>
+      </Marker>
+    )
+  }
   const color = estadoDot(foco.estado)
   const size = highlight ? 44 : 32
   return (
@@ -137,7 +149,7 @@ export default function MapaFocos() {
   }, [])
 
   const focosFiltrados = useMemo(() => {
-    return focos
+    const candidatos = focos
       .filter(f => f.estado.toUpperCase() === 'ACTIVO')
       .filter(f => haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) <= RADIO_MAX_KM)
       .sort((a, b) => {
@@ -145,8 +157,18 @@ export default function MapaFocos() {
         const dB = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], b.lat, b.lng)
         return dA - dB
       })
-      .slice(0, 5)
-  }, [focos])
+
+    const top5 = candidatos.slice(0, 5)
+
+    if (highlightId) {
+      const highlight = candidatos.find(f => f.id === highlightId)
+      if (highlight && !top5.some(f => f.id === highlightId)) {
+        top5.push(highlight)
+      }
+    }
+
+    return top5
+  }, [focos, highlightId])
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
