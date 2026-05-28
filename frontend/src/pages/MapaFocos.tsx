@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Map, { Marker, Popup, GeolocateControl, useMap } from 'react-map-gl/mapbox'
 import type { MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -8,6 +8,17 @@ import { API } from '../api'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const VALLE_DEL_SOL: [number, number] = [-33.4489, -70.6693]
+const RADIO_MAX_KM = 50
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
 
 interface FocoActivo {
   id: string
@@ -125,11 +136,23 @@ export default function MapaFocos() {
     }
   }, [])
 
+  const focosFiltrados = useMemo(() => {
+    return focos
+      .filter(f => f.estado.toUpperCase() === 'ACTIVO')
+      .filter(f => haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) <= RADIO_MAX_KM)
+      .sort((a, b) => {
+        const dA = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], a.lat, a.lng)
+        const dB = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], b.lat, b.lng)
+        return dA - dB
+      })
+      .slice(0, 5)
+  }, [focos])
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="bg-fire-500 text-white p-4 shrink-0">
         <h1 className="text-lg font-bold">Mapa de Focos Activos</h1>
-        <p className="text-sm opacity-90">{loading ? 'Cargando...' : `${focos.length} focos en tiempo real`}</p>
+        <p className="text-sm opacity-90">{loading ? 'Cargando...' : `${focosFiltrados.length} focos activos cercanos`}</p>
       </div>
 
       <div className="flex-1 relative min-h-0">
@@ -175,7 +198,7 @@ export default function MapaFocos() {
 
           <FlyToCenter target={centerTo} />
 
-          {focos.map((foco) => (
+          {focosFiltrados.map((foco) => (
             <FocoMarker
               key={foco.id}
               foco={foco}
@@ -217,31 +240,21 @@ export default function MapaFocos() {
         </div>
 
         <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
-          <h3 className="text-sm font-semibold mb-2">Leyenda:</h3>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: '#dc2626' }} />
-              <span className="text-xs">Activo</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: '#f97316' }} />
-              <span className="text-xs">Controlado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full" style={{ backgroundColor: '#16a34a' }} />
-              <span className="text-xs">Extinguido</span>
-            </div>
+          <h3 className="text-xs font-semibold mb-1">Leyenda:</h3>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+            <span className="text-xs">Activo</span>
           </div>
         </div>
       </div>
 
       <div className="bg-white p-4 border-t shrink-0 max-h-48 overflow-y-auto">
         <h3 className="font-semibold mb-3">Focos Recientes:</h3>
-        {focos.length === 0 && !loading ? (
-          <p className="text-sm text-gray-500 text-center py-4">No hay focos registrados</p>
+        {focosFiltrados.length === 0 && !loading ? (
+          <p className="text-sm text-gray-500 text-center py-4">No hay focos activos cercanos</p>
         ) : (
           <div className="space-y-2">
-            {focos.map((foco) => (
+            {focosFiltrados.map((foco) => (
               <div
                 key={foco.id}
                 onClick={() => flyToFoco(foco)}
