@@ -7,7 +7,6 @@ on:
       - 'ec2/api/**'
       - 'ec2/docker-compose.yml'
       - 'ec2/refresh_api.sh'
-      - 'ec2/grafana-provisioning/**'
       - '.github/workflows/deploy.yml'
 
 env:
@@ -49,18 +48,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ─── Paso B: SCP - aprovisionamiento Grafana ──────────────────
-      - name: SCP Grafana provisioning
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "ec2/grafana-provisioning/"
-          target: "/home/ec2-user/grafana-provisioning"
-          strip_components: 2
-
-      # ─── Paso C: SSH + refresh_api.sh ──────────────────────────────
+      # ─── Paso B: SSH + refresh_api.sh ──────────────────────────────
       # Nota: SG con SSH:22 abierto permanentemente (0.0.0.0/0) por
       # decisión táctica. AWS Academy (voc-cancel-cred) bloquea
       # ec2:AuthorizeSecurityGroupIngress, así que se eliminó ese paso.
