@@ -1,10 +1,18 @@
 apiVersion: 1
 
 datasources:
+  - name: Incendios API
+    uid: incendios-api
+    type: marcusolsson-json-datasource
+    access: proxy
+    url: http://incendios-api:8000
+    isDefault: true
+    editable: true
+
   - name: SQLite Incendios
     uid: incendios-sqlite
     type: sqlite3
     access: proxy
     database: /data/incendios.db
-    isDefault: true
+    isDefault: false
     editable: true
