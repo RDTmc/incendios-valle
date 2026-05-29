@@ -2,7 +2,9 @@ apiVersion: 1
 
 datasources:
   - name: SQLite Incendios
+    uid: incendios-sqlite
     type: sqlite3
+    access: proxy
     database: /var/lib/grafana/incendios.db
     isDefault: true
     editable: true

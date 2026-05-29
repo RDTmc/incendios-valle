@@ -31,24 +31,6 @@ echo "AWS_S3_BUCKET=$S3_BUCKET" >> /home/ec2-user/.env
 echo -e "\n Recreando ÚNICAMENTE el contenedor de la API..."
 docker-compose up -d --no-deps --force-recreate api
 
-sleep 10
-
-echo -e "\n Descargando parches desde GitHub (main.py + lambda_service)..."
-curl -sL -o /home/ec2-user/main_fixed_v2.py \
-    https://raw.githubusercontent.com/RDTmc/incendios-valle/main/ec2/api/main.py
-curl -sL -o /home/ec2-user/lambda_service.py \
-    https://raw.githubusercontent.com/RDTmc/incendios-valle/main/ec2/api/lambda_service.py
-echo -e "\n Aplicando parches en caliente..."
-if docker inspect incendios-api --format "{{.State.Status}}" | grep -q running; then
-    docker cp /home/ec2-user/main_fixed_v2.py incendios-api:/app/main.py
-    docker cp /home/ec2-user/lambda_service.py incendios-api:/app/lambda_service.py
-    docker restart incendios-api
-    sleep 5
-    echo -e "\n Parches aplicados correctamente."
-else
-    echo "Error: contenedor api no está en estado running"
-fi
-
 echo -e "\n=========================================================="
-echo " Refresh completado. API invoca Lambda para uploads."
+echo " Refresh completado vía CI/CD — imagen inmutable."
 echo "=========================================================="
