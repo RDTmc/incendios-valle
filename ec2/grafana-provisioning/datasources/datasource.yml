@@ -5,6 +5,6 @@ datasources:
     uid: incendios-sqlite
     type: sqlite3
     access: proxy
-    database: /data/incendios.db
+    database: /home/ec2-user/data/incendios.db
     isDefault: true
     editable: true
