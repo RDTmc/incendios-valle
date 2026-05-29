@@ -106,7 +106,7 @@ jobs:
             rm -f /home/ec2-user/esquema_db.txt
 
             echo ""
-            echo "--- Eliminando plugin JSON incompatible (v1.3.28 requiere Grafana >=12) ---"
+            echo "--- Eliminando plugin JSON antiguo (marcusolsson-json-datasource incompatible) ---"
             rm -rf /home/ec2-user/incendios-data/grafana/plugins/marcusolsson-json-datasource
 
             echo ""

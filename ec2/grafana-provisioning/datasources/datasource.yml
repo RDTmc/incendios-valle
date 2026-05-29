@@ -1,13 +1,17 @@
 apiVersion: 1
 
 datasources:
-  - name: Incendios API
-    uid: incendios-api
-    type: marcusolsson-json-datasource
+  - name: Incendios Infinity
+    uid: inc-infinity
+    type: yesoreyeram-infinity-datasource
     access: proxy
     url: http://incendios-api:8000
     isDefault: true
     editable: true
+    jsonData:
+      auth_method: none
+      allowedHosts:
+        - http://incendios-api:8000
 
   - name: SQLite Incendios
     uid: incendios-sqlite
