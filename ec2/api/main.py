@@ -270,7 +270,8 @@ def create_report(req: ReportRequest, payload: Optional[dict] = Depends(verify_t
         timestamp = datetime.now(timezone.utc).isoformat()
         
         item = {
-            'report_id': report_id,  # Corregido a singular para calzar con AWS
+            'reports_id': report_id,
+            'report_id': report_id,
             'user_id': user_id,
             'device_id': req.device_id or '',
             'tipo': req.tipo,
@@ -320,6 +321,9 @@ def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, pa
         if estado:
             items = [i for i in items if i.get('estado') == estado]
         
+        for item in items:
+            item['report_id'] = item.get('reports_id', '')
+        
         return items
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"List reports error: {str(e)}")
@@ -328,10 +332,11 @@ def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, pa
 def get_report(report_id: str, payload: dict = Depends(verify_token)):
     try:
         reports_table = get_reports_table()
-        response = reports_table.get_item(Key={'report_id': report_id}) # Corregido a singular
+        response = reports_table.get_item(Key={'reports_id': report_id})
         item = response.get('Item')
         if not item:
             raise HTTPException(status_code=404, detail="Report not found")
+        item['report_id'] = item.get('reports_id', '')
         return item
     except HTTPException:
         raise
@@ -358,7 +363,7 @@ def update_report(report_id: str, estado: Optional[str] = None, descripcion: Opt
         expr_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
 
         update_kwargs = {
-            'Key': {'report_id': report_id}, # Corregido a singular
+            'Key': {'reports_id': report_id},
             'UpdateExpression': update_expr,
             'ExpressionAttributeValues': expr_values,
         }
@@ -367,8 +372,11 @@ def update_report(report_id: str, estado: Optional[str] = None, descripcion: Opt
 
         reports_table.update_item(**update_kwargs)
 
-        response = reports_table.get_item(Key={'report_id': report_id}) # Corregido a singular
-        return response.get('Item', {})
+        response = reports_table.get_item(Key={'reports_id': report_id})
+        item = response.get('Item', {})
+        if item:
+            item['report_id'] = item.get('reports_id', '')
+        return item
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Update report error: {str(e)}")
 
