@@ -24,7 +24,7 @@ echo "SYNC_TOKEN=$SYNC_ACTUAL" >> /home/ec2-user/.env
 echo "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ACTUAL" >> /home/ec2-user/.env
 echo "AWS_REGION=us-east-1" >> /home/ec2-user/.env
 echo "AWS_DEFAULT_REGION=us-east-1" >> /home/ec2-user/.env
-echo "AWS_S3_BUCKET=$S3_BUCKET" >> /env
+echo "AWS_S3_BUCKET=$S3_BUCKET" >> /home/ec2-user/.env
 
 echo -e "\n Recreando contenedor de la API con imagen actualizada..."
 cd /home/ec2-user
