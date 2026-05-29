@@ -28,6 +28,9 @@ echo "SYNC_TOKEN=$SYNC_ACTUAL" >> /home/ec2-user/.env
 echo "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ACTUAL" >> /home/ec2-user/.env
 echo "AWS_S3_BUCKET=$S3_BUCKET" >> /home/ec2-user/.env
 
+echo -e "\n Descargando nueva imagen de API desde Docker Hub..."
+docker-compose pull api
+
 echo -e "\n Recreando ÚNICAMENTE el contenedor de la API..."
 docker-compose up -d --no-deps --force-recreate api
 
