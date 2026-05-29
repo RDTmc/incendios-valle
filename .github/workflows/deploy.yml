@@ -70,6 +70,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "ec2/grafana-provisioning/"
           target: "/home/ec2-user/grafana-provisioning"
+          strip_components: 1
 
       # ─── Paso C: SSH + refresh_api.sh ──────────────────────────────
       # Nota: SG con SSH:22 abierto permanentemente (0.0.0.0/0) por
