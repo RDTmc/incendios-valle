@@ -425,6 +425,54 @@ def public_map_coordinates():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/public/tipo-distribution")
+def public_tipo_distribution():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT COALESCE(NULLIF(tipo, ''), 'SIN_TIPO') AS tipo, COUNT(*) AS count
+            FROM reports GROUP BY tipo
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        return [{"tipo": r[0], "count": r[1]} for r in rows]
+    except Exception as e:
+        return [{"tipo": "SIN_DATOS", "count": 0, "error": str(e)}]
+
+@app.get("/public/geomap-data")
+def public_geomap_data():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT CAST(latitud AS REAL), CAST(longitud AS REAL), tipo, estado
+            FROM reports
+            WHERE latitud IS NOT NULL AND latitud != ''
+              AND longitud IS NOT NULL AND longitud != ''
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        peso = {"ACTIVO": 3, "PENDIENTE": 2, "CONTROLADO": 1, "EXTINGUIDO": 0}
+        result = []
+        for r in rows:
+            try:
+                lat, lng = float(r[0]), float(r[1])
+                if lat == 0 and lng == 0:
+                    continue
+                result.append({
+                    "latitude": lat,
+                    "longitude": lng,
+                    "tipo": r[2] or "SIN_TIPO",
+                    "estado": r[3] or "DESCONOCIDO",
+                    "intensidad": peso.get(r[3], 1)
+                })
+            except (ValueError, TypeError):
+                continue
+        return result
+    except Exception as e:
+        return [{"error": str(e)}]
+
 @app.get("/public/cluster-stats")
 def public_cluster_stats():
     try:

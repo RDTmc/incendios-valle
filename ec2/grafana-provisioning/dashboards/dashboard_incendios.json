@@ -2,47 +2,27 @@
   "id": null,
   "uid": "incendios-valle-main",
   "title": "Incendios Valle del Sol",
-  "tags": [
-    "incendios",
-    "valle-del-sol",
-    "produccion"
-  ],
+  "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "editable": true,
   "panels": [
     {
       "id": 1,
-      "title": "Focos Cr\u00edticos Activos",
+      "title": "Focos Críticos Activos",
       "type": "stat",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
             ]
           },
           "mappings": [],
@@ -51,123 +31,63 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
       },
-      "targets": [
-        {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
-          "refId": "A",
-          "method": "GET",
-          "urlPath": "/public/dashboard-stats",
-          "fields": [
-            {
-              "name": "Focos Activos",
-              "jsonPath": "$.focos_activos",
-              "type": "number"
-            }
-          ]
-        }
-      ]
+      "targets": [{
+        "datasource": { "type": "marcusolsson-json-datasource", "uid": "incendios-api" },
+        "refId": "A",
+        "method": "GET",
+        "urlPath": "/public/dashboard-stats",
+        "fields": [{ "name": "Focos Activos", "jsonPath": "$.focos_activos", "type": "number" }]
+      }]
     },
     {
       "id": 2,
-      "title": "Distribuci\u00f3n por Tipo de Incendio",
+      "title": "Distribución por Tipo de Incendio",
       "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 0
-      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
       "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "unit": "none"
-        },
+        "defaults": { "mappings": [], "unit": "none" },
         "overrides": []
       },
       "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto"
       },
-      "targets": [
-        {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
-          "refId": "A",
-          "method": "GET",
-          "urlPath": "/public/dashboard-stats",
-          "fields": [
-            {
-              "name": "Forestal",
-              "jsonPath": "$.tipo_forestal",
-              "type": "number"
-            },
-            {
-              "name": "Urbano",
-              "jsonPath": "$.tipo_urbano",
-              "type": "number"
-            }
-          ]
-        }
-      ]
+      "targets": [{
+        "datasource": { "type": "marcusolsson-json-datasource", "uid": "incendios-api" },
+        "refId": "A",
+        "method": "GET",
+        "urlPath": "/public/tipo-distribution",
+        "fields": [
+          { "name": "Tipo", "jsonPath": "$[*].tipo", "type": "string" },
+          { "name": "Cantidad", "jsonPath": "$[*].count", "type": "number" }
+        ]
+      }]
     },
     {
       "id": 3,
       "title": "Estatus Global de Reportes",
       "type": "bargauge",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 0
-      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 3
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 3 },
+              { "color": "red", "value": 5 }
             ]
           },
           "mappings": [],
@@ -177,124 +97,144 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto"
       },
-      "targets": [
-        {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
-          "refId": "A",
-          "method": "GET",
-          "urlPath": "/public/dashboard-stats",
-          "fields": [
-            {
-              "name": "Pendiente",
-              "jsonPath": "$.estado_pendiente",
-              "type": "number"
-            },
-            {
-              "name": "Activo",
-              "jsonPath": "$.estado_activo",
-              "type": "number"
-            },
-            {
-              "name": "Controlado",
-              "jsonPath": "$.estado_controlado",
-              "type": "number"
-            }
-          ]
-        }
-      ]
+      "targets": [{
+        "datasource": { "type": "marcusolsson-json-datasource", "uid": "incendios-api" },
+        "refId": "A",
+        "method": "GET",
+        "urlPath": "/public/dashboard-stats",
+        "fields": [
+          { "name": "Pendiente", "jsonPath": "$.estado_pendiente", "type": "number" },
+          { "name": "Activo", "jsonPath": "$.estado_activo", "type": "number" },
+          { "name": "Controlado", "jsonPath": "$.estado_controlado", "type": "number" }
+        ]
+      }]
     },
     {
       "id": 4,
       "title": "Mapa de Calor - Focos de Incendio",
       "type": "geomap",
-      "gridPos": {
-        "h": 16,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 },
       "datasource": {
         "type": "marcusolsson-json-datasource",
         "uid": "incendios-api"
       },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {
+        "view": { "lat": -33.45, "lng": -70.66, "zoom": 10 },
+        "controls": { "showZoom": true, "showAttribution": false },
+        "layers": [{
+          "name": "Heatmap",
+          "type": "heatmap",
+          "location": { "mode": "auto" },
+          "heatmap": { "radius": 20, "blur": 15 }
+        }]
+      },
+      "targets": [{
+        "datasource": { "type": "marcusolsson-json-datasource", "uid": "incendios-api" },
+        "refId": "A",
+        "method": "GET",
+        "urlPath": "/public/geomap-data",
+        "fields": [
+          { "name": "latitude", "jsonPath": "$[*].latitude", "type": "number" },
+          { "name": "longitude", "jsonPath": "$[*].longitude", "type": "number" },
+          { "name": "intensidad", "jsonPath": "$[*].intensidad", "type": "number" },
+          { "name": "estado", "jsonPath": "$[*].estado", "type": "string" },
+          { "name": "tipo", "jsonPath": "$[*].tipo", "type": "string" }
+        ]
+      }]
+    },
+    {
+      "id": 5,
+      "title": "Clústeres Detectados",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          },
+          "mappings": [],
+          "unit": "none"
+        },
         "overrides": []
       },
       "options": {
-        "view": {
-          "lat": -33.45,
-          "lng": -70.66,
-          "zoom": 10
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "targets": [{
+        "datasource": { "type": "marcusolsson-json-datasource", "uid": "incendios-api" },
+        "refId": "A",
+        "method": "GET",
+        "urlPath": "/public/cluster-stats",
+        "fields": [{ "name": "Clusters", "jsonPath": "$.clusters", "type": "number" }]
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Pendientes Estancados (>30 min)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 24 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 30 }
+            ]
+          },
+          "mappings": [],
+          "unit": "none"
         },
-        "controls": {
-          "showZoom": true,
-          "showAttribution": false
-        },
-        "layers": [
+        "overrides": [
           {
-            "name": "Heatmap",
-            "type": "heatmap",
-            "location": {
-              "mode": "auto"
-            }
+            "matcher": { "id": "byName", "options": "minutos" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red", "value": 30 }
+                ]
+              }}
+            ]
           }
         ]
       },
-      "targets": [
-        {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
-          "refId": "A",
-          "method": "GET",
-          "urlPath": "/public/map-coordinates",
-          "fields": [
-            {
-              "name": "lat",
-              "jsonPath": "$[*].lat",
-              "type": "number"
-            },
-            {
-              "name": "lng",
-              "jsonPath": "$[*].lng",
-              "type": "number"
-            },
-            {
-              "name": "intensidad",
-              "jsonPath": "$[*].intensidad",
-              "type": "number"
-            },
-            {
-              "name": "estado",
-              "jsonPath": "$[*].estado",
-              "type": "string"
-            },
-            {
-              "name": "tipo",
-              "jsonPath": "$[*].tipo",
-              "type": "string"
-            }
-          ]
-        }
-      ]
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false }
+      },
+      "targets": [{
+        "datasource": { "type": "marcusolsson-json-datasource", "uid": "incendios-api" },
+        "refId": "A",
+        "method": "GET",
+        "urlPath": "/public/stale-pendientes",
+        "fields": [
+          { "name": "report_id", "jsonPath": "$[*].report_id", "type": "string" },
+          { "name": "creado", "jsonPath": "$[*].created_at", "type": "string" },
+          { "name": "minutos", "jsonPath": "$[*].minutos", "type": "number" }
+        ]
+      }]
     }
   ]
 }
