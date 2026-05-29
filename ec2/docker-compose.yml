@@ -41,14 +41,14 @@ services:
       start_period: 10s
 
   grafana:
-    image: grafana/grafana:10.4.2  # Fijamos versión para evitar roturas de la comunidad 'latest'
+    image: grafana/grafana:10.4.8  # Fijamos versión 10.4.8+ (requerido por Infinity datasource plugin)
     container_name: incendios-grafana
     environment:
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD}"
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: "3.227.186.158"
       GF_SERVER_ROOT_URL: "http://3.227.186.158/dashboard/"  # Barra final obligatoria
-      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource@2.12.2"  # SQLite + Infinity JSON API (v2.12.2 compatible con Grafana 10.x)
+      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource"  # SQLite + Infinity JSON API
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
       - /home/ec2-user/incendios-data/api:/data:rw  # BD que escribe la API, Grafana lee
