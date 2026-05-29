@@ -26,6 +26,8 @@ echo "AWS_SESSION_TOKEN=$SESSION_TOKEN" >> /home/ec2-user/.env
 echo "JWT_SECRET=$JWT_ACTUAL" >> /home/ec2-user/.env
 echo "SYNC_TOKEN=$SYNC_ACTUAL" >> /home/ec2-user/.env
 echo "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ACTUAL" >> /home/ec2-user/.env
+echo "AWS_REGION=us-east-1" >> /home/ec2-user/.env
+echo "AWS_DEFAULT_REGION=us-east-1" >> /home/ec2-user/.env
 echo "AWS_S3_BUCKET=$S3_BUCKET" >> /home/ec2-user/.env
 
 echo -e "\n Recreando ÚNICAMENTE el contenedor de la API..."
