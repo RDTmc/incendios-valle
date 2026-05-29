@@ -110,6 +110,10 @@ jobs:
             rm -rf /home/ec2-user/incendios-data/grafana/plugins/marcusolsson-json-datasource
 
             echo ""
+            echo "--- Eliminando plugin Infinity anterior (evitar conflicto de versiones stale) ---"
+            rm -rf /home/ec2-user/incendios-data/grafana/plugins/yesoreyeram-infinity-datasource
+
+            echo ""
             echo "--- Fijando permisos SQLite para que Grafana (uid 472) pueda leer ---"
             chmod 644 /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
             chmod 755 /home/ec2-user/incendios-data/api 2>/dev/null || true
