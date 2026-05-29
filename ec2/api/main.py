@@ -494,7 +494,7 @@ def get_focos_activos():
                 continue
             
             focos.append({
-                'id': item.get('report_id', ''), # Corregido a singular
+                'id': item.get('report_id') or item.get('reports_id', ''),
                 'lat': lat,
                 'lng': lng,
                 'estado': item.get('estado', 'DESCONOCIDO'),
@@ -511,6 +511,11 @@ def get_focos_activos():
 
 @app.post("/sync")
 def sync_from_lambda(req: SyncRequest, x_sync_token: str = Header(...)):
+    """
+    Endpoint Lambda Proxy para sincronización desde AWS Lambda.
+    El body debe contener las claves obligatorias: table, operation y data.
+    Usado exclusivamente por el trigger de DynamoDB Streams.
+    """
     if x_sync_token != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid sync token")
     result = sync_to_sqlite(req.table, req.operation, req.data)
