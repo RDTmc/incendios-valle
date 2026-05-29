@@ -51,6 +51,7 @@ services:
       GF_INSTALL_PLUGINS: "frser-sqlite-datasource"  # Auto-instalar plugin SQLite
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
+      - /home/ec2-user/data:/home/ec2-user/data:ro  # Base de datos SQLite en vivo (solo lectura)
       - /home/ec2-user/grafana-provisioning:/etc/grafana/provisioning
     restart: unless-stopped
 
