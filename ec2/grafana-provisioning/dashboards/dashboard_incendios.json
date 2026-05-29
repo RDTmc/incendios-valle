@@ -54,24 +54,30 @@
       "title": "Distribuci\u00f3n por Tipo de Incendio",
       "type": "piechart",
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
-        "defaults": { "mappings": [], "unit": "none" },
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+          "fieldMinMax": false,
+          "mappings": [],
+          "unit": "none"
+        },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": true, "calcs": [], "fields": "" },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "reduceOptions": { "values": true, "calcs": ["lastNotNull"], "fields": "" },
+        "displayLabels": ["percent"],
+        "legend": { "calcs": [], "displayMode": "table", "placement": "right", "showLegend": true, "values": [] },
+        "pieType": "pie",
+        "tooltip": { "mode": "single", "sort": "none" }
       },
       "targets": [
         {
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "rawQueryText": "SELECT tipo AS \"tipo\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY tipo ORDER BY tipo",
-          "queryText": "SELECT tipo AS \"tipo\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY tipo ORDER BY tipo",
+          "rawQueryText": "SELECT COALESCE(NULLIF(tipo, ''), 'SIN TIPO') AS \"Tipo\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY \"Tipo\" ORDER BY \"Cantidad\" DESC",
+          "queryText": "SELECT COALESCE(NULLIF(tipo, ''), 'SIN TIPO') AS \"Tipo\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY \"Tipo\" ORDER BY \"Cantidad\" DESC",
           "queryType": "table",
           "timeColumns": []
         }
@@ -82,6 +88,7 @@
       "title": "Estatus Global de Reportes",
       "type": "bargauge",
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -101,18 +108,19 @@
       },
       "options": {
         "reduceOptions": { "values": true, "calcs": [], "fields": "" },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "orientation": "horizontal",
+        "displayMode": "lcd",
+        "namePlacement": "left",
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
       },
       "targets": [
         {
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "rawQueryText": "SELECT estado AS \"estado\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY estado ORDER BY estado",
-          "queryText": "SELECT estado AS \"estado\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY estado ORDER BY estado",
+          "rawQueryText": "SELECT estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY estado ORDER BY \"Cantidad\" DESC",
+          "queryText": "SELECT estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY estado ORDER BY \"Cantidad\" DESC",
           "queryType": "table",
           "timeColumns": []
         }
@@ -124,21 +132,42 @@
       "type": "geomap",
       "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": []
+      },
       "options": {
-        "view": { "lat": -33.45, "lng": -70.66, "zoom": 10 },
-        "controls": { "showZoom": true, "showAttribution": false },
+        "view": { "lat": -33.67, "lng": -70.66, "zoom": 10 },
+        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
         "layers": [
           {
             "name": "Focos",
-            "type": "markers",
-            "location": {
-              "mode": "coords",
-              "latitudeField": "lat",
-              "longitudeField": "lng"
+            "type": "heatmap",
+            "config": {
+              "blur": 10,
+              "radius": 12,
+              "weight": { "fixed": 1, "max": 1, "min": 0 }
             }
           }
-        ]
+        ],
+        "basemap": {
+          "type": "osm-standard",
+          "name": "Layer 0",
+          "config": {},
+          "tooltip": false
+        },
+        "tooltip": { "mode": "details" }
       },
       "targets": [
         {
@@ -151,5 +180,21 @@
         }
       ]
     }
-  ]
+  ],
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "templating": { "list": [] },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  }
 }
