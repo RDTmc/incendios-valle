@@ -81,12 +81,34 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 60s
+          timeout: 120s
           envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_DEFAULT_REGION
           script: |
             cd /home/ec2-user
             chmod +x ./refresh_api.sh
             ./refresh_api.sh
+
+            echo ""
+            echo "--- Limpieza de archivos huerfanos ---"
+            rm -rf /home/ec2-user/grafana-provisioning/ec2
+            rm -f /home/ec2-user/main.py /home/ec2-user/main_fixed*.py /home/ec2-user/main_backup.py
+            rm -f /home/ec2-user/lambda_service.py /home/ec2-user/seed*.py
+            rm -f /home/ec2-user/create_dashboard.py /home/ec2-user/add_geomap.py
+            rm -f /home/ec2-user/patch_*.py /home/ec2-user/check_*.py
+            rm -f /home/ec2-user/count_reports.py /home/ec2-user/fix_*.py
+            rm -f /home/ec2-user/purge_datasource.py /home/ec2-user/upload_service.py
+            rm -f /home/ec2-user/s3_service.py /home/ec2-user/dashboards.yaml
+            rm -f /home/ec2-user/incendios-api.tar
+            rm -f /home/ec2-user/incendios-data/grafana/incendios.db
+            rm -f /home/ec2-user/data/incendios.db
+            rm -f /home/ec2-user/esquema_db.txt
+
+            echo ""
+            echo "--- Reiniciando Grafana para nuevo datasource ---"
+            docker restart incendios-grafana
+
+            echo ""
+            echo "--- Deploy completado ---"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
