@@ -11,7 +11,7 @@ datasources:
 
   - name: SQLite Incendios
     uid: incendios-sqlite
-    type: sqlite3
+    type: frser-sqlite-datasource
     access: proxy
     database: /data/incendios.db
     isDefault: false
