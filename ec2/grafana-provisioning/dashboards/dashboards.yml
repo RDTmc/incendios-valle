@@ -1,7 +1,7 @@
 apiVersion: 1
 
 providers:
-  - name: "Incendios Valle del Sol"
+  - name: "Provisioning Incendios"
     orgId: 1
     folder: ""
     type: file

@@ -5,7 +5,7 @@
   "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "refresh": "30s",
   "editable": true,
   "panels": [
@@ -40,13 +40,12 @@
       },
       "targets": [
         {
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "source": "url",
-          "url": "/public/dashboard-stats",
-          "method": "GET",
-          "type": "json",
-          "parser": "backend"
+          "rawQueryText": "SELECT CAST(COUNT(*) AS INTEGER) AS focos_activos FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')",
+          "queryText": "SELECT CAST(COUNT(*) AS INTEGER) AS focos_activos FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')",
+          "queryType": "table",
+          "timeColumns": []
         }
       ]
     },
@@ -60,7 +59,7 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": { "values": true, "calcs": [], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
@@ -69,13 +68,12 @@
       },
       "targets": [
         {
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "source": "url",
-          "url": "/public/dashboard-stats",
-          "method": "GET",
-          "type": "json",
-          "parser": "backend"
+          "rawQueryText": "SELECT tipo AS \"tipo\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY tipo ORDER BY tipo",
+          "queryText": "SELECT tipo AS \"tipo\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY tipo ORDER BY tipo",
+          "queryType": "table",
+          "timeColumns": []
         }
       ]
     },
@@ -102,7 +100,7 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": { "values": true, "calcs": [], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
@@ -111,13 +109,12 @@
       },
       "targets": [
         {
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "source": "url",
-          "url": "/public/dashboard-stats",
-          "method": "GET",
-          "type": "json",
-          "parser": "backend"
+          "rawQueryText": "SELECT estado AS \"estado\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY estado ORDER BY estado",
+          "queryText": "SELECT estado AS \"estado\", CAST(COUNT(*) AS INTEGER) AS \"count\" FROM reports GROUP BY estado ORDER BY estado",
+          "queryType": "table",
+          "timeColumns": []
         }
       ]
     },
@@ -126,7 +123,7 @@
       "title": "Mapa de Calor - Focos de Incendio",
       "type": "geomap",
       "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 },
-      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {
         "view": { "lat": -33.45, "lng": -70.66, "zoom": 10 },
@@ -145,13 +142,12 @@
       },
       "targets": [
         {
-          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "source": "url",
-          "url": "/public/map-coordinates",
-          "method": "GET",
-          "type": "json",
-          "parser": "backend"
+          "rawQueryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
+          "queryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
+          "queryType": "table",
+          "timeColumns": []
         }
       ]
     }

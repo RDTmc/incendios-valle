@@ -1,22 +1,13 @@
 apiVersion: 1
 
 datasources:
-  - name: Incendios Infinity
-    uid: inc-infinity
-    type: yesoreyeram-infinity-datasource
-    access: proxy
-    url: http://incendios-api:8000
-    isDefault: true
-    editable: true
-    jsonData:
-      auth_method: none
-      allowedHosts:
-        - http://incendios-api:8000
-
   - name: SQLite Incendios
     uid: incendios-sqlite
     type: frser-sqlite-datasource
     access: proxy
-    database: /data/incendios.db
-    isDefault: false
+    isDefault: true
     editable: true
+    jsonData:
+      path: /data/incendios.db
+      pathPrefix: "file:"
+      pathOptions: "_pragma=query_only(1)"
