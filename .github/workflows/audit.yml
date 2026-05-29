@@ -1,0 +1,87 @@
+name: Audit EC2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Audit via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 60s
+          script: |
+            echo "=========================================================="
+            echo " AUDITORIA READ-ONLY - Incendios Valle del Sol"
+            echo "=========================================================="
+
+            echo ""
+            echo "=== 1. CONTENEDORES CORRIENDO ==="
+            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+
+            echo ""
+            echo "=== 2. CONTENEDORES TOTALES ==="
+            docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+
+            echo ""
+            echo "=== 3. refresh_api.sh (LOCAL EN EC2) ==="
+            echo "Hash: $(md5sum /home/ec2-user/refresh_api.sh | cut -d' ' -f1)"
+            echo "---"
+            cat /home/ec2-user/refresh_api.sh
+
+            echo ""
+            echo "=== 4. docker-compose.yml (LOCAL EN EC2) ==="
+            echo "Hash: $(md5sum /home/ec2-user/docker-compose.yml | cut -d' ' -f1)"
+            echo "---"
+            cat /home/ec2-user/docker-compose.yml
+
+            echo ""
+            echo "=== 5. PROVISIONING GRAFANA ==="
+            ls -laR /home/ec2-user/grafana-provisioning/
+
+            echo ""
+            echo "=== 6. DATASOURCE GRAFANA ==="
+            docker exec incendios-grafana cat /etc/grafana/provisioning/datasources/datasource.yml 2>/dev/null || echo "(No se pudo leer)"
+
+            echo ""
+            echo "=== 7. DASHBOARD GRAFANA ==="
+            docker exec incendios-grafana ls /etc/grafana/provisioning/dashboards/ 2>/dev/null || echo "(No se pudo leer)"
+            docker exec incendios-grafana python3 -c "import json; d=json.load(open('/etc/grafana/provisioning/dashboards/dashboard_incendios.json')); print('Title:', d.get('title')); print('Panels:', len(d.get('panels',[]))); [print('  -', p['title'], p['type']) for p in d.get('panels',[])]" 2>/dev/null || echo "(No se pudo parsear)"
+
+            echo ""
+            echo "=== 8. MAIN.PY DENTRO DEL CONTENEDOR API ==="
+            echo "Hash: $(docker exec incendios-api md5sum /app/main.py 2>/dev/null | cut -d' ' -f1)"
+            echo "Lineas: $(docker exec incendios-api wc -l /app/main.py 2>/dev/null | cut -d' ' -f1)"
+            echo "---"
+            docker exec incendios-api head -60 /app/main.py 2>/dev/null || echo "(No se pudo leer)"
+
+            echo ""
+            echo "=== 9. ENDPOINTS PUBLICOS ==="
+            docker exec incendios-api grep -n '@app\.get\|@app\.post\|@app\.put' /app/main.py 2>/dev/null || echo "(No se pudo leer)"
+
+            echo ""
+            echo "=== 10. DB_PATH EN MAIN.PY ==="
+            docker exec incendios-api grep 'DB_PATH' /app/main.py 2>/dev/null || echo "(No encontrado)"
+
+            echo ""
+            echo "=== 11. ARCHIVOS EN /home/ec2-user/ ==="
+            ls -la /home/ec2-user/
+
+            echo ""
+            echo "=== 12. BASE DE DATOS SQLITE ==="
+            ls -la /home/ec2-user/incendios-data/api/ 2>/dev/null || echo "(No existe incendios-data/api)"
+            ls -la /home/ec2-user/incendios-data/grafana/ 2>/dev/null || echo "(No existe incendios-data/grafana)"
+            ls -la /home/ec2-user/data/ 2>/dev/null || echo "(No existe /home/ec2-user/data)"
+
+            echo ""
+            echo "=== 13. LOGS DEL CONTENEDOR API (ultimas 20 lineas) ==="
+            docker logs incendios-api --tail 20 2>/dev/null || echo "(No hay logs)"
+
+            echo ""
+            echo "=========================================================="
+            echo " AUDITORIA COMPLETADA - SIN MODIFICACIONES"
+            echo "=========================================================="
