@@ -2,14 +2,10 @@
   "id": null,
   "uid": "incendios-valle-main",
   "title": "Incendios Valle del Sol",
-  "tags": [
-    "incendios",
-    "valle-del-sol",
-    "produccion"
-  ],
+  "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "editable": true,
   "panels": [
@@ -17,32 +13,16 @@
       "id": 1,
       "title": "Focos Cr\u00edticos Activos",
       "type": "stat",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
             ]
           },
           "mappings": [],
@@ -51,13 +31,7 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
@@ -66,19 +40,16 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
           "refId": "A",
+          "source": "url",
+          "url": "/public/dashboard-stats",
           "method": "GET",
-          "urlPath": "/public/dashboard-stats",
-          "fields": [
-            {
-              "name": "Focos Activos",
-              "jsonPath": "$.focos_activos",
-              "type": "number"
-            }
+          "type": "json",
+          "parser": "backend",
+          "root_selector": "$",
+          "columns": [
+            { "text": "Focos Activos", "selector": "$.focos_activos", "type": "number" }
           ]
         }
       ]
@@ -87,27 +58,13 @@
       "id": 2,
       "title": "Distribuci\u00f3n por Tipo de Incendio",
       "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 0
-      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
       "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "unit": "none"
-        },
+        "defaults": { "mappings": [], "unit": "none" },
         "overrides": []
       },
       "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
@@ -116,24 +73,17 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
           "refId": "A",
+          "source": "url",
+          "url": "/public/dashboard-stats",
           "method": "GET",
-          "urlPath": "/public/dashboard-stats",
-          "fields": [
-            {
-              "name": "Forestal",
-              "jsonPath": "$.tipo_forestal",
-              "type": "number"
-            },
-            {
-              "name": "Urbano",
-              "jsonPath": "$.tipo_urbano",
-              "type": "number"
-            }
+          "type": "json",
+          "parser": "backend",
+          "root_selector": "$",
+          "columns": [
+            { "text": "Forestal", "selector": "$.tipo_forestal", "type": "number" },
+            { "text": "Urbano", "selector": "$.tipo_urbano", "type": "number" }
           ]
         }
       ]
@@ -142,32 +92,16 @@
       "id": 3,
       "title": "Estatus Global de Reportes",
       "type": "bargauge",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 0
-      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 3
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 3 },
+              { "color": "red", "value": 5 }
             ]
           },
           "mappings": [],
@@ -177,13 +111,7 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
@@ -192,29 +120,18 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
           "refId": "A",
+          "source": "url",
+          "url": "/public/dashboard-stats",
           "method": "GET",
-          "urlPath": "/public/dashboard-stats",
-          "fields": [
-            {
-              "name": "Pendiente",
-              "jsonPath": "$.estado_pendiente",
-              "type": "number"
-            },
-            {
-              "name": "Activo",
-              "jsonPath": "$.estado_activo",
-              "type": "number"
-            },
-            {
-              "name": "Controlado",
-              "jsonPath": "$.estado_controlado",
-              "type": "number"
-            }
+          "type": "json",
+          "parser": "backend",
+          "root_selector": "$",
+          "columns": [
+            { "text": "Pendiente", "selector": "$.estado_pendiente", "type": "number" },
+            { "text": "Activo", "selector": "$.estado_activo", "type": "number" },
+            { "text": "Controlado", "selector": "$.estado_controlado", "type": "number" }
           ]
         }
       ]
@@ -223,75 +140,32 @@
       "id": 4,
       "title": "Mapa de Calor - Focos de Incendio",
       "type": "geomap",
-      "gridPos": {
-        "h": 16,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
-      "datasource": {
-        "type": "marcusolsson-json-datasource",
-        "uid": "incendios-api"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {
-        "view": {
-          "lat": -33.45,
-          "lng": -70.66,
-          "zoom": 10
-        },
-        "controls": {
-          "showZoom": true,
-          "showAttribution": false
-        },
+        "view": { "lat": -33.45, "lng": -70.66, "zoom": 10 },
+        "controls": { "showZoom": true, "showAttribution": false },
         "layers": [
-          {
-            "name": "Heatmap",
-            "type": "heatmap",
-            "location": {
-              "mode": "auto"
-            }
-          }
+          { "name": "Heatmap", "type": "heatmap", "location": { "mode": "auto" } }
         ]
       },
       "targets": [
         {
-          "datasource": {
-            "type": "marcusolsson-json-datasource",
-            "uid": "incendios-api"
-          },
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "inc-infinity" },
           "refId": "A",
+          "source": "url",
+          "url": "/public/map-coordinates",
           "method": "GET",
-          "urlPath": "/public/map-coordinates",
-          "fields": [
-            {
-              "name": "lat",
-              "jsonPath": "$[*].lat",
-              "type": "number"
-            },
-            {
-              "name": "lng",
-              "jsonPath": "$[*].lng",
-              "type": "number"
-            },
-            {
-              "name": "intensidad",
-              "jsonPath": "$[*].intensidad",
-              "type": "number"
-            },
-            {
-              "name": "estado",
-              "jsonPath": "$[*].estado",
-              "type": "string"
-            },
-            {
-              "name": "tipo",
-              "jsonPath": "$[*].tipo",
-              "type": "string"
-            }
+          "type": "json",
+          "parser": "backend",
+          "root_selector": "$",
+          "columns": [
+            { "text": "lat", "selector": "$[*].lat", "type": "number" },
+            { "text": "lng", "selector": "$[*].lng", "type": "number" },
+            { "text": "intensidad", "selector": "$[*].intensidad", "type": "number" },
+            { "text": "estado", "selector": "$[*].estado", "type": "string" },
+            { "text": "tipo", "selector": "$[*].tipo", "type": "string" }
           ]
         }
       ]
