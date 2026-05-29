@@ -48,7 +48,7 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: "3.227.186.158"
       GF_SERVER_ROOT_URL: "http://3.227.186.158/dashboard/"  # Barra final obligatoria
-      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource@3.7.1"  # SQLite + Infinity JSON API (v3.7.1 compatible con Grafana 10.4.8)
+      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource"  # SQLite + Infinity JSON API
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
       - /home/ec2-user/incendios-data/api:/data:rw  # BD que escribe la API, Grafana lee
