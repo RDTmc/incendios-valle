@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir \
     pydantic \
     python-multipart
 
-COPY . .
+COPY ec2/api/ .
 
 EXPOSE 8000
 

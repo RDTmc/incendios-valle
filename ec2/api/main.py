@@ -10,10 +10,10 @@ import uuid
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from lambda_service import upload_image  # CI/CD trigger: credentials refresh
+from lambda_service import upload_image  # Proxy de subida a S3 vía Lambda
 
 ALLOWED_MIME = {"image/jpeg", "image/png"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB (la compresión se maneja en frontend)
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 app = FastAPI(
     title="Incendios API",
@@ -28,9 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuración DynamoDB - Inicialización por request para soportar rotación de credenciales AWS Academy
+# Configuración DynamoDB - Inicialización dinámica para soportar rotación de credenciales AWS Academy
 def get_dynamodb_resource():
-    """Obtener recurso DynamoDB con credenciales frescas en cada request"""
+    """Obtiene el recurso DynamoDB con credenciales frescas en cada request"""
     return boto3.resource('dynamodb')
 
 def get_users_table():
@@ -39,7 +39,7 @@ def get_users_table():
 def get_reports_table():
     return get_dynamodb_resource().Table('reports')
 
-# Configuración SQLite
+# Configuración SQLite Local (Caché de Sincronización y Dashboard)
 DB_PATH = "/app/data/incendios.db"
 SYNC_TOKEN = os.environ.get('SYNC_TOKEN', 'incendios-sync-secret-token')
 
@@ -77,11 +77,12 @@ def init_db():
             updated_at TEXT
         )
     ''')
-    # Migración: agregar columna foto_url si no existe (BD existentes)
+    
+    # Migración preventiva por si la columna foto_url no existe en la BD local
     try:
         cursor.execute("ALTER TABLE reports ADD COLUMN foto_url TEXT DEFAULT ''")
     except sqlite3.OperationalError:
-        pass  # Ya existe
+        pass  # Ya existe la columna
 
     conn.commit()
     conn.close()
@@ -90,6 +91,7 @@ init_db()
 
 SECRET_KEY = os.environ.get('JWT_SECRET', 'incendios-valle-secret-key')
 
+# Models Pydantic
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -114,7 +116,7 @@ class SyncRequest(BaseModel):
     operation: str
     data: dict
 
-def encode_geohash(lat, lon):
+def encode_geohash(lat: float, lon: float) -> str:
     lat_hash = int(lat * 1000000)
     lon_hash = int(lon * 1000000)
     return f"{lat_hash // 1000}-{lon_hash // 1000}"
@@ -148,7 +150,7 @@ def upload_report_image(file: UploadFile = File(...)):
 
         contents = file.file.read()
         if len(contents) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="La imagen no debe superar los 2MB")
+            raise HTTPException(status_code=400, detail="La imagen no debe superar los 5MB")
 
         url = upload_image(contents, file.content_type)
         return {"foto_url": url}
@@ -174,7 +176,6 @@ def login(req: LoginRequest):
         user = items[0]
         stored_hash = user.get('password_hash', '')
         
-        # bcrypt check
         if not bcrypt.checkpw(req.password.encode(), stored_hash.encode()):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
@@ -269,7 +270,7 @@ def create_report(req: ReportRequest, payload: Optional[dict] = Depends(verify_t
         timestamp = datetime.now(timezone.utc).isoformat()
         
         item = {
-            'reports_id': report_id,
+            'report_id': report_id,  # Corregido a singular para calzar con AWS
             'user_id': user_id,
             'device_id': req.device_id or '',
             'tipo': req.tipo,
@@ -327,7 +328,7 @@ def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, pa
 def get_report(report_id: str, payload: dict = Depends(verify_token)):
     try:
         reports_table = get_reports_table()
-        response = reports_table.get_item(Key={'reports_id': report_id})
+        response = reports_table.get_item(Key={'report_id': report_id}) # Corregido a singular
         item = response.get('Item')
         if not item:
             raise HTTPException(status_code=404, detail="Report not found")
@@ -356,9 +357,8 @@ def update_report(report_id: str, estado: Optional[str] = None, descripcion: Opt
         update_expr += "updated_at = :updated_at"
         expr_values[':updated_at'] = datetime.now(timezone.utc).isoformat()
 
-        # P2-3: Never pass None to ExpressionAttributeNames - boto3 rejects it
         update_kwargs = {
-            'Key': {'reports_id': report_id},
+            'Key': {'report_id': report_id}, # Corregido a singular
             'UpdateExpression': update_expr,
             'ExpressionAttributeValues': expr_values,
         }
@@ -367,7 +367,7 @@ def update_report(report_id: str, estado: Optional[str] = None, descripcion: Opt
 
         reports_table.update_item(**update_kwargs)
 
-        response = reports_table.get_item(Key={'reports_id': report_id})
+        response = reports_table.get_item(Key={'report_id': report_id}) # Corregido a singular
         return response.get('Item', {})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Update report error: {str(e)}")
@@ -408,8 +408,8 @@ def public_map_coordinates():
         conn.close()
         peso = {"ACTIVO": 3, "PENDIENTE": 2, "CONTROLADO": 1, "EXTINGUIDO": 0}
         return [{
-            "lat": float(r[0]),
-            "lng": float(r[1]),
+            "lat": float(r[0]) if r[0] else 0.0,
+            "lng": float(r[1]) if r[1] else 0.0,
             "tipo": r[2],
             "estado": r[3],
             "intensidad": peso.get(r[3], 1)
@@ -423,19 +423,25 @@ def public_cluster_stats():
         conn = get_db_connection()
         cursor = conn.cursor()
         corte = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        
+        # Corregido para asegurar nombres en español y orden estricto de fetch en SQLite
         cursor.execute(
             "SELECT report_id, latitud, longitud FROM reports WHERE created_at >= ?",
             (corte,)
         )
         rows = cursor.fetchall()
         conn.close()
+        
         clusters = []
         for i in range(len(rows)):
             for j in range(i + 1, len(rows)):
-                lat_i, lng_i = float(rows[i][1]), float(rows[i][2])
-                lat_j, lng_j = float(rows[j][1]), float(rows[j][2])
-                if abs(lat_i - lat_j) < 0.0005 and abs(lng_i - lng_j) < 0.0005:
-                    clusters.append([rows[i][0], rows[j][0]])
+                try:
+                    lat_i, lng_i = float(rows[i][1]), float(rows[i][2])
+                    lat_j, lng_j = float(rows[j][1]), float(rows[j][2])
+                    if abs(lat_i - lat_j) < 0.0005 and abs(lng_i - lng_j) < 0.0005:
+                        clusters.append([rows[i][0], rows[j][0]])
+                except (ValueError, TypeError):
+                    continue # Ignora registros corruptos o vacíos de lat/lng de forma segura
         return {"clusters": len(clusters), "pares": clusters}
     except Exception as e:
         return {"clusters": 0, "pares": [], "error": str(e)}
@@ -488,7 +494,7 @@ def get_focos_activos():
                 continue
             
             focos.append({
-                'id': item.get('reports_id', ''),
+                'id': item.get('report_id', ''), # Corregido a singular
                 'lat': lat,
                 'lng': lng,
                 'estado': item.get('estado', 'DESCONOCIDO'),
@@ -499,7 +505,6 @@ def get_focos_activos():
             })
         
         focos.sort(key=lambda f: f['created_at'], reverse=True)
-        
         return focos
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching focos: {str(e)}")
@@ -526,11 +531,13 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
             result = "user synced"
         elif table == 'reports':
             if operation in ['INSERT', 'MODIFY']:
+                # Mapeo unificado usando 'report_id' seguro
+                r_id = data.get('report_id') or data.get('reports_id')
                 cursor.execute('''
                     INSERT OR REPLACE INTO reports
                     (report_id, user_id, tipo, latitud, longitud, geohash, descripcion, foto_url, estado, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (data.get('report_id'), data.get('user_id'), data.get('tipo'),
+                ''', (r_id, data.get('user_id'), data.get('tipo'),
                       data.get('latitud'), data.get('longitud'), data.get('geohash'),
                       data.get('descripcion'), data.get('foto_url', ''),
                       data.get('estado'), data.get('created_at'), data.get('updated_at')))
