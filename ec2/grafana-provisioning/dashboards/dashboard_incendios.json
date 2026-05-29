@@ -5,7 +5,7 @@
   "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "30s",
   "editable": true,
   "panels": [
@@ -31,7 +31,7 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "focos_activos" },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "value",
@@ -46,11 +46,7 @@
           "url": "/public/dashboard-stats",
           "method": "GET",
           "type": "json",
-          "parser": "backend",
-          "root_selector": "$",
-          "columns": [
-            { "text": "Focos Activos", "selector": "$.focos_activos", "type": "number" }
-          ]
+          "parser": "backend"
         }
       ]
     },
@@ -79,12 +75,7 @@
           "url": "/public/dashboard-stats",
           "method": "GET",
           "type": "json",
-          "parser": "backend",
-          "root_selector": "$",
-          "columns": [
-            { "text": "Forestal", "selector": "$.tipo_forestal", "type": "number" },
-            { "text": "Urbano", "selector": "$.tipo_urbano", "type": "number" }
-          ]
+          "parser": "backend"
         }
       ]
     },
@@ -126,13 +117,7 @@
           "url": "/public/dashboard-stats",
           "method": "GET",
           "type": "json",
-          "parser": "backend",
-          "root_selector": "$",
-          "columns": [
-            { "text": "Pendiente", "selector": "$.estado_pendiente", "type": "number" },
-            { "text": "Activo", "selector": "$.estado_activo", "type": "number" },
-            { "text": "Controlado", "selector": "$.estado_controlado", "type": "number" }
-          ]
+          "parser": "backend"
         }
       ]
     },
@@ -147,7 +132,15 @@
         "view": { "lat": -33.45, "lng": -70.66, "zoom": 10 },
         "controls": { "showZoom": true, "showAttribution": false },
         "layers": [
-          { "name": "Heatmap", "type": "heatmap", "location": { "mode": "auto" } }
+          {
+            "name": "Focos",
+            "type": "markers",
+            "location": {
+              "mode": "coords",
+              "latitudeField": "lat",
+              "longitudeField": "lng"
+            }
+          }
         ]
       },
       "targets": [
@@ -158,15 +151,7 @@
           "url": "/public/map-coordinates",
           "method": "GET",
           "type": "json",
-          "parser": "backend",
-          "root_selector": "$",
-          "columns": [
-            { "text": "lat", "selector": "$[*].lat", "type": "number" },
-            { "text": "lng", "selector": "$[*].lng", "type": "number" },
-            { "text": "intensidad", "selector": "$[*].intensidad", "type": "number" },
-            { "text": "estado", "selector": "$[*].estado", "type": "string" },
-            { "text": "tipo", "selector": "$[*].tipo", "type": "string" }
-          ]
+          "parser": "backend"
         }
       ]
     }
