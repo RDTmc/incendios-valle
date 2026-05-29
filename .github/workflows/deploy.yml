@@ -70,7 +70,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "ec2/grafana-provisioning/"
           target: "/home/ec2-user/grafana-provisioning"
-          strip_components: 1
+          strip_components: 2
 
       # ─── Paso C: SSH + refresh_api.sh ──────────────────────────────
       # Nota: SG con SSH:22 abierto permanentemente (0.0.0.0/0) por
@@ -92,6 +92,7 @@ jobs:
             echo ""
             echo "--- Limpieza de archivos huerfanos ---"
             rm -rf /home/ec2-user/grafana-provisioning/ec2
+            rm -rf /home/ec2-user/grafana-provisioning/grafana-provisioning
             rm -f /home/ec2-user/main.py /home/ec2-user/main_fixed*.py /home/ec2-user/main_backup.py
             rm -f /home/ec2-user/lambda_service.py /home/ec2-user/seed*.py
             rm -f /home/ec2-user/create_dashboard.py /home/ec2-user/add_geomap.py
