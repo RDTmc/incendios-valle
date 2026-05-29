@@ -5,6 +5,6 @@ datasources:
     uid: incendios-sqlite
     type: sqlite3
     access: proxy
-    database: /home/ec2-user/data/incendios.db
+    database: /var/lib/grafana/incendios.db
     isDefault: true
     editable: true
