@@ -1,11 +1,11 @@
 {
   "id": null,
   "uid": "incendios-valle-main",
-  "title": "Incendios Valle del Sol",
+  "title": "Dashboard Incendios - Valle del Sol",
   "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 4,
+  "version": 5,
   "refresh": "30s",
   "editable": true,
   "panels": [
