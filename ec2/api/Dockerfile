@@ -9,7 +9,8 @@ RUN pip install --no-cache-dir \
     PyJWT \
     bcrypt \
     pydantic \
-    python-multipart
+    python-multipart \
+    httpx
 
 COPY ec2/api/ .
 

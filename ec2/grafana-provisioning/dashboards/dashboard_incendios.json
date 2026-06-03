@@ -128,13 +128,13 @@
     },
     {
       "id": 4,
-      "title": "Mapa de Calor - Focos de Incendio",
+      "title": "Mapa de Focos por Estado",
       "type": "geomap",
-      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 8 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": { "mode": "thresholds" },
           "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
           "mappings": [],
           "thresholds": {
@@ -152,12 +152,27 @@
         "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
         "layers": [
           {
-            "name": "Focos",
-            "type": "heatmap",
+            "name": "Focos por Estado",
+            "type": "markers",
             "config": {
-              "blur": 10,
-              "radius": 12,
-              "weight": { "fixed": 1, "max": 1, "min": 0 }
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "estado",
+                  "fixed": {
+                    "ACTIVO": "#d62728",
+                    "PENDIENTE": "#ff7f0e",
+                    "CONTROLADO": "#f4e542",
+                    "EXTINGUIDO": "#2ca02c"
+                  }
+                },
+                "size": {
+                  "field": "intensidad",
+                  "fixed": { "ACTIVO": 12, "PENDIENTE": 8, "CONTROLADO": 6, "EXTINGUIDO": 4 }
+                },
+                "show": "details",
+                "label": "${__field.name}: ${__field.value}"
+              }
             }
           }
         ],
@@ -175,6 +190,107 @@
           "refId": "A",
           "rawQueryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
           "queryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
+          "queryType": "table",
+          "timeColumns": []
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Reportes Ciudadanos",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
+        "overrides": []
+      },
+      "options": {
+        "footer": { "show": false },
+        "frameIndex": 0,
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+          "refId": "A",
+          "rawQueryText": "SELECT report_id AS \"ID\", tipo AS \"Tipo\", descripcion AS \"Descripci\u00f3n\", estado AS \"Estado\", created_at AS \"Fecha\" FROM reports WHERE foto_url != '' ORDER BY created_at DESC LIMIT 10",
+          "queryType": "table",
+          "timeColumns": []
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Recursos por Incidente",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
+        "overrides": []
+      },
+      "options": {
+        "footer": { "show": false },
+        "frameIndex": 0,
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+          "refId": "A",
+          "rawQueryText": "SELECT r.report_id AS \"ID\", r.tipo AS \"Tipo\", r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant.\", ir.unidad AS \"Unidad\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "queryType": "table",
+          "timeColumns": []
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Hist\u00f3rico CONAF - 3 Regiones Centrales",
+      "type": "geomap",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 28 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": { "lat": -33.67, "lng": -70.66, "zoom": 9 },
+        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
+        "layers": [
+          {
+            "name": "Incendios CONAF",
+            "type": "markers",
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": { "field": "region", "mode": "scheme" },
+                "size": { "field": "superficie", "fixed": { "min": 4, "max": 16 } },
+                "show": "details",
+                "label": "${__field.nombre}: ${__field.superficie} ha"
+              }
+            }
+          }
+        ],
+        "basemap": {
+          "type": "osm-standard",
+          "name": "Layer 0",
+          "config": {},
+          "tooltip": false
+        },
+        "tooltip": { "mode": "details" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+          "refId": "A",
+          "rawQueryText": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, superficie, causa, fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
           "queryType": "table",
           "timeColumns": []
         }

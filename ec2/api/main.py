@@ -10,7 +10,9 @@ import uuid
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from lambda_service import upload_image  # Proxy de subida a S3 vía Lambda
+from lambda_service import upload_image
+import httpx
+import asyncio
 
 ALLOWED_MIME = {"image/jpeg", "image/png"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -78,6 +80,39 @@ def init_db():
         )
     ''')
     
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS external_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source TEXT DEFAULT 'CIREN',
+            nombre TEXT,
+            region TEXT,
+            comuna TEXT,
+            provincia TEXT,
+            superficie REAL,
+            causa TEXT,
+            latitud REAL,
+            longitud REAL,
+            fh_inicio TEXT,
+            fh_extinci TEXT,
+            temporada TEXT,
+            fetched_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(source, nombre, fh_inicio, latitud, longitud)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS incident_resources (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            report_id TEXT NOT NULL,
+            tipo_recurso TEXT NOT NULL,
+            cantidad INTEGER DEFAULT 1,
+            unidad TEXT DEFAULT '',
+            estado TEXT DEFAULT 'ASIGNADO',
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (report_id) REFERENCES reports(report_id)
+        )
+    ''')
+
     # Migración preventiva por si la columna foto_url no existe en la BD local
     try:
         cursor.execute("ALTER TABLE reports ADD COLUMN foto_url TEXT DEFAULT ''")
@@ -88,6 +123,27 @@ def init_db():
     conn.close()
 
 init_db()
+
+def seed_resources():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM incident_resources")
+    if cursor.fetchone()[0] == 0:
+        resources = [
+            ("test-qa-singular-12345", "BOMBEROS", 2, "CB-1, CB-2"),
+            ("test-qa-singular-12345", "VEHICULO", 1, "V-101"),
+            ("test-qa-singular-12345", "BRIGADA", 1, "Brigada Forestal Este"),
+            ("43c0b7b0-4828-47fb-a298-973d27b9f1d9", "BOMBEROS", 1, "CB-3"),
+            ("43c0b7b0-4828-47fb-a298-973d27b9f1d9", "CAMION_CISTERNA", 1, "CC-501"),
+        ]
+        cursor.executemany(
+            "INSERT INTO incident_resources (report_id, tipo_recurso, cantidad, unidad) VALUES (?, ?, ?, ?)",
+            resources
+        )
+        conn.commit()
+    conn.close()
+
+seed_resources()
 
 SECRET_KEY = os.environ.get('JWT_SECRET', 'incendios-valle-secret-key')
 
@@ -563,6 +619,166 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
         return result
     except Exception as e:
         return f"error: {str(e)}"
+
+# ==================== CIREN / CONAF BACKGROUND TASK ====================
+
+async def fetch_ciren_data():
+    url = (
+        "https://esri.ciren.cl/server/rest/services/"
+        "INCENDIOS_FORESTALES/FeatureServer/16/query"
+        "?where=codreg+IN+(13,5,6)"
+        "&outFields=nombre,region,comuna,provincia,superficie,"
+        "causa_gene,fh_inicio,fh_extinci,temporada"
+        "&f=geojson"
+    )
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(url, timeout=30)
+            data = r.json()
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        inserted = 0
+        for feature in data.get("features", []):
+            props = feature["properties"]
+            coords = feature["geometry"]["coordinates"]
+            cursor.execute("""
+                INSERT OR IGNORE INTO external_reports
+                (source, nombre, region, comuna, provincia, superficie, causa,
+                 latitud, longitud, fh_inicio, fh_extinci, temporada)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                "CIREN", props.get("nombre"), props.get("region"),
+                props.get("comuna"), props.get("provincia"),
+                props.get("superficie"), props.get("causa_gene"),
+                coords[1], coords[0],
+                props.get("fh_inicio"), props.get("fh_extinci"),
+                props.get("temporada")
+            ))
+            if cursor.rowcount > 0:
+                inserted += 1
+        conn.commit()
+        conn.close()
+        print(f"[CIREN] Fetched: {len(data.get('features', []))} features, {inserted} new")
+    except Exception as e:
+        print(f"[CIREN] Error: {e}")
+
+async def periodic_fetch_ciren():
+    await asyncio.sleep(30)
+    while True:
+        await fetch_ciren_data()
+        await asyncio.sleep(3600)
+
+@app.on_event("startup")
+async def start_background_tasks():
+    asyncio.create_task(periodic_fetch_ciren())
+
+# ==================== NEW PUBLIC ENDPOINTS ====================
+
+@app.get("/public/external-reports")
+def public_external_reports(source: Optional[str] = None):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        if source:
+            cursor.execute(
+                "SELECT id, source, nombre, region, comuna, provincia, superficie, causa, latitud, longitud, fh_inicio, fh_extinci, temporada, fetched_at FROM external_reports WHERE source = ? ORDER BY fh_inicio DESC LIMIT 500",
+                (source,)
+            )
+        else:
+            cursor.execute("SELECT id, source, nombre, region, comuna, provincia, superficie, causa, latitud, longitud, fh_inicio, fh_extinci, temporada, fetched_at FROM external_reports ORDER BY fh_inicio DESC LIMIT 500")
+        rows = cursor.fetchall()
+        conn.close()
+        columns = ["id", "source", "nombre", "region", "comuna", "provincia", "superficie", "causa", "lat", "lng", "fh_inicio", "fh_extinci", "temporada", "fetched_at"]
+        return [dict(zip(columns, r)) for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/public/external-reports/sources")
+def public_external_reports_sources():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT source, COUNT(*) AS total FROM external_reports GROUP BY source ORDER BY total DESC")
+        rows = cursor.fetchall()
+        conn.close()
+        return [{"source": r[0], "total": r[1]} for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/v1/external-reports/trigger")
+def trigger_external_fetch(authorization: Optional[str] = Header(None)):
+    if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(fetch_ciren_data())
+    loop.close()
+    return {"status": "triggered"}
+
+class ExternalReportRequest(BaseModel):
+    source: str = "CIREN"
+    nombre: Optional[str] = None
+    region: Optional[str] = None
+    comuna: Optional[str] = None
+    provincia: Optional[str] = None
+    superficie: Optional[float] = None
+    causa: Optional[str] = None
+    latitud: float
+    longitud: float
+    fh_inicio: Optional[str] = None
+    fh_extinci: Optional[str] = None
+    temporada: Optional[str] = None
+
+@app.post("/api/v1/external-reports/conaf")
+def receive_external_report(req: ExternalReportRequest, authorization: Optional[str] = Header(None)):
+    if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR IGNORE INTO external_reports
+            (source, nombre, region, comuna, provincia, superficie, causa,
+             latitud, longitud, fh_inicio, fh_extinci, temporada)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            req.source, req.nombre, req.region, req.comuna, req.provincia,
+            req.superficie, req.causa,
+            req.latitud, req.longitud,
+            req.fh_inicio, req.fh_extinci, req.temporada
+        ))
+        conn.commit()
+        new_id = cursor.lastrowid
+        conn.close()
+        return {"status": "inserted", "id": new_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/public/resources")
+def public_resources():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT r.report_id, r.tipo, r.estado,
+                   ir.tipo_recurso, ir.cantidad, ir.unidad
+            FROM reports r
+            LEFT JOIN incident_resources ir ON r.report_id = ir.report_id
+            ORDER BY ir.created_at DESC
+            LIMIT 20
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        return [{
+            "report_id": r[0], "tipo": r[1], "estado": r[2],
+            "recurso": r[3], "cantidad": r[4], "unidad": r[5]
+        } for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+# ==================== AUTHENTICATED ENDPOINTS ====================
 
 @app.get("/dashboard/stats")
 def get_dashboard_stats(payload: dict = Depends(verify_token)):
