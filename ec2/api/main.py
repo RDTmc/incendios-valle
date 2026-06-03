@@ -627,9 +627,9 @@ async def fetch_ciren_data():
         "https://esri.ciren.cl/server/rest/services/"
         "INCENDIOS_FORESTALES/FeatureServer/16/query"
         "?where=codreg+IN+(13,5,6)"
-        "&outFields=nombre,region,comuna,provincia,superficie,"
+        "&outFields=nombre,region,provincia,comuna,superficie,"
         "causa_gene,fh_inicio,fh_extinci,temporada"
-        "&f=geojson"
+        "&f=json&outSR=4326&resultRecordCount=2000"
     )
     try:
         async with httpx.AsyncClient() as client:
@@ -640,20 +640,25 @@ async def fetch_ciren_data():
         cursor = conn.cursor()
         inserted = 0
         for feature in data.get("features", []):
-            props = feature["properties"]
-            coords = feature["geometry"]["coordinates"]
+            attrs = feature.get("attributes", {})
+            geo = feature.get("geometry", {})
+            lng = geo.get("x")
+            lat = geo.get("y")
+            if lat is None or lng is None:
+                continue
             cursor.execute("""
                 INSERT OR IGNORE INTO external_reports
                 (source, nombre, region, comuna, provincia, superficie, causa,
                  latitud, longitud, fh_inicio, fh_extinci, temporada)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                "CIREN", props.get("nombre"), props.get("region"),
-                props.get("comuna"), props.get("provincia"),
-                props.get("superficie"), props.get("causa_gene"),
-                coords[1], coords[0],
-                props.get("fh_inicio"), props.get("fh_extinci"),
-                props.get("temporada")
+                "CIREN",
+                attrs.get("nombre"), attrs.get("region"),
+                attrs.get("comuna"), attrs.get("provincia"),
+                attrs.get("superficie"), attrs.get("causa_gene"),
+                lat, lng,
+                attrs.get("fh_inicio"), attrs.get("fh_extinci"),
+                attrs.get("temporada"),
             ))
             if cursor.rowcount > 0:
                 inserted += 1

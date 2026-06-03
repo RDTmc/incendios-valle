@@ -137,15 +137,43 @@
           "color": { "mode": "thresholds" },
           "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 80 }
-            ]
-          }
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "estado" },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Estado"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixed": {
+                    "ACTIVO": "#d62728",
+                    "PENDIENTE": "#ff7f0e",
+                    "CONTROLADO": "#f4e542",
+                    "EXTINGUIDO": "#2ca02c"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lat" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lng" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "intensidad" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          }
+        ]
       },
       "options": {
         "view": { "lat": -33.67, "lng": -70.66, "zoom": 10 },
@@ -157,31 +185,15 @@
             "config": {
               "showLegend": true,
               "style": {
-                "color": {
-                  "field": "estado",
-                  "fixed": {
-                    "ACTIVO": "#d62728",
-                    "PENDIENTE": "#ff7f0e",
-                    "CONTROLADO": "#f4e542",
-                    "EXTINGUIDO": "#2ca02c"
-                  }
-                },
-                "size": {
-                  "field": "intensidad",
-                  "fixed": { "ACTIVO": 12, "PENDIENTE": 8, "CONTROLADO": 6, "EXTINGUIDO": 4 }
-                },
+                "color": { "field": "estado" },
+                "size": { "field": "intensidad", "min": 6, "max": 18 },
                 "show": "details",
-                "label": "${__field.name}: ${__field.value}"
+                "label": "${__field.tipo}: ${__field.estado}"
               }
             }
           }
         ],
-        "basemap": {
-          "type": "osm-standard",
-          "name": "Layer 0",
-          "config": {},
-          "tooltip": false
-        },
+        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
         "tooltip": { "mode": "details" }
       },
       "targets": [
@@ -189,7 +201,6 @@
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
           "rawQueryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
-          "queryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
           "queryType": "table",
           "timeColumns": []
         }
@@ -202,19 +213,31 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "auto" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
-        "overrides": []
+        "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Imagen" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "image" } },
+              { "id": "custom.width", "value": 80 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "ID" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          }
+        ]
       },
       "options": {
-        "footer": { "show": false },
-        "frameIndex": 0,
-        "showHeader": true
+        "footer": { "show": false, "countRows": false, "enablePagination": false },
+        "showHeader": true,
+        "sortBy": [ { "displayName": "Fecha", "desc": true } ]
       },
       "targets": [
         {
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "rawQueryText": "SELECT report_id AS \"ID\", tipo AS \"Tipo\", descripcion AS \"Descripci\u00f3n\", estado AS \"Estado\", created_at AS \"Fecha\" FROM reports WHERE foto_url != '' ORDER BY created_at DESC LIMIT 10",
+          "rawQueryText": "SELECT report_id AS \"ID\", COALESCE(NULLIF(foto_url, ''), '') AS \"Imagen\", descripcion AS \"Descripcion\", tipo AS \"Tipo\", estado AS \"Estado\", created_at AS \"Fecha\" FROM reports ORDER BY created_at DESC LIMIT 10",
           "queryType": "table",
           "timeColumns": []
         }
@@ -227,19 +250,23 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "auto" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
-        "overrides": []
+        "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "ID" },
+            "properties": [ { "id": "custom.width", "value": 120 } ]
+          }
+        ]
       },
       "options": {
-        "footer": { "show": false },
-        "frameIndex": 0,
+        "footer": { "show": false, "countRows": false, "enablePagination": false },
         "showHeader": true
       },
       "targets": [
         {
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "rawQueryText": "SELECT r.report_id AS \"ID\", r.tipo AS \"Tipo\", r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant.\", ir.unidad AS \"Unidad\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "rawQueryText": "SELECT r.report_id AS \"ID\", r.tipo AS \"Tipo\", r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM reports r RIGHT JOIN incident_resources ir ON r.report_id = ir.report_id ORDER BY ir.created_at DESC LIMIT 20",
           "queryType": "table",
           "timeColumns": []
         }
@@ -258,7 +285,16 @@
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "lat" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lng" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          }
+        ]
       },
       "options": {
         "view": { "lat": -33.67, "lng": -70.66, "zoom": 9 },
@@ -270,27 +306,22 @@
             "config": {
               "showLegend": true,
               "style": {
-                "color": { "field": "region", "mode": "scheme" },
-                "size": { "field": "superficie", "fixed": { "min": 4, "max": 16 } },
+                "color": { "field": "superficie" },
+                "size": { "field": "superficie", "min": 4, "max": 20 },
                 "show": "details",
                 "label": "${__field.nombre}: ${__field.superficie} ha"
               }
             }
           }
         ],
-        "basemap": {
-          "type": "osm-standard",
-          "name": "Layer 0",
-          "config": {},
-          "tooltip": false
-        },
+        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
         "tooltip": { "mode": "details" }
       },
       "targets": [
         {
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "rawQueryText": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, superficie, causa, fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
+          "rawQueryText": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, CAST(COALESCE(superficie, 0) AS REAL) AS superficie, COALESCE(NULLIF(causa, ''), 'Sin dato') AS causa, COALESCE(NULLIF(fh_inicio, ''), 'Sin fecha') AS fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
           "queryType": "table",
           "timeColumns": []
         }
