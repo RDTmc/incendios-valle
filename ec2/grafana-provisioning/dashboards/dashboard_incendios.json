@@ -266,7 +266,7 @@
         {
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "rawQueryText": "SELECT r.report_id AS \"ID\", r.tipo AS \"Tipo\", r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM reports r RIGHT JOIN incident_resources ir ON r.report_id = ir.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "rawQueryText": "SELECT ir.report_id AS \"ID\", r.tipo AS \"Tipo\", r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
           "queryType": "table",
           "timeColumns": []
         }

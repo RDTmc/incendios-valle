@@ -48,7 +48,7 @@ SYNC_TOKEN = os.environ.get('SYNC_TOKEN', 'incendios-sync-secret-token')
 Path("/app/data").mkdir(parents=True, exist_ok=True)
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=5)
     conn.execute("PRAGMA journal_mode=DELETE")
     return conn
 
@@ -711,16 +711,12 @@ def public_external_reports_sources():
     except Exception as e:
         return {"error": str(e)}
 
-@app.post("/api/v1/external-reports/trigger")
-def trigger_external_fetch(authorization: Optional[str] = Header(None)):
+@app.post("/v1/external-reports/trigger")
+async def trigger_external_fetch(authorization: Optional[str] = Header(None)):
     if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
-    import asyncio
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(fetch_ciren_data())
-    loop.close()
-    return {"status": "triggered"}
+    asyncio.create_task(fetch_ciren_data())
+    return {"status": "triggered", "message": "Fetch iniciado en background"}
 
 class ExternalReportRequest(BaseModel):
     source: str = "CIREN"
@@ -736,7 +732,7 @@ class ExternalReportRequest(BaseModel):
     fh_extinci: Optional[str] = None
     temporada: Optional[str] = None
 
-@app.post("/api/v1/external-reports/conaf")
+@app.post("/v1/external-reports/conaf")
 def receive_external_report(req: ExternalReportRequest, authorization: Optional[str] = Header(None)):
     if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
