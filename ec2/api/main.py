@@ -622,6 +622,104 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
 
 # ==================== CIREN / CONAF BACKGROUND TASK ====================
 
+S3_BACKUP_PATH = "/app/data/backups"
+SEED_PATH = "/app/data/seed.json"
+
+def backup_sqlite_to_s3():
+    """Sube incendios.db a S3 como respaldo"""
+    import subprocess
+    try:
+        bucket = os.environ.get('AWS_S3_BUCKET', 'incendios-valle-sol')
+        subprocess.run(
+            ["aws", "s3", "cp", DB_PATH,
+             f"s3://{bucket}/backups/incendios-latest.db"],
+            capture_output=True, timeout=30
+        )
+        subprocess.run(
+            ["aws", "s3", "cp", DB_PATH,
+             f"s3://{bucket}/backups/incendios-$(date +%Y%m%d-%H%M%S).db"],
+            capture_output=True, timeout=30
+        )
+        print("[S3] Backup completado")
+    except Exception as e:
+        print(f"[S3] Backup error: {e}")
+
+def restore_sqlite_from_s3():
+    """Intenta restaurar incendios.db desde S3 si esta vacio"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM external_reports")
+    count = cursor.fetchone()[0]
+    conn.close()
+    if count > 0:
+        print("[S3] BD ya tiene datos, no se restaura")
+        return
+    import subprocess
+    try:
+        bucket = os.environ.get('AWS_S3_BUCKET', 'incendios-valle-sol')
+        result = subprocess.run(
+            ["aws", "s3", "cp", f"s3://{bucket}/backups/incendios-latest.db", DB_PATH],
+            capture_output=True, timeout=30
+        )
+        if result.returncode == 0:
+            print("[S3] BD restaurada desde S3")
+    except Exception as e:
+        print(f"[S3] Restore error: {e}")
+
+def export_external_reports_seed():
+    """Exporta external_reports a seed.json para post-reset"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT nombre, region, comuna, provincia, superficie, causa, latitud, longitud, fh_inicio, fh_extinci, temporada FROM external_reports ORDER BY fh_inicio DESC LIMIT 50")
+        rows = cursor.fetchall()
+        conn.close()
+        if rows:
+            seed = [{
+                "nombre": r[0], "region": r[1], "comuna": r[2],
+                "provincia": r[3], "superficie": r[4], "causa": r[5],
+                "latitud": r[6], "longitud": r[7],
+                "fh_inicio": r[8], "fh_extinci": r[9], "temporada": r[10]
+            } for r in rows if r[0]]
+            with open(SEED_PATH, "w") as f:
+                json.dump(seed, f, indent=2, ensure_ascii=False)
+            print(f"[SEED] Exportados {len(seed)} registros a seed.json")
+    except Exception as e:
+        print(f"[SEED] Export error: {e}")
+
+def load_seed_if_empty():
+    """Carga seed.json si external_reports esta vacio"""
+    if not os.path.exists(SEED_PATH):
+        return
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM external_reports")
+    if cursor.fetchone()[0] > 0:
+        conn.close()
+        return
+    try:
+        with open(SEED_PATH) as f:
+            seed = json.load(f)
+        for row in seed:
+            cursor.execute("""
+                INSERT OR IGNORE INTO external_reports
+                (source, nombre, region, comuna, provincia, superficie, causa,
+                 latitud, longitud, fh_inicio, fh_extinci, temporada)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                "CIREN", row.get("nombre"), row.get("region"),
+                row.get("comuna"), row.get("provincia"),
+                row.get("superficie"), row.get("causa"),
+                row.get("latitud"), row.get("longitud"),
+                row.get("fh_inicio"), row.get("fh_extinci"),
+                row.get("temporada"),
+            ))
+        conn.commit()
+        print(f"[SEED] Cargados {len(seed)} registros desde seed.json")
+    except Exception as e:
+        print(f"[SEED] Load error: {e}")
+    conn.close()
+
 async def fetch_ciren_data():
     url = (
         "https://esri.ciren.cl/server/rest/services/"
@@ -665,6 +763,9 @@ async def fetch_ciren_data():
         conn.commit()
         conn.close()
         print(f"[CIREN] Fetched: {len(data.get('features', []))} features, {inserted} new")
+        if inserted > 0:
+            export_external_reports_seed()
+            backup_sqlite_to_s3()
     except Exception as e:
         print(f"[CIREN] Error: {e}")
 
@@ -676,6 +777,9 @@ async def periodic_fetch_ciren():
 
 @app.on_event("startup")
 async def start_background_tasks():
+    await asyncio.sleep(5)
+    restore_sqlite_from_s3()
+    load_seed_if_empty()
     asyncio.create_task(periodic_fetch_ciren())
 
 # ==================== NEW PUBLIC ENDPOINTS ====================

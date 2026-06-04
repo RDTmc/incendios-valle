@@ -9,6 +9,13 @@ on:
       - 'ec2/refresh_api.sh'
       - 'ec2/grafana-provisioning/**'
       - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      restore-db:
+        description: 'Restaurar SQLite desde S3'
+        type: boolean
+        default: true
+        required: false
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/incendios-api
@@ -87,6 +94,11 @@ jobs:
             cd /home/ec2-user
             chmod +x ./refresh_api.sh
             ./refresh_api.sh
+
+            echo ""
+            echo "--- Restore SQLite desde S3 (workflow_dispatch o post-reset) ---"
+            aws s3 cp s3://$(grep AWS_S3_BUCKET /home/ec2-user/.env 2>/dev/null | cut -d= -f2)/backups/incendios-latest.db \
+              /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || echo "No hay backup en S3, se creara BD limpia"
 
             echo ""
             echo "--- Limpieza de archivos huerfanos ---"
