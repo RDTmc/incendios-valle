@@ -176,7 +176,7 @@
         ]
       },
       "options": {
-        "view": { "lat": -33.67, "lng": -70.66, "zoom": 10 },
+        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
         "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
         "layers": [
           {
@@ -297,7 +297,7 @@
         ]
       },
       "options": {
-        "view": { "lat": -33.67, "lng": -70.66, "zoom": 9 },
+        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
         "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
         "layers": [
           {
