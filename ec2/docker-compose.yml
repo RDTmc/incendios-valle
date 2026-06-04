@@ -21,9 +21,7 @@ services:
     environment:
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      # Credenciales AWS via LabRole (IMDS) - no se setean env vars
       - DYNAMODB_TABLE_USERS=users
       - DYNAMODB_TABLE_REPORTS=reports
       - JWT_SECRET=${JWT_SECRET}
@@ -46,8 +44,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD}"
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
-      GF_SERVER_DOMAIN: "3.227.186.158"
-      GF_SERVER_ROOT_URL: "http://3.227.186.158/dashboard/"  # Barra final obligatoria
+      GF_SERVER_DOMAIN: "dashboard.keogh.lat"
+      GF_SERVER_ROOT_URL: "https://dashboard.keogh.lat/dashboard/"
       GF_INSTALL_PLUGINS: "frser-sqlite-datasource"  # SQLite + Infinity JSON API
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
