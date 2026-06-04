@@ -128,7 +128,7 @@ jobs:
             echo "--- Fijando permisos SQLite para que Grafana (uid 472) pueda leer/escribir ---"
             chmod 644 /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
             chmod 755 /home/ec2-user/incendios-data/api 2>/dev/null || true
-            chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
+            sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
             chmod 664 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
 
             echo ""

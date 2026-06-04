@@ -33,8 +33,8 @@ aws s3 cp s3://$S3_BUCKET/backups/incendios-latest.db \
 aws s3 cp s3://$S3_BUCKET/backups/grafana-latest.db \
   /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
 echo -e "\n--- Fijando ownership para que Grafana (uid 472) pueda escribir ---"
-chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
-chown 472:472 /home/ec2-user/incendios-data/grafana 2>/dev/null || true
+sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
+sudo chown 472:472 /home/ec2-user/incendios-data/grafana 2>/dev/null || true
 
 echo -e "\n Recreando el contenedor de la API..."
 docker-compose up -d --no-deps --force-recreate api
