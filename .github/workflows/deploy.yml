@@ -90,8 +90,22 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 120s
+          envs: FIRMS_API_KEY,OWM_API_KEY
           script: |
             cd /home/ec2-user
+
+            echo "--- Inyectando API keys desde GitHub Secrets ---"
+            if [ -n "$FIRMS_API_KEY" ]; then
+              grep -q "^FIRMS_API_KEY=" /home/ec2-user/.env 2>/dev/null \
+                && sed -i "s|^FIRMS_API_KEY=.*|FIRMS_API_KEY=$FIRMS_API_KEY|" /home/ec2-user/.env \
+                || echo "FIRMS_API_KEY=$FIRMS_API_KEY" >> /home/ec2-user/.env
+            fi
+            if [ -n "$OWM_API_KEY" ]; then
+              grep -q "^OWM_API_KEY=" /home/ec2-user/.env 2>/dev/null \
+                && sed -i "s|^OWM_API_KEY=.*|OWM_API_KEY=$OWM_API_KEY|" /home/ec2-user/.env \
+                || echo "OWM_API_KEY=$OWM_API_KEY" >> /home/ec2-user/.env
+            fi
+
             chmod +x ./refresh_api.sh
             ./refresh_api.sh
 

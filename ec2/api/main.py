@@ -13,6 +13,7 @@ from pathlib import Path
 from lambda_service import upload_image
 import httpx
 import asyncio
+import json
 
 ALLOWED_MIME = {"image/jpeg", "image/png"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -110,6 +111,39 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (report_id) REFERENCES reports(report_id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS firms_hotspots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            latitude REAL,
+            longitude REAL,
+            brightness REAL,
+            frp REAL,
+            confidence TEXT,
+            satellite TEXT,
+            acq_date TEXT,
+            acq_time INTEGER,
+            daynight TEXT,
+            source TEXT,
+            fetched_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(latitude, longitude, acq_date, acq_time, satellite)
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS weather_readings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lat REAL,
+            lon REAL,
+            region TEXT,
+            temperature REAL,
+            humidity INTEGER,
+            wind_speed REAL,
+            wind_direction REAL,
+            weather_desc TEXT,
+            pressure INTEGER,
+            fetched_at TEXT DEFAULT (datetime('now'))
         )
     ''')
 
@@ -775,12 +809,116 @@ async def periodic_fetch_ciren():
         await fetch_ciren_data()
         await asyncio.sleep(3600)
 
+# ==================== NASA FIRMS BACKGROUND TASK ====================
+
+FIRMS_BBOX = "-72.5,-35.0,-69.5,-32.5"
+FIRMS_SOURCES = ["VIIRS_SNPP_NRT", "VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT"]
+
+async def fetch_firms_hotspots():
+    api_key = os.environ.get('FIRMS_API_KEY', '')
+    if not api_key:
+        print("[FIRMS] No API key configured")
+        return
+    for source in FIRMS_SOURCES:
+        url = f"https://firms.modaps.eosdis.nasa.gov/api/area/json/{api_key}/{source}/{FIRMS_BBOX}/2"
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.get(url, timeout=30)
+            if r.status_code != 200:
+                print(f"[FIRMS] {source}: HTTP {r.status_code}")
+                continue
+            data = r.json()
+            if not isinstance(data, list):
+                continue
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            inserted = 0
+            for item in data:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO firms_hotspots
+                    (latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    item.get("latitude"), item.get("longitude"),
+                    item.get("brightness"), item.get("frp"),
+                    str(item.get("confidence", "")),
+                    item.get("satellite", ""),
+                    item.get("acq_date", ""),
+                    item.get("acq_time"),
+                    item.get("daynight", ""), source
+                ))
+                if cursor.rowcount > 0:
+                    inserted += 1
+            conn.commit()
+            conn.close()
+            print(f"[FIRMS] {source}: {len(data)} received, {inserted} new")
+        except Exception as e:
+            print(f"[FIRMS] Error {source}: {e}")
+
+async def periodic_fetch_firms():
+    await asyncio.sleep(60)
+    while True:
+        await fetch_firms_hotspots()
+        await asyncio.sleep(1800)
+
+# ==================== OPENWEATHERMAP BACKGROUND TASK ====================
+
+WEATHER_ZONES = [
+    {"region": "Valparaíso", "lat": -33.05, "lon": -71.62},
+    {"region": "Metropolitana", "lat": -33.45, "lon": -70.67},
+    {"region": "O'Higgins", "lat": -34.17, "lon": -70.74},
+]
+
+async def fetch_weather_data():
+    api_key = os.environ.get('OWM_API_KEY', '')
+    if not api_key:
+        print("[OWM] No API key configured")
+        return
+    async with httpx.AsyncClient() as client:
+        for zone in WEATHER_ZONES:
+            url = f"https://api.openweathermap.org/data/2.5/weather?lat={zone['lat']}&lon={zone['lon']}&units=metric&appid={api_key}"
+            try:
+                r = await client.get(url, timeout=15)
+                if r.status_code != 200:
+                    print(f"[OWM] {zone['region']}: HTTP {r.status_code}")
+                    continue
+                data = r.json()
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO weather_readings
+                    (lat, lon, region, temperature, humidity, wind_speed, wind_direction, weather_desc, pressure)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    zone['lat'], zone['lon'], zone['region'],
+                    data.get("main", {}).get("temp"),
+                    data.get("main", {}).get("humidity"),
+                    data.get("wind", {}).get("speed"),
+                    data.get("wind", {}).get("deg"),
+                    data.get("weather", [{}])[0].get("description", ""),
+                    data.get("main", {}).get("pressure"),
+                ))
+                conn.commit()
+                conn.close()
+                w = data.get("main", {})
+                print(f"[OWM] {zone['region']}: {w.get('temp')}°C, {w.get('humidity')}% humedad")
+            except Exception as e:
+                print(f"[OWM] Error {zone['region']}: {e}")
+
+async def periodic_fetch_weather():
+    await asyncio.sleep(90)
+    while True:
+        await fetch_weather_data()
+        await asyncio.sleep(1800)
+
 @app.on_event("startup")
 async def start_background_tasks():
     await asyncio.sleep(5)
     restore_sqlite_from_s3()
     load_seed_if_empty()
     asyncio.create_task(periodic_fetch_ciren())
+    asyncio.create_task(periodic_fetch_firms())
+    asyncio.create_task(periodic_fetch_weather())
 
 # ==================== NEW PUBLIC ENDPOINTS ====================
 
@@ -812,6 +950,67 @@ def public_external_reports_sources():
         rows = cursor.fetchall()
         conn.close()
         return [{"source": r[0], "total": r[1]} for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/public/firms-hotspots")
+def public_firms_hotspots():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT latitude, longitude, brightness, frp, confidence,
+                   satellite, acq_date, acq_time, source, fetched_at
+            FROM firms_hotspots
+            WHERE fetched_at >= datetime('now', '-3 days')
+            ORDER BY acq_date DESC, acq_time DESC
+            LIMIT 1000
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        columns = ["lat", "lng", "brightness", "frp", "confidence",
+                   "satellite", "acq_date", "acq_time", "source", "fetched_at"]
+        return [dict(zip(columns, r)) for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/public/weather/latest")
+def public_weather_latest():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT w1.region, w1.temperature, w1.humidity, w1.wind_speed,
+                   w1.wind_direction, w1.weather_desc, w1.pressure, w1.fetched_at
+            FROM weather_readings w1
+            WHERE w1.id IN (SELECT MAX(id) FROM weather_readings GROUP BY region)
+            ORDER BY w1.region
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        columns = ["region", "temperature", "humidity", "wind_speed",
+                   "wind_direction", "weather_desc", "pressure", "fetched_at"]
+        return [dict(zip(columns, r)) for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/public/weather/history")
+def public_weather_history(limit: int = 50):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT region, temperature, humidity, wind_speed,
+                   wind_direction, weather_desc, fetched_at
+            FROM weather_readings
+            ORDER BY fetched_at DESC
+            LIMIT ?
+        """, (limit,))
+        rows = cursor.fetchall()
+        conn.close()
+        columns = ["region", "temperature", "humidity", "wind_speed",
+                   "wind_direction", "weather_desc", "fetched_at"]
+        return [dict(zip(columns, r)) for r in rows]
     except Exception as e:
         return {"error": str(e)}
 

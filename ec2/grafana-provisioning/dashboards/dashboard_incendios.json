@@ -5,7 +5,7 @@
   "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "refresh": "30s",
   "editable": true,
   "panels": [
@@ -267,6 +267,175 @@
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
           "rawQueryText": "SELECT r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "queryType": "table",
+          "timeColumns": []
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Condiciones Clim\u00e1ticas 30-30-30",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Temp \u00b0C" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 25 },
+                  { "color": "red", "value": 30 }
+                ]}
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              { "id": "unit", "value": "celsius" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Humedad %" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "orange", "value": 30 },
+                  { "color": "green", "value": 40 }
+                ]}
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              { "id": "unit", "value": "percent" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Viento km/h" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 25 },
+                  { "color": "red", "value": 30 }
+                ]}
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              { "id": "unit", "value": "kmh" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Riesgo" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 2 }
+                ]}
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "footer": { "show": false, "countRows": false, "enablePagination": false },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+          "refId": "A",
+          "rawQueryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp \u00b0C\", w1.humidity AS \"Humedad %\", ROUND(w1.wind_speed * 3.6, 1) AS \"Viento km/h\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "queryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp \u00b0C\", w1.humidity AS \"Humedad %\", ROUND(w1.wind_speed * 3.6, 1) AS \"Viento km/h\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "queryType": "table",
+          "timeColumns": []
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Focos de Calor Satelital - NASA FIRMS (lt 3 d\u00edas)",
+      "type": "geomap",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 52 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "lat" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lng" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "frp" },
+            "properties": [
+              { "id": "displayName", "value": "Potencia T\u00e9rmica (MW)" },
+              { "id": "color", "value": { "mode": "continuous-gr-bl" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Confianza" },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixed": {
+                    "low": "#2ca02c",
+                    "nominal": "#ff7f0e",
+                    "high": "#d62728"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
+        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
+        "layers": [
+          {
+            "name": "Focos VIIRS/MODIS",
+            "type": "markers",
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": { "field": "frp" },
+                "size": { "field": "frp", "min": 5, "max": 15 },
+                "show": "details",
+                "label": "${__field.Sat\u00e9lite}: ${__field.frp} MW"
+              }
+            }
+          }
+        ],
+        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
+        "tooltip": { "mode": "details" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+          "refId": "A",
+          "rawQueryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Sat\u00e9lite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
+          "queryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Sat\u00e9lite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
           "queryType": "table",
           "timeColumns": []
         }
