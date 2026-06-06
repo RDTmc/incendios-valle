@@ -5,7 +5,7 @@
   "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 6,
+  "version": 7,
   "refresh": "30s",
   "editable": true,
   "panels": [
@@ -63,14 +63,14 @@
           "mappings": [],
           "unit": "none"
         },
+        "options": {
+          "reduceOptions": { "values": true, "calcs": ["lastNotNull"], "fields": "" },
+          "displayLabels": ["percent"],
+          "legend": { "calcs": [], "displayMode": "table", "placement": "right", "showLegend": true, "values": [] },
+          "pieType": "pie",
+          "tooltip": { "mode": "single", "sort": "none" }
+        },
         "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "values": true, "calcs": ["lastNotNull"], "fields": "" },
-        "displayLabels": ["percent"],
-        "legend": { "calcs": [], "displayMode": "table", "placement": "right", "showLegend": true, "values": [] },
-        "pieType": "pie",
-        "tooltip": { "mode": "single", "sort": "none" }
       },
       "targets": [
         {
@@ -130,7 +130,7 @@
       "id": 4,
       "title": "Mapa de Focos por Estado",
       "type": "geomap",
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 8 },
+      "gridPos": { "h": 13, "w": 12, "x": 0, "y": 8 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": {
@@ -143,10 +143,7 @@
           {
             "matcher": { "id": "byName", "options": "estado" },
             "properties": [
-              {
-                "id": "displayName",
-                "value": "Estado"
-              },
+              { "id": "displayName", "value": "Estado" },
               {
                 "id": "color",
                 "value": {
@@ -207,10 +204,65 @@
       ]
     },
     {
+      "id": 7,
+      "title": "Hist\u00f3rico CONAF - 3 Regiones Centrales",
+      "type": "geomap",
+      "gridPos": { "h": 13, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "lat" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "lng" },
+            "properties": [ { "id": "custom.hidden", "value": true } ]
+          }
+        ]
+      },
+      "options": {
+        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
+        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
+        "layers": [
+          {
+            "name": "Incendios CONAF",
+            "type": "markers",
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": { "field": "superficie" },
+                "size": { "field": "superficie", "min": 4, "max": 20 },
+                "show": "details",
+                "label": "${__field.nombre}: ${__field.superficie} ha"
+              }
+            }
+          }
+        ],
+        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
+        "tooltip": { "mode": "details" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+          "refId": "A",
+          "rawQueryText": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, CAST(COALESCE(superficie, 0) AS REAL) AS superficie, COALESCE(NULLIF(causa, ''), 'Sin dato') AS causa, COALESCE(NULLIF(fh_inicio, ''), 'Sin fecha') AS fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
+          "queryType": "table",
+          "timeColumns": []
+        }
+      ]
+    },
+    {
       "id": 5,
       "title": "Reportes Ciudadanos",
       "type": "table",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 21 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
@@ -247,7 +299,7 @@
       "id": 6,
       "title": "Recursos por Incidente",
       "type": "table",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 29 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
@@ -273,10 +325,52 @@
       ]
     },
     {
+      "id": 10,
+      "title": "Total Hist\u00f3rico CONAF",
+      "type": "stat",
+      "gridPos": { "h": 9, "w": 8, "x": 8, "y": 29 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1000 },
+              { "color": "red", "value": 5000 }
+            ]
+          },
+          "mappings": [],
+          "unit": "none",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "total_ha" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
+          "refId": "A",
+          "rawQueryText": "SELECT ROUND(SUM(COALESCE(superficie, 0))) AS total_ha FROM external_reports",
+          "queryText": "SELECT ROUND(SUM(COALESCE(superficie, 0))) AS total_ha FROM external_reports",
+          "queryType": "table",
+          "timeColumns": []
+        }
+      ]
+    },
+    {
       "id": 8,
-      "title": "Condiciones Clim\u00e1ticas 30-30-30",
+      "title": "Clima 30-30-30",
       "type": "table",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 29 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": {
@@ -286,7 +380,11 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Temp \u00b0C" },
+            "matcher": { "id": "byName", "options": "Regi\u00f3n" },
+            "properties": [ { "id": "custom.width", "value": 60 } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Temp" },
             "properties": [
               {
                 "id": "thresholds",
@@ -301,7 +399,7 @@
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Humedad %" },
+            "matcher": { "id": "byName", "options": "Hum" },
             "properties": [
               {
                 "id": "thresholds",
@@ -316,7 +414,7 @@
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Viento km/h" },
+            "matcher": { "id": "byName", "options": "Viento" },
             "properties": [
               {
                 "id": "thresholds",
@@ -333,6 +431,7 @@
           {
             "matcher": { "id": "byName", "options": "Riesgo" },
             "properties": [
+              { "id": "custom.width", "value": 50 },
               {
                 "id": "thresholds",
                 "value": { "mode": "absolute", "steps": [
@@ -355,8 +454,8 @@
         {
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
-          "rawQueryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp \u00b0C\", w1.humidity AS \"Humedad %\", ROUND(w1.wind_speed * 3.6, 1) AS \"Viento km/h\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
-          "queryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp \u00b0C\", w1.humidity AS \"Humedad %\", ROUND(w1.wind_speed * 3.6, 1) AS \"Viento km/h\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "rawQueryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "queryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
           "queryType": "table",
           "timeColumns": []
         }
@@ -364,9 +463,9 @@
     },
     {
       "id": 9,
-      "title": "Focos de Calor Satelital - NASA FIRMS (lt 3 d\u00edas)",
+      "title": "Focos de Calor Satelital - NASA FIRMS",
       "type": "geomap",
-      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 52 },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 38 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": {
@@ -436,61 +535,6 @@
           "refId": "A",
           "rawQueryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Sat\u00e9lite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
           "queryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Sat\u00e9lite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "title": "Hist\u00f3rico CONAF - 3 Regiones Centrales",
-      "type": "geomap",
-      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 28 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "lat" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "lng" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          }
-        ]
-      },
-      "options": {
-        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
-        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
-        "layers": [
-          {
-            "name": "Incendios CONAF",
-            "type": "markers",
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": { "field": "superficie" },
-                "size": { "field": "superficie", "min": 4, "max": 20 },
-                "show": "details",
-                "label": "${__field.nombre}: ${__field.superficie} ha"
-              }
-            }
-          }
-        ],
-        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
-        "tooltip": { "mode": "details" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, CAST(COALESCE(superficie, 0) AS REAL) AS superficie, COALESCE(NULLIF(causa, ''), 'Sin dato') AS causa, COALESCE(NULLIF(fh_inicio, ''), 'Sin fecha') AS fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
           "queryType": "table",
           "timeColumns": []
         }
