@@ -819,28 +819,28 @@ async def fetch_firms_hotspots():
     if not api_key:
         print("[FIRMS] No API key configured")
         return
+    import csv, io
     for source in FIRMS_SOURCES:
-        url = f"https://firms.modaps.eosdis.nasa.gov/api/area/json/{api_key}/{source}/{FIRMS_BBOX}/2"
+        url = f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{api_key}/{source}/{FIRMS_BBOX}/2"
         try:
             async with httpx.AsyncClient() as client:
                 r = await client.get(url, timeout=30)
             if r.status_code != 200:
                 print(f"[FIRMS] {source}: HTTP {r.status_code}")
                 continue
-            data = r.json()
-            if not isinstance(data, list):
-                continue
+            reader = csv.DictReader(io.StringIO(r.text))
             conn = get_db_connection()
             cursor = conn.cursor()
             inserted = 0
-            for item in data:
+            for item in reader:
                 cursor.execute("""
                     INSERT OR IGNORE INTO firms_hotspots
                     (latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     item.get("latitude"), item.get("longitude"),
-                    item.get("brightness"), item.get("frp"),
+                    item.get("bright_ti4") or item.get("brightness"),
+                    item.get("frp"),
                     str(item.get("confidence", "")),
                     item.get("satellite", ""),
                     item.get("acq_date", ""),
@@ -851,7 +851,7 @@ async def fetch_firms_hotspots():
                     inserted += 1
             conn.commit()
             conn.close()
-            print(f"[FIRMS] {source}: {len(data)} received, {inserted} new")
+            print(f"[FIRMS] {source}: {inserted} new hotpots")
         except Exception as e:
             print(f"[FIRMS] Error {source}: {e}")
 
