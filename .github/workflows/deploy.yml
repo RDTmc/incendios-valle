@@ -85,6 +85,9 @@ jobs:
       # ec2:AuthorizeSecurityGroupIngress, así que se eliminó ese paso.
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
+        env:
+          FIRMS_API_KEY: ${{ secrets.FIRMS_API_KEY }}
+          OWM_API_KEY: ${{ secrets.OWM_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
