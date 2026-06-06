@@ -5,7 +5,7 @@
   "tags": ["incendios", "valle-del-sol", "produccion"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 7,
+  "version": 8,
   "refresh": "30s",
   "editable": true,
   "panels": [
@@ -299,14 +299,14 @@
       "id": 6,
       "title": "Recursos por Incidente",
       "type": "table",
-      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 29 },
+"gridPos": { "h": 9, "w": 12, "x": 0, "y": 29 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "ID" },
-            "properties": [ { "id": "custom.width", "value": 120 } ]
+            "matcher": { "id": "byName", "options": "Estado" },
+            "properties": [ { "id": "custom.width", "value": 80 } ]
           }
         ]
       },
@@ -319,48 +319,7 @@
           "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
           "refId": "A",
           "rawQueryText": "SELECT r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 10,
-      "title": "Total Hist\u00f3rico CONAF",
-      "type": "stat",
-      "gridPos": { "h": 9, "w": 8, "x": 8, "y": 29 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 1000 },
-              { "color": "red", "value": 5000 }
-            ]
-          },
-          "mappings": [],
-          "unit": "none",
-          "min": 0
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "total_ha" },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT ROUND(SUM(COALESCE(superficie, 0))) AS total_ha FROM external_reports",
-          "queryText": "SELECT ROUND(SUM(COALESCE(superficie, 0))) AS total_ha FROM external_reports",
+          "queryText": "SELECT r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
           "queryType": "table",
           "timeColumns": []
         }
@@ -370,7 +329,7 @@
       "id": 8,
       "title": "Clima 30-30-30",
       "type": "table",
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 29 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 29 },
       "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": {
@@ -487,7 +446,7 @@
             "matcher": { "id": "byName", "options": "frp" },
             "properties": [
               { "id": "displayName", "value": "Potencia T\u00e9rmica (MW)" },
-              { "id": "color", "value": { "mode": "continuous-gr-bl" } }
+              { "id": "color", "value": { "mode": "continuous-blues" } }
             ]
           },
           {
