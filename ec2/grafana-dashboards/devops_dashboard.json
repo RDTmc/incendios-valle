@@ -1,0 +1,87 @@
+{
+  "title": "DevOps - Incendios Valle del Sol",
+  "uid": "devops-incendios",
+  "tags": ["devops", "incendios"],
+  "timezone": "browser",
+  "editable": true,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Uptime - API Healthcheck",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "red", "value": 0 },
+            { "color": "green", "value": 1 }
+          ]}
+        },
+        "overrides": []
+      },
+      "targets": [{
+        "rawSql": "SELECT 1 as status",
+        "format": "table",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "Reportes por Estado",
+      "type": "bargauge",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource" },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "showUnfilled": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [{
+        "rawSql": "SELECT estado, COUNT(*) as count FROM reports GROUP BY estado ORDER BY count DESC",
+        "format": "table",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Alertas Recientes",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "frser-sqlite-datasource" },
+      "options": {
+        "sortBy": [{ "desc": true }]
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "targets": [{
+        "rawSql": "SELECT alert_type, message, created_at, read FROM alerts ORDER BY created_at DESC LIMIT 20",
+        "format": "table",
+        "refId": "A"
+      }]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s"
+}

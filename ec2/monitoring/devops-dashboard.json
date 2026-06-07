@@ -1,0 +1,108 @@
+{
+  "title": "DevOps - Incendios Valle del Sol",
+  "uid": "devops-incendios",
+  "tags": ["devops", "incendios"],
+  "timezone": "browser",
+  "editable": true,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Uptime - API Healthcheck",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource" },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "red", "value": 0 },
+            { "color": "green", "value": 1 }
+          ]}
+        },
+        "overrides": []
+      },
+      "targets": [{
+        "rawSql": "SELECT 1 as status",
+        "format": "table",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "Reportes Activos vs Controlados",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource" },
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [{
+        "rawSql": "SELECT created_at as time, COUNT(*) as total FROM reports GROUP BY created_at ORDER BY time",
+        "format": "time_series",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Recursos del Sistema",
+      "type": "gauge",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 6 },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "green", "value": 0 },
+            { "color": "yellow", "value": 50 },
+            { "color": "red", "value": 80 }
+          ]},
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "targets": [{
+        "rawSql": "SELECT COUNT(*) * 10.0 / (SELECT COUNT(*) FROM reports WHERE estado IN ('ACTIVO','PENDIENTE') GROUP BY estado HAVING COUNT(*) > 0) * 100 as uso FROM reports",
+        "format": "table",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Errores Recientes (API)",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "frser-sqlite-datasource" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending"
+      },
+      "targets": [{
+        "rawSql": "SELECT 'API' as source, 'healthcheck' as level, 'OK' as message, datetime('now') as time",
+        "format": "logs",
+        "refId": "A"
+      }]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s"
+}

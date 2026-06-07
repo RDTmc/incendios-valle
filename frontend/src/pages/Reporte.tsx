@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { useAuth } from '../App'
 import { API } from '../api'
+import { useToast } from '../util/toast'
 import { compressImage } from '../util/image'
 import { getDeviceId } from '../util/device'
 
@@ -51,6 +52,7 @@ export default function Reporte() {
   const [gpsError, setGpsError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const { addToast } = useToast()
   const [misReportesCount] = useState(() => {
     try {
       const stored = localStorage.getItem('mis_reportes_ids')
@@ -99,7 +101,7 @@ export default function Reporte() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!reporte.lat || !reporte.lng) {
-      alert('Por favor obtén tu ubicación primero')
+      addToast('Obtén tu ubicación primero', 'warning')
       return
     }
     setSubmitting(true)
@@ -132,7 +134,7 @@ export default function Reporte() {
       navigate('/confirmar', { state: { reporte: result, lat: reporte.lat, lng: reporte.lng, tipo: reporte.tipo, fotoUrl: reporte.fotoUrl, isAnonymous } })
     } catch (err: any) {
       console.error('Error al enviar:', err)
-      alert(err.message || 'Error al enviar reporte. Intenta de nuevo.')
+      addToast(err.message || 'Error al enviar reporte. Intenta de nuevo.', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -148,7 +150,7 @@ export default function Reporte() {
       const url = await API.uploadImage(optimized)
       setReporte({ ...reporte, fotoUrl: url, fotoName: file.name })
     } catch (err: any) {
-      alert(err.message || 'Error al subir imagen. Intenta de nuevo.')
+      addToast(err.message || 'Error al subir imagen. Intenta de nuevo.', 'error')
     } finally {
       setUploading(false)
     }

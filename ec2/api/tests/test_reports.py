@@ -1,0 +1,204 @@
+import pytest
+from unittest.mock import MagicMock
+
+class TestReports:
+    def test_create_report_authenticated(self, client, mock_dynamodb, db_connection):
+        _, mock_reports = mock_dynamodb
+        mock_reports.put_item.return_value = {}
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'test-user',
+            'email': 'test@example.com',
+            'rol': 'VECINO',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.post("/reports", json={
+            "user_id": "test-user",
+            "tipo": "FORESTAL",
+            "latitud": -33.45,
+            "longitud": -70.67,
+            "descripcion": "Test report"
+        }, headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["estado"] == "PENDIENTE"
+        assert "report_id" in data
+
+    def test_create_report_anonymous(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.put_item.return_value = {}
+        response = client.post("/reportar", json={
+            "tipo": "URBANO",
+            "latitud": -33.45,
+            "longitud": -70.67,
+            "descripcion": "Anonymous report",
+            "device_id": "test-device-001"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["estado"] == "PENDIENTE"
+
+    def test_create_report_anonymous_no_device_id(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        response = client.post("/reportar", json={
+            "tipo": "URBANO",
+            "latitud": -33.45,
+            "longitud": -70.67,
+            "descripcion": "No device"
+        })
+        assert response.status_code == 400
+        assert "device_id" in response.json()["detail"]
+
+    def test_list_reports_authenticated(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.scan.return_value = {
+            'Items': [
+                {'reports_id': 'r1', 'user_id': 'u1', 'tipo': 'FORESTAL', 'estado': 'ACTIVO',
+                 'latitud': '-33.45', 'longitud': '-70.67', 'created_at': '2026-01-01T00:00:00',
+                 'descripcion': 'Fire 1'}
+            ]
+        }
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user',
+            'email': 'admin@example.com',
+            'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.get("/reports", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) > 0
+        assert data[0]["report_id"] == "r1"
+
+    def test_get_report_by_id(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.get_item.return_value = {
+            'Item': {'reports_id': 'r1', 'user_id': 'u1', 'tipo': 'FORESTAL',
+                     'estado': 'PENDIENTE', 'latitud': '-33.45', 'longitud': '-70.67'}
+        }
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.get("/reports/r1", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert response.status_code == 200
+        assert response.json()["report_id"] == "r1"
+
+    def test_get_report_not_found(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.get_item.return_value = {}
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.get("/reports/nonexistent-id", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert response.status_code == 404
+
+    def test_update_report_status(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.update_item.return_value = {}
+        mock_reports.get_item.return_value = {
+            'Item': {'reports_id': 'r1', 'estado': 'ACTIVO'}
+        }
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.put("/reports/r1?estado=CONTROLADO", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert response.status_code == 200
+        assert response.json()["estado"] == "ACTIVO"
+
+    def test_public_dashboard_stats(self, client, db_connection):
+        cursor = db_connection.cursor()
+        cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, tipo, created_at) VALUES ('r1', 'ACTIVO', 'FORESTAL', datetime('now'))")
+        cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, tipo, created_at) VALUES ('r2', 'PENDIENTE', 'URBANO', datetime('now'))")
+        cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, tipo, created_at) VALUES ('r3', 'EXTINGUIDO', 'FORESTAL', datetime('now'))")
+        db_connection.commit()
+        response = client.get("/public/dashboard-stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["focos_activos"] == 2
+        assert data["tipo_forestal"] == 2
+        assert data["tipo_urbano"] == 1
+        assert data["estado_activo"] == 1
+        assert data["estado_pendiente"] == 1
+        assert data["estado_extinguido"] == 1
+
+    def test_public_map_coordinates(self, client, db_connection):
+        cursor = db_connection.cursor()
+        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, tipo, estado, created_at) VALUES ('r1', '-33.45', '-70.67', 'FORESTAL', 'ACTIVO', datetime('now'))")
+        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, tipo, estado, created_at) VALUES ('r2', '-33.46', '-70.68', 'URBANO', 'PENDIENTE', datetime('now'))")
+        db_connection.commit()
+        response = client.get("/public/map-coordinates")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+        estados = {d["estado"] for d in data}
+        assert "ACTIVO" in estados
+        assert "PENDIENTE" in estados
+        intensidades = {d["intensidad"] for d in data}
+        assert 3 in intensidades
+        assert 2 in intensidades
+
+    def test_dashboard_stats_authenticated(self, client, db_connection):
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.get("/dashboard/stats", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert "total" in data
+        assert "by_estado" in data
+        assert "by_tipo" in data
+
+    def test_dashboard_stats_unauthorized(self, client):
+        response = client.get("/dashboard/stats")
+        assert response.status_code == 401
+
+    def test_sync_reports_table(self, client, db_connection):
+        cursor = db_connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM reports")
+        before = cursor.fetchone()[0]
+        response = client.post("/sync", json={
+            "table": "reports",
+            "operation": "INSERT",
+            "data": {"report_id": "sync-r1", "user_id": "u1", "tipo": "FORESTAL",
+                     "latitud": "-33.45", "longitud": "-70.67", "estado": "ACTIVO",
+                     "descripcion": "Sync test", "created_at": "2026-01-01", "updated_at": "2026-01-01"}
+        }, headers={"x-sync-token": "test-sync-token"})
+        assert response.status_code == 200
+        assert response.json()["status"] == "synced"
+        cursor.execute("SELECT COUNT(*) FROM reports")
+        after = cursor.fetchone()[0]
+        assert after == before + 1
+
+    def test_sync_unknown_table(self, client):
+        response = client.post("/sync", json={
+            "table": "unknown",
+            "operation": "INSERT",
+            "data": {}
+        }, headers={"x-sync-token": "test-sync-token"})
+        assert response.status_code == 200
+        assert response.json()["result"] == "unknown table"
