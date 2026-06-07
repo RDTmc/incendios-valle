@@ -71,7 +71,7 @@ def get_report_repository() -> ReportRepository:
 DB_PATH = os.environ.get('DB_PATH', "/app/data/incendios.db")
 SYNC_TOKEN = os.environ.get('SYNC_TOKEN', 'incendios-sync-secret-token')
 
-Path("/app/data").mkdir(parents=True, exist_ok=True)
+Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_db_connection():
