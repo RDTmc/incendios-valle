@@ -67,6 +67,10 @@ jobs:
       - name: Run frontend tests with coverage
         run: cd frontend && npm test -- --coverage --reporter=verbose
 
+      # ─── Fix coverage paths for SonarCloud Docker container ────
+      - name: Fix coverage paths for SonarCloud
+        run: sed -i 's|<source>.*</source>|<source>ec2/api</source>|' ec2/api/coverage.xml
+
       # ─── SONARCLOUD ANALYSIS ────────────────────────────────────
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
