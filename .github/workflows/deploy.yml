@@ -8,6 +8,10 @@ on:
       - 'ec2/docker-compose.yml'
       - 'ec2/refresh_api.sh'
       - 'ec2/grafana-provisioning/**'
+      - 'frontend/**'
+      - 'lambda/**'
+      - 'scripts/**'
+      - 'sonar-project.properties'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
     inputs:
@@ -27,6 +31,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # ─── BACKEND TESTS ────────────────────────────────────────────
       - name: Set up Python
@@ -41,7 +47,7 @@ jobs:
 
       - name: Run backend tests with coverage
         run: |
-          cd ec2/api && python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term -v
+          python -m pytest ec2/api/tests/ --cov=ec2/api --cov-report=xml:ec2/api/coverage.xml --cov-report=term -v
         env:
           JWT_SECRET: test-secret
           SYNC_TOKEN: test-token
@@ -66,10 +72,6 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.python.coverage.reportPaths=ec2/api/coverage.xml
-            -Dsonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
 
       # ─── DOCKER BUILD & DEPLOY ──────────────────────────────────
       - name: Set up Docker Buildx

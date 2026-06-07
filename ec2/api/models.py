@@ -16,7 +16,7 @@ class RegisterRequest(BaseModel):
 
 class ReportRequest(BaseModel):
     user_id: Optional[str] = None
-    tipo: str = "INCENDIO"
+    tipo: str = "FORESTAL"
     latitud: float
     longitud: float
     descripcion: str = ""

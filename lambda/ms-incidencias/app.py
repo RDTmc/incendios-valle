@@ -56,7 +56,7 @@ def create_report(event):
     lon = body.get('longitud', 0)
     
     item = {
-        'report_id': report_id,
+        'reports_id': report_id,
         'user_id': body.get('user_id', ''),
         'tipo': body.get('tipo', 'INCENDIO'),
         'latitud': str(lat),
@@ -74,7 +74,7 @@ def create_report(event):
         'statusCode': 201,
         'headers': {'Content-Type': 'application/json'},
         'body': json.dumps({
-            'report_id': report_id,
+            'reports_id': report_id,
             'estado': 'PENDIENTE',
             'created_at': timestamp
         })
@@ -108,14 +108,23 @@ def list_reports(event):
     }
 
 def get_report(report_id):
-    response = reports_table.get_item(Key={'report_id': report_id})
-    item = response.get('Item')
+    response = reports_table.query(
+        KeyConditionExpression='reports_id = :rid',
+        ExpressionAttributeValues={':rid': report_id}
+    )
+    items = response.get('Items', [])
     
-    if not item:
+    if not items:
         return {
             'statusCode': 404,
             'body': json.dumps({'error': 'Report not found'})
         }
+    
+    return {
+        'statusCode': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps(items[0])
+    }
     
     return {
         'statusCode': 200,
@@ -125,6 +134,20 @@ def get_report(report_id):
 
 def update_report(report_id, event):
     body = json.loads(event.get('body', {}))
+    
+    # Primero obtener created_at (RANGE key)
+    query_resp = reports_table.query(
+        KeyConditionExpression='reports_id = :rid',
+        ExpressionAttributeValues={':rid': report_id}
+    )
+    items = query_resp.get('Items', [])
+    if not items:
+        return {
+            'statusCode': 404,
+            'body': json.dumps({'error': 'Report not found'})
+        }
+    
+    created_at = items[0]['created_at']
     
     update_expr = 'SET '
     expr_values = {}
@@ -144,13 +167,13 @@ def update_report(report_id, event):
     
     try:
         reports_table.update_item(
-            Key={'report_id': report_id},
+            Key={'reports_id': report_id, 'created_at': created_at},
             UpdateExpression=update_expr,
             ExpressionAttributeValues=expr_values,
             ExpressionAttributeNames=expr_names if expr_names else None
         )
         
-        response = reports_table.get_item(Key={'report_id': report_id})
+        response = reports_table.get_item(Key={'reports_id': report_id, 'created_at': created_at})
         
         return {
             'statusCode': 200,
