@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import type { MapRef } from 'react-map-gl/mapbox'
 import { useLocation } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { API } from '../api'

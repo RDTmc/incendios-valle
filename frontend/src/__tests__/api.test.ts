@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const API_URL = 'https://api.keogh.lat/api'
-
 beforeEach(() => {
   vi.restoreAllMocks()
 })
@@ -110,7 +108,7 @@ describe('API.createReportAnonimo', () => {
 
   it('should call the /reportar endpoint', async () => {
     let capturedUrl = ''
-    let capturedBody = {}
+    let capturedBody: Record<string, unknown> = {}
     globalThis.fetch = vi.fn().mockImplementation((url: string, options: any) => {
       capturedUrl = url
       capturedBody = JSON.parse(options.body)

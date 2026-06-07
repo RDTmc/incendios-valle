@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { API } from '../api'
 import { AlertTriangle, X, Flame, Info } from 'lucide-react'
 
 interface Alert {
