@@ -5,7 +5,7 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir --only-binary :all: \
     fastapi==0.109.0 \
-    'uvicorn[standard]==0.27.0' \
+    uvicorn==0.27.0 \
     boto3==1.34.0 \
     PyJWT==2.8.0 \
     bcrypt==4.1.0 \
