@@ -23,7 +23,8 @@ from routers.auth import router as auth_router
 from routers.reports import router as reports_router
 from routers.public import router as public_router
 from routers.alerts import router as alerts_router
-from dependencies import sync_to_sqlite
+from dependencies import verify_token, verify_token_optional, sync_to_sqlite
+from models import SyncRequest, ExternalReportRequest
 
 ALLOWED_MIME = {"image/jpeg", "image/png"}
 MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -35,7 +36,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://incendios-valle.pages.dev",
+        "https://dashboard.keogh.lat",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,14 +73,14 @@ def get_report_repository() -> ReportRepository:
 
 
 DB_PATH = os.environ.get('DB_PATH', "/app/data/incendios.db")
-SYNC_TOKEN = os.environ.get('SYNC_TOKEN', 'incendios-sync-secret-token')
+SYNC_TOKEN = os.environ['SYNC_TOKEN']
 
 Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH, timeout=5)
-    conn.execute("PRAGMA journal_mode=DELETE")
+    conn.execute("PRAGMA journal_mode=WAL")
     return conn
 
 
@@ -217,50 +221,11 @@ def seed_resources():
 
 seed_resources()
 
-SECRET_KEY = os.environ.get('JWT_SECRET', 'incendios-valle-secret-key')
-
-
-class SyncRequest(BaseModel):
-    table: str
-    operation: str
-    data: dict
-
-
-class ExternalReportRequest(BaseModel):
-    source: str = "CIREN"
-    nombre: Optional[str] = None
-    region: Optional[str] = None
-    comuna: Optional[str] = None
-    provincia: Optional[str] = None
-    superficie: Optional[float] = None
-    causa: Optional[str] = None
-    latitud: float
-    longitud: float
-    fh_inicio: Optional[str] = None
-    fh_extinci: Optional[str] = None
-    temporada: Optional[str] = None
-
 
 def encode_geohash(lat: float, lon: float) -> str:
     lat_hash = int(lat * 1000000)
     lon_hash = int(lon * 1000000)
     return f"{lat_hash // 1000}-{lon_hash // 1000}"
-
-
-def verify_token(authorization: Optional[str] = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="No token provided")
-    token = authorization.replace("Bearer ", "")
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-
-def verify_token_optional(authorization: Optional[str] = Header(None)):
-    if not authorization:
-        return None
     token = authorization.replace("Bearer ", "")
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -281,7 +246,8 @@ def upload_report_image(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir imagen: {str(e)}")
+        print(f"[upload] Error: {e}")
+        raise HTTPException(status_code=500, detail="Error al subir imagen")
 
 
 @app.get("/health")
@@ -318,7 +284,8 @@ def get_focos_activos():
         focos.sort(key=lambda f: f['created_at'], reverse=True)
         return focos
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching focos: {str(e)}")
+        print(f"[focos] Error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching focos")
 
 
 @app.post("/sync")
@@ -643,7 +610,8 @@ def receive_external_report(req: ExternalReportRequest, authorization: Optional[
         conn.close()
         return {"status": "inserted", "id": new_id}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        print(f"[sync] Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/dashboard/stats")

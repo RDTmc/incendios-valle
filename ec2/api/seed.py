@@ -5,7 +5,7 @@ Ejecutar en la EC2 o localmente con credenciales AWS configuradas.
 """
 
 import boto3
-import hashlib
+import bcrypt
 import uuid
 from datetime import datetime, timezone
 
@@ -16,7 +16,7 @@ def seed():
 
     # Crear usuario admin
     admin_id = str(uuid.uuid4())
-    password_hash = hashlib.sha256('admin123'.encode()).hexdigest()
+    password_hash = bcrypt.hashpw('admin123'.encode(), bcrypt.gensalt()).decode()
     timestamp = datetime.now(timezone.utc).isoformat()
 
     print("Creando usuario admin...")
@@ -36,7 +36,7 @@ def seed():
 
     # Crear usuario vecino de prueba
     vecino_id = str(uuid.uuid4())
-    password_hash_vecino = hashlib.sha256('vecino123'.encode()).hexdigest()
+    password_hash_vecino = bcrypt.hashpw('vecino123'.encode(), bcrypt.gensalt()).decode()
 
     print("\nCreando usuario vecino...")
     try:

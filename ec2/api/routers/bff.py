@@ -91,4 +91,5 @@ def bff_dashboard():
             "focos": focos,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"BFF dashboard error: {str(e)}")
+        print(f"[bff] Dashboard error: {e}")
+        raise HTTPException(status_code=500, detail="BFF dashboard error")

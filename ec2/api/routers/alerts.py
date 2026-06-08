@@ -22,7 +22,8 @@ def list_alerts(read: Optional[str] = None, limit: int = 50):
             "source": r[6], "read": bool(r[7]), "created_at": r[8],
         } for r in rows]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching alerts: {str(e)}")
+        print(f"[alerts] Fetch error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching alerts")
 
 
 @router.post("/alerts")
@@ -43,7 +44,8 @@ def create_alert(alert_type: str = "INFO", message: str = "", report_id: str = "
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating alert: {str(e)}")
+        print(f"[alerts] Create error: {e}")
+        raise HTTPException(status_code=500, detail="Error creating alert")
 
 
 @router.put("/alerts/{alert_id}/read")
@@ -56,4 +58,5 @@ def mark_alert_read(alert_id: int):
         conn.close()
         return {"status": "updated"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating alert: {str(e)}")
+        print(f"[alerts] Update error: {e}")
+        raise HTTPException(status_code=500, detail="Error updating alert")

@@ -25,7 +25,8 @@ def public_dashboard_stats():
             "tipo_urbano": by_tipo.get("URBANO", 0)
         }
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] dashboard_stats error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/map-coordinates")
@@ -45,7 +46,8 @@ def public_map_coordinates():
             "intensidad": peso.get(r[3], 1)
         } for r in rows if r[0] and r[1]]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] map_coordinates error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/external-reports")
@@ -66,7 +68,8 @@ def public_external_reports(source: Optional[str] = None):
             "fh_inicio": r[10], "fh_extinci": r[11], "temporada": r[12],
         } for r in rows]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] external_reports error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/cluster-stats")
@@ -94,7 +97,8 @@ def public_cluster_stats():
                     continue
         return {"clusters": len(clusters), "pares": clusters}
     except Exception as e:
-        return {"clusters": 0, "pares": [], "error": str(e)}
+        print(f"[public] cluster_stats error: {e}")
+        return {"clusters": 0, "pares": [], "error": "Internal server error"}
 
 
 @router.get("/stale-pendientes")
@@ -114,7 +118,8 @@ def public_stale_pendientes():
         conn.close()
         return [{"report_id": r[0], "created_at": r[1], "minutos": int(r[2])} for r in rows]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] stale_pendientes error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/external-reports/sources")
@@ -127,7 +132,8 @@ def public_external_reports_sources():
         conn.close()
         return [{"source": r[0], "total": r[1]} for r in rows]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] external_reports_sources error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/weather/latest")
@@ -148,7 +154,8 @@ def public_weather_latest():
                    "wind_direction", "weather_desc", "pressure", "fetched_at"]
         return [dict(zip(columns, r)) for r in rows]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] weather_latest error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/weather/history")
@@ -169,7 +176,8 @@ def public_weather_history(limit: int = 50):
                    "wind_direction", "weather_desc", "fetched_at"]
         return [dict(zip(columns, r)) for r in rows]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] weather_history error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/firms-hotspots")
@@ -187,7 +195,8 @@ def public_firms_hotspots():
             "daynight": r[9], "source": r[10],
         } for r in rows]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] firms_hotspots error: {e}")
+        return {"error": "Internal server error"}
 
 
 @router.get("/resources")
@@ -209,4 +218,5 @@ def public_resources():
             "recurso": r[3], "cantidad": r[4], "unidad": r[5]
         } for r in rows]
     except Exception as e:
-        return {"error": str(e)}
+        print(f"[public] resources error: {e}")
+        return {"error": "Internal server error"}

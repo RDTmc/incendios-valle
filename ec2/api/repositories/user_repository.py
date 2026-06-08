@@ -1,11 +1,9 @@
 import uuid
 import bcrypt
 import jwt
-import os
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
-
-SECRET_KEY = os.environ.get('JWT_SECRET', 'incendios-valle-secret')
+from dependencies import SECRET_KEY
 
 
 class UserRepository:

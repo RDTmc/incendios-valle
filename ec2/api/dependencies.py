@@ -5,13 +5,13 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, Header
 from typing import Optional
 
-SECRET_KEY = os.environ.get('JWT_SECRET', 'incendios-valle-secret')
+SECRET_KEY = os.environ['JWT_SECRET']
 DB_PATH = os.environ.get('DB_PATH', "/app/data/incendios.db")
 
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH, timeout=5)
-    conn.execute("PRAGMA journal_mode=DELETE")
+    conn.execute("PRAGMA journal_mode=WAL")
     return conn
 
 
@@ -92,4 +92,5 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
         conn.close()
         return result
     except Exception as e:
-        return f"error: {str(e)}"
+        print(f"[sync_to_sqlite] Error: {e}")
+        return "error"

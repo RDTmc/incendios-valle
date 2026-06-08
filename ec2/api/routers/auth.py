@@ -1,12 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
-from dependencies import get_user_repository, verify_token, sync_to_sqlite
+from dependencies import get_user_repository, verify_token, sync_to_sqlite, SECRET_KEY
 from models import LoginRequest, RegisterRequest
 import jwt
-import os
 from datetime import datetime, timezone, timedelta
 
 router = APIRouter(tags=["auth"])
-SECRET_KEY = os.environ.get('JWT_SECRET', 'incendios-valle-secret')
 
 
 @router.post("/login")
@@ -17,7 +15,8 @@ def login(req: LoginRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
+        print(f"[auth] Login error: {e}")
+        raise HTTPException(status_code=500, detail="Login error")
 
 
 @router.post("/register")
@@ -53,4 +52,5 @@ def register(req: RegisterRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Register error: {str(e)}")
+        print(f"[auth] Register error: {e}")
+        raise HTTPException(status_code=500, detail="Register error")

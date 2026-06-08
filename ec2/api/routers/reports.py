@@ -45,7 +45,8 @@ def create_report(req: ReportRequest, payload: Optional[dict] = Depends(verify_t
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Create report error: {str(e)}")
+        print(f"[reports] Create error: {e}")
+        raise HTTPException(status_code=500, detail="Create report error")
 
 
 @router.post("/api/reportar")
@@ -64,7 +65,8 @@ def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, pa
             items = repo.find_all(estado)
         return items
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"List reports error: {str(e)}")
+        print(f"[reports] List error: {e}")
+        raise HTTPException(status_code=500, detail="List reports error")
 
 
 @router.get("/reports/{report_id}")
@@ -78,7 +80,8 @@ def get_report(report_id: str, payload: dict = Depends(verify_token)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Get report error: {str(e)}")
+        print(f"[reports] Get error: {e}")
+        raise HTTPException(status_code=500, detail="Get report error")
 
 
 @router.put("/reports/{report_id}")
@@ -88,4 +91,5 @@ def update_report(report_id: str, estado: Optional[str] = None, descripcion: Opt
         item = repo.update(report_id, estado, descripcion)
         return item
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Update report error: {str(e)}")
+        print(f"[reports] Update error: {e}")
+        raise HTTPException(status_code=500, detail="Update report error")

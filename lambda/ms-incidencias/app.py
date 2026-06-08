@@ -125,12 +125,6 @@ def get_report(report_id):
         'headers': {'Content-Type': 'application/json'},
         'body': json.dumps(items[0])
     }
-    
-    return {
-        'statusCode': 200,
-        'headers': {'Content-Type': 'application/json'},
-        'body': json.dumps(item)
-    }
 
 def update_report(report_id, event):
     body = json.loads(event.get('body', {}))
