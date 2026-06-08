@@ -3,8 +3,15 @@ FROM python:3.11-slim
 RUN useradd -m app
 WORKDIR /app
 
-COPY ec2/api/requirements.txt .
-RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: \
+    fastapi==0.109.0 \
+    'uvicorn[standard]==0.27.0' \
+    boto3==1.34.0 \
+    PyJWT==2.8.0 \
+    bcrypt==4.1.0 \
+    pydantic==2.5.2 \
+    python-multipart==0.0.6 \
+    httpx==0.26.0
 
 COPY ec2/api/ .
 
