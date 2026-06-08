@@ -47,7 +47,7 @@ jobs:
 
       - name: Run backend tests with coverage
         run: |
-          cd ec2/api && python -m pytest tests/ --cov=. --cov-report=xml:coverage.xml --cov-report=term -v --cov-config=../../.coveragerc
+          PYTHONPATH=ec2/api python -m pytest ec2/api/tests/ --cov=ec2/api --cov-report=xml:ec2/api/coverage.xml --cov-report=term -v --cov-config=.coveragerc
         env:
           JWT_SECRET: test-secret
           SYNC_TOKEN: test-token
