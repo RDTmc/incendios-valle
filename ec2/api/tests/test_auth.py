@@ -116,4 +116,4 @@ class TestAuth:
     def test_verify_token_missing(self, client):
         response = client.get("/dashboard/stats")
         assert response.status_code == 401
-        assert "No token provided" in response.json()["detail"]
+        assert "Token requerido" in response.json()["detail"]
