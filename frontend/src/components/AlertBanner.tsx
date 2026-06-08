@@ -27,7 +27,23 @@ const alertIcons: Record<string, React.ReactNode> = {
   INFO: <Info className="w-5 h-5 text-white" />,
 }
 
+const ALLOWED_API_HOSTS = ['api.keogh.lat', 'localhost']
 const POLL_INTERVAL = 30000
+
+function getApiBase(): string {
+  const url = import.meta.env.VITE_API_URL || 'https://api.keogh.lat/api'
+  try {
+    const parsed = new URL(url)
+    if (!ALLOWED_API_HOSTS.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) {
+      return 'https://api.keogh.lat/api'
+    }
+    return url.replace(/\/+$/, '')
+  } catch {
+    return 'https://api.keogh.lat/api'
+  }
+}
+
+const API_BASE = getApiBase()
 
 export default function AlertBanner() {
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -36,7 +52,7 @@ export default function AlertBanner() {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const data = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.keogh.lat/api'}/alerts?read=0&limit=5`)
+        const data = await fetch(`${API_BASE}/alerts?read=0&limit=5`)
         if (data.ok) {
           const json = await data.json()
           setAlerts(json)
@@ -52,7 +68,7 @@ export default function AlertBanner() {
 
   const dismiss = (id: number) => {
     setDismissed(prev => new Set(prev).add(id))
-    fetch(`${import.meta.env.VITE_API_URL || 'https://api.keogh.lat/api'}/alerts/${id}/read`, { method: 'PUT' })
+    fetch(`${API_BASE}/alerts/${id}/read`, { method: 'PUT' })
       .catch(() => {})
   }
 
