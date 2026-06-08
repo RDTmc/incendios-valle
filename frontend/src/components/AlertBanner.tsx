@@ -68,8 +68,9 @@ export default function AlertBanner() {
 
   const dismiss = (id: number) => {
     setDismissed(prev => new Set(prev).add(id))
-    if (!Number.isFinite(id) || id < 0) return
-    fetch(`${API_BASE}/alerts/${encodeURIComponent(String(id))}/read`, { method: 'PUT' })
+    const idStr = String(id)
+    if (!/^\d+$/.test(idStr)) return
+    fetch(`${API_BASE}/alerts/${idStr}/read`, { method: 'PUT' })
       .catch(() => {})
   }
 
