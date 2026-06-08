@@ -225,3 +225,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Arnés LLM (local, no se commitca)
+/AGENTS.md
+/docs/GOAL.md
+/docs/ARQUITECTURA.md
+/docs/ESTADO.md
+/docs/TAREAS.md
+/docs/REGLAS.md

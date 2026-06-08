@@ -227,6 +227,9 @@ export default function MapaFocos() {
               <div
                 key={foco.id}
                 onClick={() => flyToFoco(foco)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') flyToFoco(foco); }}
+                role="button"
+                tabIndex={0}
                 className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                   foco.id === highlightId ? 'bg-blue-50 ring-2 ring-blue-400' : 'bg-gray-50 hover:bg-gray-100'
                 }`}

@@ -26,6 +26,8 @@ from routers.alerts import router as alerts_router
 from dependencies import verify_token, verify_token_optional, sync_to_sqlite
 from models import SyncRequest, ExternalReportRequest
 
+_background_tasks: set[asyncio.Task] = set()
+
 ALLOWED_MIME = {"image/jpeg", "image/png"}
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
@@ -574,16 +576,19 @@ async def start_background_tasks():
     await asyncio.sleep(5)
     restore_sqlite_from_s3()
     load_seed_if_empty()
-    asyncio.create_task(periodic_fetch_ciren())
-    asyncio.create_task(periodic_fetch_firms())
-    asyncio.create_task(periodic_fetch_weather())
+    for fn in (periodic_fetch_ciren, periodic_fetch_firms, periodic_fetch_weather):
+        task = asyncio.create_task(fn())
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
 
 
 @app.post("/v1/external-reports/trigger")
 async def trigger_external_fetch(authorization: Optional[str] = Header(None)):
     if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
-    asyncio.create_task(fetch_ciren_data())
+    task = asyncio.create_task(fetch_ciren_data())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return {"status": "triggered", "message": "Fetch iniciado en background"}
 
 
