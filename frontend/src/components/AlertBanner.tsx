@@ -37,7 +37,7 @@ function getApiBase(): string {
     if (!ALLOWED_API_HOSTS.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) {
       return 'https://api.keogh.lat/api'
     }
-    return url.replace(/\/+$/, '')
+    return url.endsWith('/') ? url.slice(0, -1) : url
   } catch {
     return 'https://api.keogh.lat/api'
   }
@@ -68,6 +68,7 @@ export default function AlertBanner() {
 
   const dismiss = (id: number) => {
     setDismissed(prev => new Set(prev).add(id))
+    if (!Number.isFinite(id) || id < 0) return
     fetch(`${API_BASE}/alerts/${id}/read`, { method: 'PUT' })
       .catch(() => {})
   }
