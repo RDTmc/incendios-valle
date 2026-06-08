@@ -4,7 +4,7 @@ RUN useradd -m app
 WORKDIR /app
 
 COPY ec2/api/requirements.txt .
-RUN pip install --no-cache-dir --only-binary :all: --require-hashes -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
 COPY ec2/api/ .
 
