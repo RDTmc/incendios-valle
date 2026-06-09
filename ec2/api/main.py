@@ -485,7 +485,7 @@ async def fetch_firms_hotspots():
             async with httpx.AsyncClient() as client:
                 r = await client.get(url, timeout=30)
             if r.status_code != 200:
-                raise Exception(f"[FIRMS] {source}: HTTP {r.status_code}")
+                raise RuntimeError(f"[FIRMS] {source}: HTTP {r.status_code}")
             return r
 
         try:
@@ -543,11 +543,11 @@ async def fetch_weather_data():
     for zone in WEATHER_ZONES:
         url = f"https://api.openweathermap.org/data/2.5/weather?lat={zone['lat']}&lon={zone['lon']}&units=metric&appid={api_key}"
 
-        async def fetch():
+        async def fetch(url=url, zone=zone):
             async with httpx.AsyncClient() as client:
                 r = await client.get(url, timeout=15)
             if r.status_code != 200:
-                raise Exception(f"[OWM] {zone['region']}: HTTP {r.status_code}")
+                raise RuntimeError(f"[OWM] {zone['region']}: HTTP {r.status_code}")
             return r.json()
 
         try:

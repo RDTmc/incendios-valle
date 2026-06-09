@@ -36,7 +36,7 @@ class CircuitBreaker:
             result = await coro_factory()
             await self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             await self._on_failure()
             if fallback:
                 return await fallback()
@@ -45,7 +45,7 @@ class CircuitBreaker:
     async def _handle_open(self, fallback):
         if fallback:
             return await fallback()
-        raise Exception(f"CircuitBreaker '{self.name}' is OPEN")
+        raise RuntimeError(f"CircuitBreaker '{self.name}' is OPEN")
 
     async def _on_success(self):
         async with self._lock:

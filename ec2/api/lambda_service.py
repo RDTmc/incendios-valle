@@ -21,6 +21,6 @@ def upload_image(file_bytes: bytes, content_type: str) -> str:
     )
     result = json.loads(response["Payload"].read().decode("utf-8"))
     if result.get("statusCode") != 200:
-        raise Exception(result.get("body", "Lambda invocation failed"))
+        raise RuntimeError(result.get("body", "Lambda invocation failed"))
     body = json.loads(result["body"])
     return body["foto_url"]

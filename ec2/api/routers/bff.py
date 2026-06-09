@@ -35,14 +35,16 @@ def bff_dashboard():
             WHERE fetched_at = (SELECT MAX(fetched_at) FROM weather_readings)
         """)
         weather_row = cursor.fetchone()
-        weather = {
-            "temperature": weather_row[0] if weather_row else None,
-            "humidity": weather_row[1] if weather_row else None,
-            "wind_speed": weather_row[2] if weather_row else None,
-            "description": weather_row[3] if weather_row else None,
-            "region": weather_row[4] if weather_row else None,
-            "fetched_at": weather_row[5] if weather_row else None,
-        } if weather_row else {}
+        weather = {}
+        if weather_row:
+            weather = {
+                "temperature": weather_row[0],
+                "humidity": weather_row[1],
+                "wind_speed": weather_row[2],
+                "description": weather_row[3],
+                "region": weather_row[4],
+                "fetched_at": weather_row[5],
+            }
 
         cursor.execute("SELECT COUNT(*) FROM firms_hotspots WHERE fetched_at = (SELECT MAX(fetched_at) FROM firms_hotspots)")
         hotspots_count = cursor.fetchone()[0]

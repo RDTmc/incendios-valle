@@ -4,13 +4,14 @@ Seed script para crear usuario admin y datos de prueba en DynamoDB.
 Ejecutar en la EC2 o localmente con credenciales AWS configuradas.
 """
 
+import os
 import boto3
 import bcrypt
 import uuid
 from datetime import datetime, timezone
 
 def seed():
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('AWS_REGION', 'us-east-1'))
     users_table = dynamodb.Table('users')
     reports_table = dynamodb.Table('reports')
 
@@ -29,7 +30,7 @@ def seed():
             'rol': 'ADMIN',
             'created_at': timestamp
         })
-        print(f"✅ Admin creado: admin@valledelsol.cl / admin123")
+        print("✅ Admin creado: admin@valledelsol.cl / admin123")
         print(f"   user_id: {admin_id}")
     except Exception as e:
         print(f"❌ Error creando admin: {e}")
@@ -48,7 +49,7 @@ def seed():
             'rol': 'VECINO',
             'created_at': timestamp
         })
-        print(f"✅ Vecino creado: vecino@valledelsol.cl / vecino123")
+        print("✅ Vecino creado: vecino@valledelsol.cl / vecino123")
         print(f"   user_id: {vecino_id}")
     except Exception as e:
         print(f"❌ Error creando vecino: {e}")

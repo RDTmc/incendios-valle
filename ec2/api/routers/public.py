@@ -4,6 +4,8 @@ from dependencies import get_db_connection, get_report_repository
 
 router = APIRouter(prefix="/public", tags=["public"])
 
+_INTERNAL_ERROR = "Internal server error"
+
 
 @router.get("/dashboard-stats")
 def public_dashboard_stats():
@@ -26,7 +28,7 @@ def public_dashboard_stats():
         }
     except Exception as e:
         print(f"[public] dashboard_stats error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -50,7 +52,7 @@ def public_map_coordinates():
         } for r in rows if r[0] and r[1]]
     except Exception as e:
         print(f"[public] map_coordinates error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -75,7 +77,7 @@ def public_external_reports(source: Optional[str] = None):
         } for r in rows]
     except Exception as e:
         print(f"[public] external_reports error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -107,7 +109,7 @@ def public_cluster_stats():
         return {"clusters": len(clusters), "pares": clusters}
     except Exception as e:
         print(f"[public] cluster_stats error: {e}")
-        return {"clusters": 0, "pares": [], "error": "Internal server error"}
+        return {"clusters": 0, "pares": [], "error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -131,7 +133,7 @@ def public_stale_pendientes():
         return [{"report_id": r[0], "created_at": r[1], "minutos": int(r[2])} for r in rows]
     except Exception as e:
         print(f"[public] stale_pendientes error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -148,7 +150,7 @@ def public_external_reports_sources():
         return [{"source": r[0], "total": r[1]} for r in rows]
     except Exception as e:
         print(f"[public] external_reports_sources error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -173,7 +175,7 @@ def public_weather_latest():
         return [dict(zip(columns, r)) for r in rows]
     except Exception as e:
         print(f"[public] weather_latest error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -198,7 +200,7 @@ def public_weather_history(limit: int = 50):
         return [dict(zip(columns, r)) for r in rows]
     except Exception as e:
         print(f"[public] weather_history error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -220,7 +222,7 @@ def public_firms_hotspots():
         } for r in rows]
     except Exception as e:
         print(f"[public] firms_hotspots error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
@@ -246,7 +248,7 @@ def public_resources():
         } for r in rows]
     except Exception as e:
         print(f"[public] resources error: {e}")
-        return {"error": "Internal server error"}
+        return {"error": _INTERNAL_ERROR}
     finally:
         if conn is not None:
             conn.close()
