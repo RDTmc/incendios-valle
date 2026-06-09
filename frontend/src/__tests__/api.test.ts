@@ -166,3 +166,116 @@ describe('API.getReports', () => {
     expect(result[0].report_id).toBe('r1')
   })
 })
+
+describe('API.createReport', () => {
+  it('should create a report with auth token', async () => {
+    const mockResponse = { report_id: 'r1', estado: 'PENDIENTE' }
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve(mockResponse)
+    })
+
+    const { API } = await import('../api')
+    const result = await API.createReport('test-token', {
+      user_id: 'u1',
+      tipo: 'FORESTAL',
+      latitud: -33.45,
+      longitud: -70.67,
+      descripcion: 'Test fire'
+    })
+    expect(result.report_id).toBe('r1')
+    expect(result.estado).toBe('PENDIENTE')
+  })
+
+  it('should include Authorization header', async () => {
+    let capturedHeaders: any = null
+    globalThis.fetch = vi.fn().mockImplementation((url: string, options: any) => {
+      capturedHeaders = options.headers
+      return Promise.resolve({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve({ report_id: 'r1' })
+      })
+    })
+
+    const { API } = await import('../api')
+    await API.createReport('my-token', {
+      user_id: 'u1',
+      tipo: 'URBANO',
+      latitud: -33.45,
+      longitud: -70.67,
+      descripcion: 'Test'
+    })
+    expect(capturedHeaders['Authorization']).toBe('Bearer my-token')
+  })
+})
+
+describe('API.uploadImage', () => {
+  it('should upload an image and return url', async () => {
+    const mockResponse = { foto_url: 'https://bucket.s3.amazonaws.com/test.jpg' }
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve(mockResponse)
+    })
+
+    const { API } = await import('../api')
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+    const url = await API.uploadImage(file)
+    expect(url).toBe('https://bucket.s3.amazonaws.com/test.jpg')
+  })
+
+  it('should throw on upload failure', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 413,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve({ error: 'File too large' })
+    })
+
+    const { API } = await import('../api')
+    const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+    await expect(API.uploadImage(file)).rejects.toThrow('File too large')
+  })
+})
+
+describe('API.setOnUnauthorized', () => {
+  it('should call the registered callback on 401 responses', async () => {
+    const callback = vi.fn()
+    const { API, setOnUnauthorized } = await import('../api')
+    setOnUnauthorized(callback)
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve({ detail: 'Token expired' })
+    })
+
+    await expect(API.createReport('expired-token', {
+      user_id: 'u1', tipo: 'FORESTAL', latitud: -33.45, longitud: -70.67, descripcion: 'Test'
+    })).rejects.toThrow('Token expired')
+
+    expect(callback).toHaveBeenCalled()
+  })
+
+  it('should not call callback on non-401 errors', async () => {
+    const callback = vi.fn()
+    const { API, setOnUnauthorized } = await import('../api')
+    setOnUnauthorized(callback)
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: () => Promise.resolve({ detail: 'Server error' })
+    })
+
+    await expect(API.createReport('token', {
+      user_id: 'u1', tipo: 'FORESTAL', latitud: -33.45, longitud: -70.67, descripcion: 'Test'
+    })).rejects.toThrow('Server error')
+
+    expect(callback).not.toHaveBeenCalled()
+  })
+})
