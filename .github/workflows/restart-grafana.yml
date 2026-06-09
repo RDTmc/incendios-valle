@@ -4,30 +4,53 @@ on:
   workflow_dispatch:
 
 jobs:
-  restart:
+  sync-and-restart:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Sync datasource config to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "ec2/grafana-provisioning/datasources/datasource.yml"
+          target: "/home/ec2-user/grafana-provisioning/datasources"
+          strip_components: 3
+
+      - name: Sync dashboard JSON to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "ec2/grafana-provisioning/dashboards/"
+          target: "/home/ec2-user/grafana-provisioning/dashboards"
+          strip_components: 3
+
       - name: Fix permissions and restart Grafana
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 60s
+          timeout: 90s
           script: |
             cd /home/ec2-user
             echo "--- Permisos actuales ---"
-            ls -la /home/ec2-user/incendios-data/api/incendios.db
-            ls -ld /home/ec2-user/incendios-data/api
+            ls -la /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || echo "DB no existe aun"
+            ls -ld /home/ec2-user/incendios-data/api 2>/dev/null || echo "Dir no existe"
             echo ""
-            echo "--- Corrigiendo permisos SQLite (rw para todos: API uid 1000 + Grafana uid 472) ---"
-            sudo chmod 666 /home/ec2-user/incendios-data/api/incendios.db
-            sudo chmod 777 /home/ec2-user/incendios-data/api
+            echo "--- Corrigiendo permisos SQLite para concurrencia API+Grafana ---"
+            sudo chmod 666 /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
+            sudo chmod 777 /home/ec2-user/incendios-data/api 2>/dev/null || true
             sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
             sudo chmod 664 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
             echo "--- Permisos corregidos ---"
-            ls -la /home/ec2-user/incendios-data/api/incendios.db
-            ls -ld /home/ec2-user/incendios-data/api
+            ls -la /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
+            ls -ld /home/ec2-user/incendios-data/api 2>/dev/null || true
             echo ""
             echo "--- Restart limpio de Grafana ---"
             docker-compose stop grafana
