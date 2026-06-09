@@ -28,7 +28,7 @@ interface AuthContextType {
   logout: () => void
 }
 
-const AuthContext = createContext<AuthContextType | null>(null)
+export const AuthContext = createContext<AuthContextType | null>(null)
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
@@ -37,7 +37,7 @@ export const useAuth = () => {
 }
 
 // Componente Guard para rutas protegidas por rol
-const ProtectedRoute = ({ children, allowedRoles, allowAnonymous }: { children: React.ReactNode; allowedRoles?: string[]; allowAnonymous?: boolean }) => {
+export const ProtectedRoute = ({ children, allowedRoles, allowAnonymous }: { children: React.ReactNode; allowedRoles?: string[]; allowAnonymous?: boolean }) => {
   const { user, token } = useAuth()
 
   if (!token || !user) {
@@ -70,7 +70,7 @@ function UnauthHandler() {
   return null
 }
 
-function getDefaultPath(user: { rol: string } | null) {
+export function getDefaultPath(user: { rol: string } | null) {
   if (!user) return '/login'
   if (user.rol === 'ADMIN') return '/admin'
   return '/reporte'
