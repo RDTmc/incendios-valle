@@ -7,7 +7,7 @@ jobs:
   restart:
     runs-on: ubuntu-latest
     steps:
-      - name: Restart Grafana container via SSH
+      - name: Fix permissions and restart Grafana
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -16,11 +16,20 @@ jobs:
           timeout: 60s
           script: |
             cd /home/ec2-user
+            echo "--- Corrigiendo permisos SQLite para Grafana (uid 472) ---"
+            ls -la /home/ec2-user/incendios-data/api/incendios.db
+            sudo chown 472:472 /home/ec2-user/incendios-data/api/incendios.db
+            chmod 664 /home/ec2-user/incendios-data/api/incendios.db
+            sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
+            chmod 664 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
+            ls -la /home/ec2-user/incendios-data/api/incendios.db
+            echo ""
+            echo "--- Restart limpio de Grafana ---"
             docker-compose stop grafana
             docker-compose rm -f grafana
             docker-compose up -d grafana
             echo "Esperando que Grafana inicie..."
-            for i in {1..12}; do
+            for i in {1..15}; do
               sleep 5
               STATUS=$(docker inspect --format='{{.State.Health.Status}}' incendios-grafana 2>/dev/null || echo "starting")
               echo "Intento $i - Estado: $STATUS"
@@ -29,5 +38,6 @@ jobs:
                 break
               fi
             done
+            echo ""
             echo "Estado final de Grafana:"
             docker ps --filter name=incendios-grafana --format "{{.Names}} {{.Status}}"
