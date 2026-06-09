@@ -202,3 +202,78 @@ class TestReports:
         }, headers={"x-sync-token": "test-sync-token"})
         assert response.status_code == 200
         assert response.json()["result"] == "unknown table"
+
+    def test_list_reports_by_user(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.query.return_value = {
+            'Items': [
+                {'reports_id': 'u1-r1', 'user_id': 'user1', 'tipo': 'FORESTAL', 'estado': 'ACTIVO',
+                 'latitud': '-33.45', 'longitud': '-70.67', 'created_at': '2026-01-01', 'descripcion': 'My report'}
+            ]
+        }
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.get("/reports?user_id=user1", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) > 0
+        assert data[0]["report_id"] == "u1-r1"
+
+    def test_create_report_db_error(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.put_item.side_effect = Exception("DynamoDB error")
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'test-user', 'email': 'test@test.com', 'rol': 'VECINO',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.post("/reports", json={
+            "user_id": "test-user", "tipo": "FORESTAL",
+            "latitud": -33.45, "longitud": -70.67, "descripcion": "Error test"
+        }, headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 500
+
+    def test_list_reports_db_error(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.scan.side_effect = Exception("DynamoDB error")
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.get("/reports", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 500
+
+    def test_get_report_db_error(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.get_item.side_effect = Exception("DynamoDB error")
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.get("/reports/r1", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 500
+
+    def test_update_report_db_error(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.update_item.side_effect = Exception("DynamoDB error")
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+        response = client.put("/reports/r1?estado=CONTROLADO", headers={
+            "Authorization": f"Bearer {token}"
+        })
+        assert response.status_code == 500

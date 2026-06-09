@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/33</span>
+                <span class='fraction'>33/33</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>4/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/33</span>
+                <span class='fraction'>33/33</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -96,72 +96,72 @@
 <a name='L31'></a><a href='#L31'>31</a>
 <a name='L32'></a><a href='#L32'>32</a>
 <a name='L33'></a><a href='#L33'>33</a>
-<a name='L34'></a><a href='#L34'>34</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >// Detector de navegador embebido (in-app browser)<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-<span class="cstat-no" title="statement not covered" >// Identifica visores internos de escáneres QR, Facebook, Instagram, etc.</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >const AGENTES_EMBEBIDOS = [</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'Facebook',    pat: /FBAN|FBAV|MESSENGER/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'Instagram',   pat: /Instagram/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'Twitter/X',   pat: /Twitter|Tweetbot/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'LinkedIn',    pat: /LinkedIn/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'TikTok',      pat: /TikTok|musical_ly/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'Snapchat',    pat: /Snapchat/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'Gmail',       pat: /com\.google\.android\.gm/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'WebView',     pat: /wv|WebView/i },</span>
-<span class="cstat-no" title="statement not covered" >  { nombre: 'Escáner QR',  pat: /QRScanner|Scan|BarCode/i },</span>
-<span class="cstat-no" title="statement not covered" >]</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >function obtenerUa(): string {</span>
-<span class="cstat-no" title="statement not covered" >  return navigator.userAgent || ''</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export function detectarNavegadorEmbebido(): string | null {</span>
-<span class="cstat-no" title="statement not covered" >  const ua = obtenerUa()</span>
-<span class="cstat-no" title="statement not covered" >  for (const agente of AGENTES_EMBEBIDOS) {</span>
-<span class="cstat-no" title="statement not covered" >    if (agente.pat.test(ua)) return agente.nombre</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  return null</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export function esNavegadorInstalable(): boolean {</span>
-<span class="cstat-no" title="statement not covered" >  // Ya instalada como PWA</span>
-<span class="cstat-no" title="statement not covered" >  if (window.matchMedia('(display-mode: standalone)').matches) return true</span>
-<span class="cstat-no" title="statement not covered" >  if ((navigator as any).standalone) return true</span>
-<span class="cstat-no" title="statement not covered" >  return false</span>
-<span class="cstat-no" title="statement not covered" >}</span>
+<a name='L34'></a><a href='#L34'>34</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">45x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Detector de navegador embebido (in-app browser)
+// Identifica visores internos de escáneres QR, Facebook, Instagram, etc.
+&nbsp;
+const AGENTES_EMBEBIDOS = [
+  { nombre: 'Facebook',    pat: /FBAN|FBAV|MESSENGER/i },
+  { nombre: 'Instagram',   pat: /Instagram/i },
+  { nombre: 'Twitter/X',   pat: /Twitter|Tweetbot/i },
+  { nombre: 'LinkedIn',    pat: /LinkedIn/i },
+  { nombre: 'TikTok',      pat: /TikTok|musical_ly/i },
+  { nombre: 'Snapchat',    pat: /Snapchat/i },
+  { nombre: 'Gmail',       pat: /com\.google\.android\.gm/i },
+  { nombre: 'WebView',     pat: /wv|WebView/i },
+  { nombre: 'Escáner QR',  pat: /QRScanner|Scan|BarCode/i },
+]
+&nbsp;
+function obtenerUa(): string {
+  return navigator.<span class="branch-0 cbranch-no" title="branch not covered" >userAgent || ''</span>
+}
+&nbsp;
+export function detectarNavegadorEmbebido(): string | null {
+  const ua = obtenerUa()
+  for (const agente of AGENTES_EMBEBIDOS) {
+    if (agente.pat.test(ua)) <span class="branch-0 cbranch-no" title="branch not covered" >return agente.nombre</span>
+  }
+  return null
+}
+&nbsp;
+export function esNavegadorInstalable(): boolean {
+  // Ya instalada como PWA
+  if (globalThis.matchMedia('(display-mode: standalone)').matches) <span class="branch-0 cbranch-no" title="branch not covered" >return true</span>
+  if ((navigator as any).standalone) <span class="branch-0 cbranch-no" title="branch not covered" >return true</span>
+  return false
+}
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -169,7 +169,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-06T23:07:47.619Z
+                at 2026-06-09T20:13:09.449Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

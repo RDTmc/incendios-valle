@@ -63,3 +63,21 @@ class TestAlerts:
         response = client.get("/alerts?limit=3")
         data = response.json()
         assert len(data) == 3
+
+    def test_list_alerts_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.alerts.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/alerts")
+            assert response.status_code == 500
+
+    def test_create_alert_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.alerts.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.post("/alerts?alert_type=ALTA&message=Test")
+            assert response.status_code == 500
+
+    def test_mark_alert_read_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.alerts.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.put("/alerts/1/read")
+            assert response.status_code == 500

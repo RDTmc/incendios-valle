@@ -92,6 +92,16 @@ class TestPublicEndpoints:
         data = response.json()
         assert data["clusters"] >= 1
 
+    def test_public_cluster_stats_bad_coords(self, client, db_connection):
+        cursor = db_connection.cursor()
+        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r-bad', 'not-a-number', 'also-bad', datetime('now'))")
+        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r-ok', '-33.45', '-70.67', datetime('now'))")
+        db_connection.commit()
+        response = client.get("/public/cluster-stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data["clusters"], int)
+
     def test_public_stale_pendientes(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, created_at) VALUES ('r-stale', 'PENDIENTE', datetime('now', '-2 hours'))")
@@ -103,6 +113,17 @@ class TestPublicEndpoints:
         assert len(data) >= 1
         assert any(r["report_id"] == "r-stale" for r in data)
 
+    def test_public_external_reports_filter_source(self, client, db_connection):
+        cursor = db_connection.cursor()
+        cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Fire 1', -33.45, -70.67, '2026-01-01')")
+        cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CONAF', 'Fire 2', -34.00, -71.00, '2026-01-01')")
+        db_connection.commit()
+        response = client.get("/public/external-reports?source=CIREN")
+        assert response.status_code == 200
+        data = response.json()
+        assert all(r["source"] == "CIREN" for r in data)
+        assert len(data) == 1
+
     def test_public_external_reports_sources(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud) VALUES ('CIREN', 'Fire 1', -33.45, -70.67)")
@@ -112,6 +133,13 @@ class TestPublicEndpoints:
         data = response.json()
         assert isinstance(data, list)
         assert any(s["source"] == "CIREN" for s in data)
+
+    def test_public_external_reports_sources_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/external-reports/sources")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
 
     def test_public_weather_latest(self, client, db_connection):
         cursor = db_connection.cursor()
@@ -139,6 +167,69 @@ class TestPublicEndpoints:
         response = client.get("/public/weather/history")
         assert response.status_code == 200
         assert isinstance(response.json(), list)
+
+    def test_public_dashboard_stats_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/dashboard-stats")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
+
+    def test_public_map_coordinates_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/map-coordinates")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
+
+    def test_public_external_reports_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/external-reports")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
+
+    def test_public_cluster_stats_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/cluster-stats")
+            assert response.status_code == 200
+            assert response.json() == {"clusters": 0, "pares": [], "error": "Internal server error"}
+
+    def test_public_stale_pendientes_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/stale-pendientes")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
+
+    def test_public_weather_latest_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/weather/latest")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
+
+    def test_public_weather_history_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/weather/history")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
+
+    def test_public_firms_hotspots_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/firms-hotspots")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
+
+    def test_public_resources_db_error(self, client):
+        from unittest.mock import patch
+        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/public/resources")
+            assert response.status_code == 200
+            assert response.json() == {"error": "Internal server error"}
 
     def test_v1_trigger_invalid_token(self, client):
         response = client.post("/v1/external-reports/trigger", headers={"Authorization": "Bearer wrong-token"})

@@ -49,8 +49,6 @@ def create_alert(alert_type: str = "INFO", message: str = "", report_id: str = "
         conn.commit()
         alert_id = cursor.lastrowid
         return {"status": "created", "id": alert_id}
-    except HTTPException:
-        raise
     except Exception as e:
         print(f"[alerts] Create error: {e}")
         raise HTTPException(status_code=500, detail="Error creating alert")

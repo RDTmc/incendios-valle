@@ -117,3 +117,15 @@ class TestAuth:
         response = client.get("/dashboard/stats")
         assert response.status_code == 401
         assert "Token requerido" in response.json()["detail"]
+
+    def test_login_db_error(self, client, mock_dynamodb):
+        mock_users, _ = mock_dynamodb
+        mock_users.query.side_effect = Exception("DynamoDB error")
+        response = client.post("/login", json={"email": "test@test.cl", "password": "test123"})
+        assert response.status_code == 500
+
+    def test_register_db_error(self, client, mock_dynamodb):
+        mock_users, _ = mock_dynamodb
+        mock_users.query.side_effect = Exception("DynamoDB error")
+        response = client.post("/register", json={"email": "test@test.cl", "password": "Test1234!", "nombre": "Test"})
+        assert response.status_code == 500

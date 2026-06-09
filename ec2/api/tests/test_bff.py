@@ -41,3 +41,25 @@ class TestBFF:
         data = response.json()
         assert data["stats"]["total_reportes"] == 0
         assert data["weather"] == {}
+
+    def test_bff_dashboard_focos(self, client, mock_dynamodb):
+        _, mock_reports = mock_dynamodb
+        mock_reports.scan.return_value = {
+            'Items': [
+                {'reports_id': 'r1', 'latitud': '-33.45', 'longitud': '-70.67',
+                 'estado': 'ACTIVO', 'tipo': 'FORESTAL', 'descripcion': '', 'foto_url': '', 'created_at': ''},
+                {'reports_id': 'r2', 'latitud': 'invalid', 'longitud': '-70.0',
+                 'estado': 'ACTIVO', 'tipo': 'FORESTAL', 'descripcion': '', 'foto_url': '', 'created_at': ''},
+                {'reports_id': 'r3', 'latitud': '0', 'longitud': '0',
+                 'estado': 'ACTIVO', 'tipo': 'FORESTAL', 'descripcion': '', 'foto_url': '', 'created_at': ''},
+            ]
+        }
+        response = client.get("/bff/dashboard")
+        assert response.status_code == 200
+        assert len(response.json()["focos"]) == 1
+
+    def test_bff_dashboard_db_error(self, client):
+        from unittest.mock import patch
+        with patch('main.get_db_connection', side_effect=Exception("DB crash")):
+            response = client.get("/bff/dashboard")
+            assert response.status_code == 500
