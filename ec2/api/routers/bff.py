@@ -14,7 +14,9 @@ def _get_report_repo():
     return get_report_repository()
 
 
-@router.get("/dashboard")
+@router.get("/dashboard", responses={
+    500: {"description": "BFF dashboard error"},
+})
 def bff_dashboard():
     conn = None
     try:

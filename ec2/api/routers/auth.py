@@ -7,7 +7,9 @@ from datetime import datetime, timezone, timedelta
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/login")
+@router.post("/login", responses={
+    500: {"description": "Login error"},
+})
 def login(req: LoginRequest):
     try:
         repo = get_user_repository()
@@ -19,7 +21,9 @@ def login(req: LoginRequest):
         raise HTTPException(status_code=500, detail="Login error")
 
 
-@router.post("/register")
+@router.post("/register", responses={
+    500: {"description": "Register error"},
+})
 def register(req: RegisterRequest):
     try:
         repo = get_user_repository()

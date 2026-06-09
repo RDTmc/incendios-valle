@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
+from typing import Optional, Annotated
 from dependencies import get_report_repository, verify_token, verify_token_optional, sync_to_sqlite
 from models import ReportRequest
 from factories import ReportFactory
@@ -8,8 +8,11 @@ from datetime import datetime, timezone
 router = APIRouter(tags=["reports"])
 
 
-@router.post("/reports")
-def create_report(req: ReportRequest, payload: Optional[dict] = Depends(verify_token_optional)):
+@router.post("/reports", responses={
+    400: {"description": "device_id requerido para reportes anónimos"},
+    500: {"description": "Create report error"},
+})
+def create_report(req: ReportRequest, payload: Annotated[Optional[dict], Depends(verify_token_optional)]):
     try:
         if not payload:
             if not req.device_id:
@@ -49,14 +52,22 @@ def create_report(req: ReportRequest, payload: Optional[dict] = Depends(verify_t
         raise HTTPException(status_code=500, detail="Create report error")
 
 
-@router.post("/api/reportar")
-@router.post("/reportar")
-def reportar_anonimo(req: ReportRequest, payload: Optional[dict] = Depends(verify_token_optional)):
+@router.post("/api/reportar", responses={
+    400: {"description": "device_id requerido para reportes anónimos"},
+    500: {"description": "Create report error"},
+})
+@router.post("/reportar", responses={
+    400: {"description": "device_id requerido para reportes anónimos"},
+    500: {"description": "Create report error"},
+})
+def reportar_anonimo(req: ReportRequest, payload: Annotated[Optional[dict], Depends(verify_token_optional)]):
     return create_report(req, payload)
 
 
-@router.get("/reports")
-def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, payload: dict = Depends(verify_token)):
+@router.get("/reports", responses={
+    500: {"description": "List reports error"},
+})
+def list_reports(payload: Annotated[dict, Depends(verify_token)], estado: Optional[str] = None, user_id: Optional[str] = None):
     try:
         repo = get_report_repository()
         if user_id:
@@ -69,8 +80,11 @@ def list_reports(estado: Optional[str] = None, user_id: Optional[str] = None, pa
         raise HTTPException(status_code=500, detail="List reports error")
 
 
-@router.get("/reports/{report_id}")
-def get_report(report_id: str, payload: dict = Depends(verify_token)):
+@router.get("/reports/{report_id}", responses={
+    404: {"description": "Report not found"},
+    500: {"description": "Get report error"},
+})
+def get_report(report_id: str, payload: Annotated[dict, Depends(verify_token)]):
     try:
         repo = get_report_repository()
         item = repo.find_by_id(report_id)
@@ -84,8 +98,10 @@ def get_report(report_id: str, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail="Get report error")
 
 
-@router.put("/reports/{report_id}")
-def update_report(report_id: str, estado: Optional[str] = None, descripcion: Optional[str] = None, payload: dict = Depends(verify_token)):
+@router.put("/reports/{report_id}", responses={
+    500: {"description": "Update report error"},
+})
+def update_report(report_id: str, payload: Annotated[dict, Depends(verify_token)], estado: Optional[str] = None, descripcion: Optional[str] = None):
     try:
         repo = get_report_repository()
         item = repo.update(report_id, estado, descripcion)

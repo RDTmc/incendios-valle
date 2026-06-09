@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Annotated
 import boto3
 import bcrypt
 import jwt
@@ -230,8 +230,11 @@ def encode_geohash(lat: float, lon: float) -> str:
     return f"{lat_hash // 1000}-{lon_hash // 1000}"
 
 
-@app.post("/reports/upload")
-def upload_report_image(file: UploadFile = File(...)):
+@app.post("/reports/upload", responses={
+    400: {"description": "Solo se permiten imágenes JPEG o PNG"},
+    500: {"description": "Error al subir imagen"},
+})
+def upload_report_image(file: Annotated[UploadFile, File()]):
     try:
         if file.content_type not in ALLOWED_MIME:
             raise HTTPException(status_code=400, detail="Solo se permiten imágenes JPEG o PNG")
@@ -252,7 +255,9 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/focos-activos")
+@app.get("/focos-activos", responses={
+    500: {"description": "Error fetching focos"},
+})
 def get_focos_activos():
     try:
         LAT_MIN, LAT_MAX = -34.5, -32.5
@@ -285,8 +290,10 @@ def get_focos_activos():
         raise HTTPException(status_code=500, detail="Error fetching focos")
 
 
-@app.post("/sync")
-def sync_from_lambda(req: SyncRequest, x_sync_token: str = Header(...)):
+@app.post("/sync", responses={
+    403: {"description": "Invalid sync token"},
+})
+def sync_from_lambda(req: SyncRequest, x_sync_token: Annotated[str, Header()]):
     if x_sync_token != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid sync token")
     result = sync_to_sqlite(req.table, req.operation, req.data)
@@ -588,8 +595,10 @@ async def start_background_tasks():
         task.add_done_callback(_background_tasks.discard)
 
 
-@app.post("/v1/external-reports/trigger")
-async def trigger_external_fetch(authorization: Optional[str] = Header(None)):
+@app.post("/v1/external-reports/trigger", responses={
+    403: {"description": "Invalid token"},
+})
+async def trigger_external_fetch(authorization: Annotated[Optional[str], Header()] = None):
     if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
     task = asyncio.create_task(fetch_ciren_data())
@@ -598,8 +607,11 @@ async def trigger_external_fetch(authorization: Optional[str] = Header(None)):
     return {"status": "triggered", "message": "Fetch iniciado en background"}
 
 
-@app.post("/v1/external-reports/conaf")
-def receive_external_report(req: ExternalReportRequest, authorization: Optional[str] = Header(None)):
+@app.post("/v1/external-reports/conaf", responses={
+    403: {"description": "Invalid token"},
+    500: {"description": "Internal server error"},
+})
+def receive_external_report(req: ExternalReportRequest, authorization: Annotated[Optional[str], Header()] = None):
     if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
     try:
@@ -627,8 +639,10 @@ def receive_external_report(req: ExternalReportRequest, authorization: Optional[
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/dashboard/stats")
-def get_dashboard_stats(payload: dict = Depends(verify_token)):
+@app.get("/dashboard/stats", responses={
+    500: {"description": "Internal server error"},
+})
+def get_dashboard_stats(payload: Annotated[dict, Depends(verify_token)]):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()

@@ -5,7 +5,9 @@ from dependencies import get_db_connection
 router = APIRouter(tags=["alerts"])
 
 
-@router.get("/alerts")
+@router.get("/alerts", responses={
+    500: {"description": "Error fetching alerts"},
+})
 def list_alerts(read: Optional[str] = None, limit: int = 50):
     conn = None
     try:
@@ -29,7 +31,10 @@ def list_alerts(read: Optional[str] = None, limit: int = 50):
             conn.close()
 
 
-@router.post("/alerts")
+@router.post("/alerts", responses={
+    400: {"description": "Message is required"},
+    500: {"description": "Error creating alert"},
+})
 def create_alert(alert_type: str = "INFO", message: str = "", report_id: str = "", latitud: float = 0, longitud: float = 0):
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
@@ -54,7 +59,9 @@ def create_alert(alert_type: str = "INFO", message: str = "", report_id: str = "
             conn.close()
 
 
-@router.put("/alerts/{alert_id}/read")
+@router.put("/alerts/{alert_id}/read", responses={
+    500: {"description": "Error updating alert"},
+})
 def mark_alert_read(alert_id: int):
     conn = None
     try:
