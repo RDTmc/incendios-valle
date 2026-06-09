@@ -7,6 +7,7 @@ router = APIRouter(prefix="/public", tags=["public"])
 
 @router.get("/dashboard-stats")
 def public_dashboard_stats():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14,7 +15,6 @@ def public_dashboard_stats():
         by_estado = {row[0]: row[1] for row in cursor.fetchall()}
         cursor.execute("SELECT tipo, COUNT(*) FROM reports GROUP BY tipo")
         by_tipo = {row[0]: row[1] for row in cursor.fetchall()}
-        conn.close()
         return {
             "focos_activos": by_estado.get("ACTIVO", 0) + by_estado.get("PENDIENTE", 0),
             "estado_pendiente": by_estado.get("PENDIENTE", 0),
@@ -27,16 +27,19 @@ def public_dashboard_stats():
     except Exception as e:
         print(f"[public] dashboard_stats error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/map-coordinates")
 def public_map_coordinates():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT latitud, longitud, tipo, estado FROM reports")
         rows = cursor.fetchall()
-        conn.close()
         peso = {"ACTIVO": 3, "PENDIENTE": 2, "CONTROLADO": 1, "EXTINGUIDO": 0}
         return [{
             "lat": float(r[0]) if r[0] else 0.0,
@@ -48,10 +51,14 @@ def public_map_coordinates():
     except Exception as e:
         print(f"[public] map_coordinates error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/external-reports")
 def public_external_reports(source: Optional[str] = None):
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -60,7 +67,6 @@ def public_external_reports(source: Optional[str] = None):
         else:
             cursor.execute("SELECT * FROM external_reports ORDER BY fh_inicio DESC LIMIT 100")
         rows = cursor.fetchall()
-        conn.close()
         return [{
             "id": r[0], "source": r[1], "nombre": r[2], "region": r[3],
             "comuna": r[4], "provincia": r[5], "superficie": r[6],
@@ -70,10 +76,14 @@ def public_external_reports(source: Optional[str] = None):
     except Exception as e:
         print(f"[public] external_reports error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/cluster-stats")
 def public_cluster_stats():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -84,7 +94,6 @@ def public_cluster_stats():
             (corte,)
         )
         rows = cursor.fetchall()
-        conn.close()
         clusters = []
         for i in range(len(rows)):
             for j in range(i + 1, len(rows)):
@@ -99,10 +108,14 @@ def public_cluster_stats():
     except Exception as e:
         print(f"[public] cluster_stats error: {e}")
         return {"clusters": 0, "pares": [], "error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/stale-pendientes")
 def public_stale_pendientes():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -115,29 +128,35 @@ def public_stale_pendientes():
             ORDER BY minutos DESC
         """)
         rows = cursor.fetchall()
-        conn.close()
         return [{"report_id": r[0], "created_at": r[1], "minutos": int(r[2])} for r in rows]
     except Exception as e:
         print(f"[public] stale_pendientes error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/external-reports/sources")
 def public_external_reports_sources():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT source, COUNT(*) AS total FROM external_reports GROUP BY source ORDER BY total DESC")
         rows = cursor.fetchall()
-        conn.close()
         return [{"source": r[0], "total": r[1]} for r in rows]
     except Exception as e:
         print(f"[public] external_reports_sources error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/weather/latest")
 def public_weather_latest():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -149,17 +168,20 @@ def public_weather_latest():
             ORDER BY w1.region
         """)
         rows = cursor.fetchall()
-        conn.close()
         columns = ["region", "temperature", "humidity", "wind_speed",
                    "wind_direction", "weather_desc", "pressure", "fetched_at"]
         return [dict(zip(columns, r)) for r in rows]
     except Exception as e:
         print(f"[public] weather_latest error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/weather/history")
 def public_weather_history(limit: int = 50):
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -171,23 +193,25 @@ def public_weather_history(limit: int = 50):
             LIMIT ?
         """, (limit,))
         rows = cursor.fetchall()
-        conn.close()
         columns = ["region", "temperature", "humidity", "wind_speed",
                    "wind_direction", "weather_desc", "fetched_at"]
         return [dict(zip(columns, r)) for r in rows]
     except Exception as e:
         print(f"[public] weather_history error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/firms-hotspots")
 def public_firms_hotspots():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM firms_hotspots ORDER BY acq_date DESC, acq_time DESC LIMIT 200")
         rows = cursor.fetchall()
-        conn.close()
         return [{
             "id": r[0], "latitude": r[1], "longitude": r[2],
             "brightness": r[3], "frp": r[4], "confidence": r[5],
@@ -197,10 +221,14 @@ def public_firms_hotspots():
     except Exception as e:
         print(f"[public] firms_hotspots error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 @router.get("/resources")
 def public_resources():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -212,7 +240,6 @@ def public_resources():
             ORDER BY ir.created_at DESC LIMIT 20
         """)
         rows = cursor.fetchall()
-        conn.close()
         return [{
             "report_id": r[0], "tipo": r[1], "estado": r[2],
             "recurso": r[3], "cantidad": r[4], "unidad": r[5]
@@ -220,3 +247,6 @@ def public_resources():
     except Exception as e:
         print(f"[public] resources error: {e}")
         return {"error": "Internal server error"}
+    finally:
+        if conn is not None:
+            conn.close()

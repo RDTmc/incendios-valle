@@ -228,11 +228,6 @@ def encode_geohash(lat: float, lon: float) -> str:
     lat_hash = int(lat * 1000000)
     lon_hash = int(lon * 1000000)
     return f"{lat_hash // 1000}-{lon_hash // 1000}"
-    token = authorization.replace("Bearer ", "")
-    try:
-        return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-    except jwt.InvalidTokenError:
-        return None
 
 
 @app.post("/reports/upload")
@@ -323,10 +318,12 @@ def backup_sqlite_to_s3():
 
 def restore_sqlite_from_s3():
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM external_reports")
-    count = cursor.fetchone()[0]
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM external_reports")
+        count = cursor.fetchone()[0]
+    finally:
+        conn.close()
     if count > 0:
         print("[S3] BD ya tiene datos, no se restaura")
         return
@@ -344,12 +341,12 @@ def restore_sqlite_from_s3():
 
 
 def export_external_reports_seed():
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT nombre, region, comuna, provincia, superficie, causa, latitud, longitud, fh_inicio, fh_extinci, temporada FROM external_reports ORDER BY fh_inicio DESC LIMIT 50")
         rows = cursor.fetchall()
-        conn.close()
         if rows:
             seed = [{
                 "nombre": r[0], "region": r[1], "comuna": r[2],
@@ -362,6 +359,9 @@ def export_external_reports_seed():
             print(f"[SEED] Exportados {len(seed)} registros a seed.json")
     except Exception as e:
         print(f"[SEED] Export error: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def load_seed_if_empty():
@@ -416,33 +416,35 @@ async def fetch_ciren_data():
     try:
         data = await breaker.call(fetch)
         conn = get_db_connection()
-        cursor = conn.cursor()
-        inserted = 0
-        for feature in data.get("features", []):
-            attrs = feature.get("attributes", {})
-            geo = feature.get("geometry", {})
-            lng = geo.get("x")
-            lat = geo.get("y")
-            if lat is None or lng is None:
-                continue
-            cursor.execute("""
-                INSERT OR IGNORE INTO external_reports
-                (source, nombre, region, comuna, provincia, superficie, causa,
-                 latitud, longitud, fh_inicio, fh_extinci, temporada)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                "CIREN",
-                attrs.get("nombre"), attrs.get("region"),
-                attrs.get("comuna"), attrs.get("provincia"),
-                attrs.get("superficie"), attrs.get("causa_gene"),
-                lat, lng,
-                attrs.get("fh_inicio"), attrs.get("fh_extinci"),
-                attrs.get("temporada"),
-            ))
-            if cursor.rowcount > 0:
-                inserted += 1
-        conn.commit()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            inserted = 0
+            for feature in data.get("features", []):
+                attrs = feature.get("attributes", {})
+                geo = feature.get("geometry", {})
+                lng = geo.get("x")
+                lat = geo.get("y")
+                if lat is None or lng is None:
+                    continue
+                cursor.execute("""
+                    INSERT OR IGNORE INTO external_reports
+                    (source, nombre, region, comuna, provincia, superficie, causa,
+                     latitud, longitud, fh_inicio, fh_extinci, temporada)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    "CIREN",
+                    attrs.get("nombre"), attrs.get("region"),
+                    attrs.get("comuna"), attrs.get("provincia"),
+                    attrs.get("superficie"), attrs.get("causa_gene"),
+                    lat, lng,
+                    attrs.get("fh_inicio"), attrs.get("fh_extinci"),
+                    attrs.get("temporada"),
+                ))
+                if cursor.rowcount > 0:
+                    inserted += 1
+            conn.commit()
+        finally:
+            conn.close()
         print(f"[CIREN] Fetched: {len(data.get('features', []))} features, {inserted} new")
         if inserted > 0:
             export_external_reports_seed()
@@ -483,27 +485,29 @@ async def fetch_firms_hotspots():
             r = await breaker.call(fetch)
             reader = csv.DictReader(io.StringIO(r.text))
             conn = get_db_connection()
-            cursor = conn.cursor()
-            inserted = 0
-            for item in reader:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO firms_hotspots
-                    (latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    item.get("latitude"), item.get("longitude"),
-                    item.get("bright_ti4") or item.get("brightness"),
-                    item.get("frp"),
-                    str(item.get("confidence", "")),
-                    item.get("satellite", ""),
-                    item.get("acq_date", ""),
-                    item.get("acq_time"),
-                    item.get("daynight", ""), source
-                ))
-                if cursor.rowcount > 0:
-                    inserted += 1
-            conn.commit()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                inserted = 0
+                for item in reader:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO firms_hotspots
+                        (latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        item.get("latitude"), item.get("longitude"),
+                        item.get("bright_ti4") or item.get("brightness"),
+                        item.get("frp"),
+                        str(item.get("confidence", "")),
+                        item.get("satellite", ""),
+                        item.get("acq_date", ""),
+                        item.get("acq_time"),
+                        item.get("daynight", ""), source
+                    ))
+                    if cursor.rowcount > 0:
+                        inserted += 1
+                conn.commit()
+            finally:
+                conn.close()
             print(f"[FIRMS] {source}: {inserted} new hotpots")
         except Exception as e:
             print(f"[FIRMS] Error {source}: {e}")
@@ -542,22 +546,24 @@ async def fetch_weather_data():
         try:
             data = await breaker.call(fetch)
             conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO weather_readings
-                (lat, lon, region, temperature, humidity, wind_speed, wind_direction, weather_desc, pressure)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                zone['lat'], zone['lon'], zone['region'],
-                data.get("main", {}).get("temp"),
-                data.get("main", {}).get("humidity"),
-                data.get("wind", {}).get("speed"),
-                data.get("wind", {}).get("deg"),
-                data.get("weather", [{}])[0].get("description", ""),
-                data.get("main", {}).get("pressure"),
-            ))
-            conn.commit()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO weather_readings
+                    (lat, lon, region, temperature, humidity, wind_speed, wind_direction, weather_desc, pressure)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    zone['lat'], zone['lon'], zone['region'],
+                    data.get("main", {}).get("temp"),
+                    data.get("main", {}).get("humidity"),
+                    data.get("wind", {}).get("speed"),
+                    data.get("wind", {}).get("deg"),
+                    data.get("weather", [{}])[0].get("description", ""),
+                    data.get("main", {}).get("pressure"),
+                ))
+                conn.commit()
+            finally:
+                conn.close()
             w = data.get("main", {})
             print(f"[OWM] {zone['region']}: {w.get('temp')}°C, {w.get('humidity')}% humedad")
         except Exception as e:
@@ -598,22 +604,24 @@ def receive_external_report(req: ExternalReportRequest, authorization: Optional[
         raise HTTPException(status_code=403, detail="Invalid token")
     try:
         conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR IGNORE INTO external_reports
-            (source, nombre, region, comuna, provincia, superficie, causa,
-             latitud, longitud, fh_inicio, fh_extinci, temporada)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            req.source, req.nombre, req.region, req.comuna, req.provincia,
-            req.superficie, req.causa,
-            req.latitud, req.longitud,
-            req.fh_inicio, req.fh_extinci, req.temporada
-        ))
-        conn.commit()
-        new_id = cursor.lastrowid
-        conn.close()
-        return {"status": "inserted", "id": new_id}
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR IGNORE INTO external_reports
+                (source, nombre, region, comuna, provincia, superficie, causa,
+                 latitud, longitud, fh_inicio, fh_extinci, temporada)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                req.source, req.nombre, req.region, req.comuna, req.provincia,
+                req.superficie, req.causa,
+                req.latitud, req.longitud,
+                req.fh_inicio, req.fh_extinci, req.temporada
+            ))
+            conn.commit()
+            new_id = cursor.lastrowid
+            return {"status": "inserted", "id": new_id}
+        finally:
+            conn.close()
     except Exception as e:
         print(f"[sync] Error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -622,16 +630,21 @@ def receive_external_report(req: ExternalReportRequest, authorization: Optional[
 @app.get("/dashboard/stats")
 def get_dashboard_stats(payload: dict = Depends(verify_token)):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM reports")
-    total = cursor.fetchone()[0]
-    cursor.execute("SELECT estado, COUNT(*) FROM reports GROUP BY estado")
-    by_estado = {row[0]: row[1] for row in cursor.fetchall()}
-    cursor.execute("SELECT tipo, COUNT(*) FROM reports GROUP BY tipo")
-    by_tipo = {row[0]: row[1] for row in cursor.fetchall()}
-    conn.close()
-    return {
-        "total": total,
-        "by_estado": by_estado,
-        "by_tipo": by_tipo
-    }
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM reports")
+        total = cursor.fetchone()[0]
+        cursor.execute("SELECT estado, COUNT(*) FROM reports GROUP BY estado")
+        by_estado = {row[0]: row[1] for row in cursor.fetchall()}
+        cursor.execute("SELECT tipo, COUNT(*) FROM reports GROUP BY tipo")
+        by_tipo = {row[0]: row[1] for row in cursor.fetchall()}
+        return {
+            "total": total,
+            "by_estado": by_estado,
+            "by_tipo": by_tipo
+        }
+    except Exception as e:
+        print(f"[dashboard] stats error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        conn.close()

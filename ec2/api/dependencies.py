@@ -63,6 +63,7 @@ def verify_token_optional(authorization: Optional[str] = Header(None)):
 
 
 def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -89,8 +90,10 @@ def sync_to_sqlite(table: str, operation: str, data: dict) -> str:
         else:
             result = "unknown table"
         conn.commit()
-        conn.close()
         return result
     except Exception as e:
         print(f"[sync_to_sqlite] Error: {e}")
         return "error"
+    finally:
+        if conn is not None:
+            conn.close()

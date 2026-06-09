@@ -16,6 +16,7 @@ def _get_report_repo():
 
 @router.get("/dashboard")
 def bff_dashboard():
+    conn = None
     try:
         conn = _get_db()
         cursor = conn.cursor()
@@ -49,8 +50,6 @@ def bff_dashboard():
 
         cursor.execute("SELECT COUNT(*) FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')")
         active_reports = cursor.fetchone()[0]
-
-        conn.close()
 
         repo = _get_report_repo()
         all_items = repo.find_all()
@@ -93,3 +92,6 @@ def bff_dashboard():
     except Exception as e:
         print(f"[bff] Dashboard error: {e}")
         raise HTTPException(status_code=500, detail="BFF dashboard error")
+    finally:
+        if conn is not None:
+            conn.close()
