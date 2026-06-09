@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { API } from '../api'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Button } from '../components/ui/Button'
+import { Card, CardTitle } from '../components/ui/Card'
 
 interface Reporte {
   report_id: string
@@ -28,16 +30,16 @@ function BottomNav() {
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-2">
       <div className="flex justify-around">
         {tabs.map(tab => (
-          <button
+          <Button
             key={tab.path}
+            variant="ghost"
+            size="sm"
             onClick={() => navigate(tab.path)}
-            className={`flex flex-col items-center px-4 py-1 rounded-lg transition-colors ${
-              path === tab.path ? 'text-fire-500 bg-fire-50 font-medium' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`flex-col gap-0 px-4 ${path === tab.path ? 'text-fire-500 bg-fire-50' : 'text-gray-500'}`}
           >
             <span className="text-lg">{tab.icon}</span>
             <span className="text-xs">{tab.label}</span>
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -83,12 +85,9 @@ export default function Historial() {
         <h1 className="text-xl font-bold text-gray-800">Mis Reportes</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600 truncate max-w-[120px]">{user?.nombre || user?.email}</span>
-          <button
-            onClick={() => { logout(); navigate('/login') }}
-            className="text-sm text-red-600 hover:text-red-800 font-medium"
-          >
+          <Button variant="ghost" size="sm" className="!text-red-600 hover:!text-red-800" onClick={() => { logout(); navigate('/login') }}>
             Cerrar Sesión
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -101,19 +100,16 @@ export default function Historial() {
           <div className="text-center py-8">
             <span className="text-4xl">📋</span>
             <p className="text-gray-500 mt-2">No tienes reportes aún</p>
-            <button
-              onClick={() => navigate('/reporte')}
-              className="mt-3 text-fire-500 hover:underline text-sm"
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate('/reporte')}>
               Reportar un incendio
-            </button>
+            </Button>
           </div>
         ) : (
           reportes.map((reporte) => (
-            <div key={reporte.report_id} className="bg-white rounded-lg shadow p-4">
+            <Card key={reporte.report_id}>
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h3 className="font-semibold text-gray-800 text-sm">Reporte #{reporte.report_id.slice(0, 8)}</h3>
+                  <CardTitle className="text-sm">Reporte #{reporte.report_id.slice(0, 8)}</CardTitle>
                   <p className="text-xs text-gray-500">{formatDate(reporte.created_at)}</p>
                 </div>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${getEstadoColor(reporte.estado)}`}>
@@ -137,13 +133,14 @@ export default function Historial() {
                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{reporte.descripcion}</p>
               )}
 
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => navigate('/mapa', { state: { lat: parseFloat(reporte.latitud), lng: parseFloat(reporte.longitud), reportId: reporte.report_id } })}
-                className="mt-3 text-sm text-fire-500 hover:underline"
               >
                 Ver en mapa →
-              </button>
-            </div>
+              </Button>
+            </Card>
           ))
         )}
       </div>

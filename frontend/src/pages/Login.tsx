@@ -3,6 +3,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Flame } from 'lucide-react'
 import { useAuth } from '../App'
 import { useToast } from '../util/toast'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -42,7 +45,7 @@ export default function Login() {
 
   return (
     <div className="h-screen overflow-hidden bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+      <Card padding="lg" className="w-full max-w-md">
         <div className="text-center mb-4">
           <div className="w-full flex justify-center mb-3">
             <img
@@ -55,16 +58,18 @@ export default function Login() {
           <p className="text-sm text-gray-500">Sistema de Gestión de Emergencias</p>
         </div>
 
-        <button
+        <Button
+          variant="danger"
+          size="lg"
+          icon={<Flame className="w-5 h-5 animate-pulse" />}
           onClick={() => navigate('/reporte')}
-          className="flex items-center justify-center gap-3 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 mb-4"
+          className="w-full mb-4"
         >
-          <Flame className="w-6 h-6 animate-pulse shrink-0" />
           <span className="flex flex-col items-start leading-tight">
             <span className="text-sm">Reportar Emergencia Rápida</span>
             <span className="text-[10px] font-normal opacity-80">Anónimo · Sin registro</span>
           </span>
-        </button>
+        </Button>
 
         <div className="relative mb-4">
           <div className="absolute inset-0 flex items-center">
@@ -76,19 +81,15 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Correo electrónico
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError('') }}
-              className={`w-full px-4 py-2 border ${error && !email.trim() ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-fire-500 focus:border-transparent bg-gray-900 text-white placeholder-gray-400`}
-              placeholder="correo@ejemplo.com"
-              required
-            />
-          </div>
+          <Input
+            label="Correo electrónico"
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError('') }}
+            placeholder="correo@ejemplo.com"
+            required
+            error={error && !email.trim() ? error : undefined}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -106,7 +107,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 {showPassword ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -126,13 +127,14 @@ export default function Login() {
             <p className="text-red-500 text-sm mt-1">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
+            loading={loading}
+            size="lg"
+            className="w-full"
           >
             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-          </button>
+          </Button>
         </form>
 
         <div className="mt-4 text-center space-y-2">
@@ -143,7 +145,7 @@ export default function Login() {
             Al reportar de forma anónima se registrará un identificador único de dispositivo.
           </p>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

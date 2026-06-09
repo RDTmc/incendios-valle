@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect, createContext, useContext } from 'react'
-import { API } from './api'
+import { API, setOnUnauthorized } from './api'
 
 // Pages
 import Login from './pages/Login'
@@ -13,10 +13,12 @@ import RedireccionQr from './pages/RedireccionQr'
 import AfichePreview from './pages/AfichePreview'
 
 // Componentes
+import ErrorBoundary from './components/ErrorBoundary'
+import OfflineBanner from './components/OfflineBanner'
 import AvisoNavegadorEmbebido from './components/AvisoNavegadorEmbebido'
 import ToastContainer from './components/Toast'
 import AlertBanner from './components/AlertBanner'
-import { ToastProvider } from './util/toast'
+import { ToastProvider, useToast } from './util/toast'
 
 // Context
 interface AuthContextType {
@@ -52,6 +54,20 @@ const ProtectedRoute = ({ children, allowedRoles, allowAnonymous }: { children: 
   }
 
   return <>{children}</>
+}
+
+function UnauthHandler() {
+  const { logout } = useAuth()
+  const { addToast } = useToast()
+
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      logout()
+      addToast('Sesión expirada — inicia sesión de nuevo', 'warning')
+    })
+  }, [])
+
+  return null
 }
 
 function App() {
@@ -98,57 +114,61 @@ function App() {
   }
 
   return (
+    <ErrorBoundary>
+    <ToastProvider>
     <AuthContext.Provider value={{ user, token, login, logout }}>
-      <ToastProvider>
-        <AvisoNavegadorEmbebido />
-        <ToastContainer />
-        <AlertBanner />
-        <BrowserRouter>
-          <Routes>
-            {/* Login: redirige si ya hay sesión */}
-            <Route path="/login" element={user ? <Navigate to={user.rol === 'ADMIN' ? '/admin' : '/reporte'} /> : <Login />} />
-            
-            {/* Registro */}
-            <Route path="/registro" element={<Registro />} />
-            
-            {/* Ruta QR: redirección inteligente según SO */}
-            <Route path="/qr" element={<RedireccionQr />} />
-            
-            {/* Dev: prototipo del afiche municipal */}
-            <Route path="/dev-afiche" element={<AfichePreview />} />
-            
-            {/* Rutas Admin */}
-            <Route path="/admin" element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <Historial />
-              </ProtectedRoute>
-            } />
-            
-            {/* Rutas Vecino (accesibles también para anónimos) */}
-            <Route path="/reporte" element={
-              <ProtectedRoute allowedRoles={['VECINO']} allowAnonymous>
-                <Reporte />
-              </ProtectedRoute>
-            } />
-            <Route path="/confirmar" element={
-              <ProtectedRoute allowedRoles={['VECINO']} allowAnonymous>
-                <Confirmacion />
-              </ProtectedRoute>
-            } />
-            <Route path="/mapa" element={<MapaFocos />} />
-            <Route path="/historial" element={
-              <ProtectedRoute allowedRoles={['VECINO']}>
-                <Historial />
-              </ProtectedRoute>
-            } />
-            
-            {/* Rutas genéricas */}
-            <Route path="/vecino" element={<Navigate to="/reporte" replace />} />
-            <Route path="/" element={<Navigate to={user ? (user.rol === 'ADMIN' ? '/admin' : '/reporte') : '/login'} replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ToastProvider>
+      <UnauthHandler />
+      <OfflineBanner />
+      <AvisoNavegadorEmbebido />
+      <ToastContainer />
+      <AlertBanner />
+      <BrowserRouter>
+        <Routes>
+          {/* Login: redirige si ya hay sesión */}
+          <Route path="/login" element={user ? <Navigate to={user.rol === 'ADMIN' ? '/admin' : '/reporte'} /> : <Login />} />
+          
+          {/* Registro */}
+          <Route path="/registro" element={<Registro />} />
+          
+          {/* Ruta QR: redirección inteligente según SO */}
+          <Route path="/qr" element={<RedireccionQr />} />
+          
+          {/* Dev: prototipo del afiche municipal */}
+          <Route path="/dev-afiche" element={<AfichePreview />} />
+          
+          {/* Rutas Admin */}
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <Historial />
+            </ProtectedRoute>
+          } />
+          
+          {/* Rutas Vecino (accesibles también para anónimos) */}
+          <Route path="/reporte" element={
+            <ProtectedRoute allowedRoles={['VECINO']} allowAnonymous>
+              <Reporte />
+            </ProtectedRoute>
+          } />
+          <Route path="/confirmar" element={
+            <ProtectedRoute allowedRoles={['VECINO']} allowAnonymous>
+              <Confirmacion />
+            </ProtectedRoute>
+          } />
+          <Route path="/mapa" element={<MapaFocos />} />
+          <Route path="/historial" element={
+            <ProtectedRoute allowedRoles={['VECINO']}>
+              <Historial />
+            </ProtectedRoute>
+          } />
+          
+          {/* Rutas genéricas */}
+          <Route path="/vecino" element={<Navigate to="/reporte" replace />} />
+          <Route path="/" element={<Navigate to={user ? (user.rol === 'ADMIN' ? '/admin' : '/reporte') : '/login'} replace />} />
+        </Routes>
+      </BrowserRouter>
     </AuthContext.Provider>
+    </ToastProvider>
+    </ErrorBoundary>
   )
 }
 

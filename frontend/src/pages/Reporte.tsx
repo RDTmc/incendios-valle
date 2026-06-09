@@ -6,6 +6,8 @@ import L from 'leaflet'
 import { useAuth } from '../App'
 import { API } from '../api'
 import { useToast } from '../util/toast'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 import { compressImage } from '../util/image'
 import { getDeviceId } from '../util/device'
 
@@ -183,16 +185,13 @@ export default function Reporte() {
           ) : (
             <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-2 mb-2 rounded text-xs font-medium flex items-center justify-between">
               <span className="flex items-center gap-1 truncate"><ShieldCheck className="w-4 h-4 text-green-600 shrink-0" /> {user?.nombre || user?.email}</span>
-              <button
-                onClick={() => { logout(); navigate('/login') }}
-                className="text-xs text-red-600 hover:text-red-800 font-medium ml-2 shrink-0"
-              >
+              <Button variant="ghost" size="sm" className="!text-red-600 hover:!text-red-800" onClick={() => { logout(); navigate('/login') }}>
                 Cerrar
-              </button>
+              </Button>
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-lg p-4">
+          <Card>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Tipo de incendio */}
@@ -201,30 +200,24 @@ export default function Reporte() {
                 Tipo de Incendio
               </label>
               <div className="grid grid-cols-2 gap-2">
-                <button
+                <Button
                   type="button"
+                  variant={reporte.tipo === 'FORESTAL' ? 'primary' : 'secondary'}
+                  size="md"
+                  icon={<Trees className="w-4 h-4" />}
                   onClick={() => setReporte({ ...reporte, tipo: 'FORESTAL' })}
-                  className={`p-2 rounded-lg border-2 text-sm ${
-                    reporte.tipo === 'FORESTAL'
-                      ? 'border-fire-500 bg-fire-50'
-                      : 'border-gray-200'
-                  }`}
                 >
-                  <Trees className="w-4 h-4 inline-block mr-1" />
                   Forestal
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant={reporte.tipo === 'URBANO' ? 'primary' : 'secondary'}
+                  size="md"
+                  icon={<Home className="w-4 h-4" />}
                   onClick={() => setReporte({ ...reporte, tipo: 'URBANO' })}
-                  className={`p-2 rounded-lg border-2 text-sm ${
-                    reporte.tipo === 'URBANO'
-                      ? 'border-fire-500 bg-fire-50'
-                      : 'border-gray-200'
-                  }`}
                 >
-                  <Home className="w-4 h-4 inline-block mr-1" />
                   Urbano
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -233,14 +226,18 @@ export default function Reporte() {
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Ubicación
               </label>
-              <button
+              <Button
                 type="button"
-                onClick={getLocation}
+                variant="primary"
+                size="md"
+                icon={<MapPin className="w-4 h-4" />}
+                loading={loading}
                 disabled={loading}
-                className="w-full py-2 px-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 text-sm"
+                onClick={getLocation}
+                className="w-full !bg-blue-500 hover:!bg-blue-600"
               >
-                {loading ? 'Obteniendo ubicación...' : <><MapPin className="w-4 h-4 inline-block mr-1" /> Obtener Mi Ubicación</>}
-              </button>
+                {loading ? 'Obteniendo ubicación...' : 'Obtener Mi Ubicación'}
+              </Button>
               {gpsError && (
                 <p className="mt-1 text-xs text-red-600 flex items-start gap-1">
                   <span>⚠️</span> {gpsError}
@@ -325,29 +322,27 @@ export default function Reporte() {
 
             {/* Botón enviar */}
             {slotsLlenos ? (
-              <div className="w-full bg-gray-300 text-gray-600 font-semibold py-2 rounded-lg text-sm text-center">
+              <div className="w-full bg-gray-300 text-gray-600 font-semibold py-3 rounded-lg text-sm text-center">
                 Has alcanzado el límite máximo de 5 reportes simultáneos para evitar saturación del servicio.
               </div>
             ) : (
-              <button
+              <Button
                 type="submit"
-                disabled={submitting}
-                className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-2 rounded-lg disabled:opacity-50 text-sm"
+                loading={submitting}
+                size="lg"
+                className="w-full"
               >
                 {submitting ? 'Enviando...' : 'Enviar Reporte'}
-              </button>
+              </Button>
             )}
           </form>
-        </div>
+        </Card>
 
         {isAnonymous && (
           <div className="mt-2 text-center">
-            <button
-              onClick={() => navigate('/login')}
-              className="text-xs text-fire-500 hover:underline"
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
               ¿Ya tienes cuenta? Inicia sesión aquí
-            </button>
+            </Button>
           </div>
         )}
       </div>

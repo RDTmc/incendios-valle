@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { API } from '../api'
 import { useToast } from '../util/toast'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
 
 export default function Registro() {
   const [nombre, setNombre] = useState('')
@@ -59,7 +62,7 @@ export default function Registro() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+      <Card padding="lg" className="w-full max-w-md">
         <div className="text-center mb-6">
           <img
             src="/logo-muni.png"
@@ -71,74 +74,55 @@ export default function Registro() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre completo
-            </label>
-            <input
-              type="text"
-              value={nombre}
-              onChange={(e) => { setNombre(e.target.value); setError('') }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 focus:border-transparent bg-gray-900 text-white placeholder-gray-400"
-              placeholder="Tu nombre"
-              required
-            />
-          </div>
+          <Input
+            label="Nombre completo"
+            type="text"
+            value={nombre}
+            onChange={(e) => { setNombre(e.target.value); setError('') }}
+            placeholder="Tu nombre"
+            required
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Correo electrónico
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError('') }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 focus:border-transparent bg-gray-900 text-white placeholder-gray-400"
-              placeholder="correo@ejemplo.com"
-              required
-            />
-          </div>
+          <Input
+            label="Correo electrónico"
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError('') }}
+            placeholder="correo@ejemplo.com"
+            required
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError('') }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 focus:border-transparent bg-gray-900 text-white placeholder-gray-400"
-              placeholder="Mínimo 6 caracteres"
-              required
-              minLength={6}
-            />
-          </div>
+          <Input
+            label="Contraseña"
+            type="password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError('') }}
+            placeholder="Mínimo 6 caracteres"
+            required
+            minLength={6}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirmar contraseña
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); setError('') }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 focus:border-transparent bg-gray-900 text-white placeholder-gray-400"
-              placeholder="Repite la contraseña"
-              required
-            />
-          </div>
+          <Input
+            label="Confirmar contraseña"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => { setConfirmPassword(e.target.value); setError('') }}
+            placeholder="Repite la contraseña"
+            required
+          />
 
           {error && (
             <p className="text-red-500 text-sm">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full bg-fire-500 hover:bg-fire-600 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
+            loading={loading}
+            size="lg"
+            className="w-full"
           >
             {loading ? 'Registrando...' : 'Crear Cuenta'}
-          </button>
+          </Button>
         </form>
 
         <div className="mt-4 text-center">
@@ -146,7 +130,7 @@ export default function Registro() {
             ¿Ya tienes cuenta? Inicia sesión
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

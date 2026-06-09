@@ -1,5 +1,18 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.keogh.lat/api'
 
+let onUnauthorized: (() => void) | null = null
+
+export function setOnUnauthorized(fn: () => void) {
+  onUnauthorized = fn
+}
+
+const handleAuth = async (res: Response): Promise<Response> => {
+  if (res.status === 401 && onUnauthorized) {
+    onUnauthorized()
+  }
+  return res
+}
+
 // P3-2: Safe JSON parser to handle non-JSON responses (403 HTML, plain text, etc.)
 const safeJson = async (res: Response): Promise<any> => {
   const contentType = res.headers.get('content-type') || ''
@@ -44,10 +57,10 @@ export const API = {
   uploadImage: async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
-    const res = await fetch(`${API_URL}/reports/upload`, {
+    const res = await handleAuth(await fetch(`${API_URL}/reports/upload`, {
       method: 'POST',
       body: formData
-    })
+    }))
     if (!res.ok) {
       const err = await safeJson(res)
       throw new Error(err.error || err.detail || `Upload failed: HTTP ${res.status}`)
@@ -57,14 +70,14 @@ export const API = {
   },
 
   createReport: async (token: string, data: { user_id: string; tipo: string; latitud: number; longitud: number; descripcion: string; foto_url?: string }) => {
-    const res = await fetch(`${API_URL}/reports`, {
+    const res = await handleAuth(await fetch(`${API_URL}/reports`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(data)
-    })
+    }))
     if (!res.ok) {
       const err = await safeJson(res)
       throw new Error(err.error || err.detail || `Failed to create report: HTTP ${res.status}`)
@@ -85,9 +98,9 @@ export const API = {
     const url = userId 
       ? `${API_URL}/reports?user_id=${userId}`
       : `${API_URL}/reports`
-    const res = await fetch(url, {
+    const res = await handleAuth(await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` }
-    })
+    }))
     if (!res.ok) {
       const err = await safeJson(res)
       throw new Error(err.error || err.detail || `Failed to fetch reports: HTTP ${res.status}`)
