@@ -41,7 +41,7 @@ function FlyToCenter({ target }: { target: [number, number] | null }) {
   return null
 }
 
-function FocoMarker({ foco, highlight, onClick }: { foco: FocoData; highlight: boolean; onClick: () => void }) {
+function FocoMarker({ foco, highlight, onClick }: { readonly foco: FocoData; readonly highlight: boolean; readonly onClick: () => void }) {
   if (highlight && foco.foto_url) {
     return (
       <Marker longitude={foco.lng} latitude={foco.lat} anchor="bottom" onClick={onClick}>

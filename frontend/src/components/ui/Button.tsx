@@ -17,11 +17,11 @@ const sizeStyles: Record<Size, string> = {
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant
-  size?: Size
-  loading?: boolean
-  icon?: ReactNode
-  children: ReactNode
+  readonly variant?: Variant
+  readonly size?: Size
+  readonly loading?: boolean
+  readonly icon?: ReactNode
+  readonly children: ReactNode
 }
 
 export function Button({ variant = 'primary', size = 'md', loading, icon, children, className = '', disabled, ...props }: ButtonProps) {

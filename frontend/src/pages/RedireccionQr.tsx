@@ -15,9 +15,9 @@ export default function RedireccionQr() {
   useEffect(() => {
     if (esAndroid()) {
       setEstado('android')
-      window.location.href = `intent://incendios-valle.pages.dev/${UTM}#Intent;scheme=https;package=com.android.chrome;end`
+      globalThis.location.href = `intent://incendios-valle.pages.dev/${UTM}#Intent;scheme=https;package=com.android.chrome;end`
       const fallback = setTimeout(() => {
-        window.location.href = `${URL_BASE}/login${UTM}`
+        globalThis.location.href = `${URL_BASE}/login${UTM}`
       }, 2000)
       return () => clearTimeout(fallback)
     }

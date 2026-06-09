@@ -123,8 +123,8 @@ export default function Reporte() {
         payload.device_id = getDeviceId()
         result = await API.createReportAnonimo(payload)
       } else {
-        payload.user_id = user!.user_id
-        result = await API.createReport(token!, payload)
+        payload.user_id = user.user_id
+        result = await API.createReport(token, payload)
       }
 
       try {

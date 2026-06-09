@@ -1,10 +1,10 @@
 import { ReactNode } from 'react'
 
 interface CardProps {
-  children: ReactNode
-  className?: string
-  padding?: 'none' | 'sm' | 'md' | 'lg'
-  shadow?: boolean
+  readonly children: ReactNode
+  readonly className?: string
+  readonly padding?: 'none' | 'sm' | 'md' | 'lg'
+  readonly shadow?: boolean
 }
 
 const paddingStyles = {
@@ -24,14 +24,14 @@ export function Card({ children, className = '', padding = 'md', shadow = true }
   )
 }
 
-export function CardHeader({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardHeader({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
   return <div className={`mb-3 ${className}`}>{children}</div>
 }
 
-export function CardBody({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardBody({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
   return <div className={className}>{children}</div>
 }
 
-export function CardTitle({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardTitle({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
   return <h3 className={`font-semibold text-gray-800 ${className}`}>{children}</h3>
 }

@@ -35,7 +35,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               size="lg"
               onClick={() => {
                 this.setState({ hasError: false, error: null })
-                window.location.reload()
+                globalThis.location.reload()
               }}
             >
               Reintentar

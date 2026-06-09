@@ -27,7 +27,7 @@ export function detectarNavegadorEmbebido(): string | null {
 
 export function esNavegadorInstalable(): boolean {
   // Ya instalada como PWA
-  if (window.matchMedia('(display-mode: standalone)').matches) return true
+  if (globalThis.matchMedia('(display-mode: standalone)').matches) return true
   if ((navigator as any).standalone) return true
   return false
 }

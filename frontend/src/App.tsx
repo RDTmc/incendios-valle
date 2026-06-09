@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, useMemo, createContext, useContext } from 'react'
 import { API, setOnUnauthorized } from './api'
 
 // Pages
@@ -113,10 +113,12 @@ function App() {
     setToken(null)
   }
 
+  const authValue = useMemo(() => ({ user, token, login, logout }), [user, token, login, logout])
+
   return (
     <ErrorBoundary>
     <ToastProvider>
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={authValue}>
       <UnauthHandler />
       <OfflineBanner />
       <AvisoNavegadorEmbebido />
