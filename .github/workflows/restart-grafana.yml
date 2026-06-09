@@ -1,0 +1,33 @@
+name: Restart Grafana
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart Grafana container via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 60s
+          script: |
+            cd /home/ec2-user
+            docker-compose stop grafana
+            docker-compose rm -f grafana
+            docker-compose up -d grafana
+            echo "Esperando que Grafana inicie..."
+            for i in {1..12}; do
+              sleep 5
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' incendios-grafana 2>/dev/null || echo "starting")
+              echo "Intento $i - Estado: $STATUS"
+              if [ "$STATUS" = "healthy" ]; then
+                echo "Grafana listo!"
+                break
+              fi
+            done
+            echo "Estado final de Grafana:"
+            docker ps --filter name=incendios-grafana --format "{{.Names}} {{.Status}}"
