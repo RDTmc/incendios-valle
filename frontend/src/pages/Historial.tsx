@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { API } from '../api'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, type NavigateFunction } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardTitle } from '../components/ui/Card'
 
@@ -64,7 +64,7 @@ function formatDate(dateStr: string) {
   }
 }
 
-function renderReportList(loading: boolean, reportes: Reporte[], navigate: (path: string) => void) {
+function renderReportList(loading: boolean, reportes: Reporte[], navigate: NavigateFunction) {
   if (loading) {
     return (
       <div className="text-center py-8">
