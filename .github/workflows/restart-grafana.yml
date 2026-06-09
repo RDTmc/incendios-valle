@@ -16,13 +16,18 @@ jobs:
           timeout: 60s
           script: |
             cd /home/ec2-user
-            echo "--- Corrigiendo permisos SQLite para Grafana (uid 472) ---"
+            echo "--- Permisos actuales ---"
             ls -la /home/ec2-user/incendios-data/api/incendios.db
-            sudo chown 472:472 /home/ec2-user/incendios-data/api/incendios.db
-            chmod 664 /home/ec2-user/incendios-data/api/incendios.db
+            ls -ld /home/ec2-user/incendios-data/api
+            echo ""
+            echo "--- Corrigiendo permisos SQLite (rw para todos: API uid 1000 + Grafana uid 472) ---"
+            sudo chmod 666 /home/ec2-user/incendios-data/api/incendios.db
+            sudo chmod 777 /home/ec2-user/incendios-data/api
             sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
-            chmod 664 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
+            sudo chmod 664 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
+            echo "--- Permisos corregidos ---"
             ls -la /home/ec2-user/incendios-data/api/incendios.db
+            ls -ld /home/ec2-user/incendios-data/api
             echo ""
             echo "--- Restart limpio de Grafana ---"
             docker-compose stop grafana
