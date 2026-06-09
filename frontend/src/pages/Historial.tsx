@@ -136,7 +136,7 @@ export default function Historial() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/mapa', { state: { lat: parseFloat(reporte.latitud), lng: parseFloat(reporte.longitud), reportId: reporte.report_id } })}
+                onClick={() => navigate('/mapa', { state: { lat: Number.parseFloat(reporte.latitud), lng: Number.parseFloat(reporte.longitud), reportId: reporte.report_id } })}
               >
                 Ver en mapa →
               </Button>

@@ -199,7 +199,7 @@ export default function Reporte() {
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Tipo de Incendio
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo de Incendio">
                 <Button
                   type="button"
                   variant={reporte.tipo === 'FORESTAL' ? 'primary' : 'secondary'}
@@ -223,10 +223,11 @@ export default function Reporte() {
 
             {/* Ubicación */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="btn-ubicacion" className="block text-xs font-medium text-gray-700 mb-1">
                 Ubicación
               </label>
               <Button
+                id="btn-ubicacion"
                 type="button"
                 variant="primary"
                 size="md"
@@ -276,11 +277,12 @@ export default function Reporte() {
 
             {/* Cámara / Foto */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="foto-input" className="block text-xs font-medium text-gray-700 mb-1">
                 Fotografía
               </label>
-              <label className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg block text-center cursor-pointer hover:border-fire-500 text-sm">
+              <label htmlFor="foto-input" className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg block text-center cursor-pointer hover:border-fire-500 text-sm">
                 <input
+                  id="foto-input"
                   type="file"
                   accept="image/*"
                   capture="environment"
@@ -300,10 +302,11 @@ export default function Reporte() {
 
             {/* Descripción */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="descripcion" className="block text-xs font-medium text-gray-700 mb-1">
                 Descripción (opcional)
               </label>
               <textarea
+                id="descripcion"
                 value={reporte.descripcion}
                 onChange={(e) => setReporte({ ...reporte, descripcion: e.target.value })}
                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-fire-500 bg-gray-900 text-white placeholder-gray-400 text-sm"

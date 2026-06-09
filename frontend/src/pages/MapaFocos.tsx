@@ -118,7 +118,7 @@ export default function MapaFocos() {
       if (!VALID_ESTADOS.has(f.estado.toUpperCase())) continue
       if (haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) > RADIO_MAX_KM) continue
       const t = new Date(f.created_at).getTime()
-      if (isNaN(t) || t < corte) continue
+      if (Number.isNaN(t) || t < corte) continue
       comunidad.push(f)
     }
 
