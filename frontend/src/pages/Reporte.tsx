@@ -38,6 +38,12 @@ function MapController({ lat, lng }: { lat: number; lng: number }) {
   return null
 }
 
+function renderFotoLabel(uploading: boolean, reporte: { fotoUrl?: string; fotoName?: string }) {
+  if (uploading) return <span className="text-blue-600">⏳ Subiendo...</span>
+  if (reporte.fotoUrl) return <span className="text-green-600">✅ {reporte.fotoName}</span>
+  return <span className="text-gray-500"><Camera className="w-4 h-4 inline-block mr-1" /> Tomar foto</span>
+}
+
 export default function Reporte() {
   const navigate = useNavigate()
   const { user, token, logout } = useAuth()
@@ -195,11 +201,11 @@ export default function Reporte() {
 
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Tipo de incendio */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+            <fieldset>
+              <legend className="block text-xs font-medium text-gray-700 mb-1">
                 Tipo de Incendio
-              </label>
-              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo de Incendio">
+              </legend>
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={reporte.tipo === 'FORESTAL' ? 'primary' : 'secondary'}
@@ -218,8 +224,8 @@ export default function Reporte() {
                 >
                   Urbano
                 </Button>
-              </div>
-            </div>
+                </div>
+              </fieldset>
 
             {/* Ubicación */}
             <div>
@@ -290,13 +296,7 @@ export default function Reporte() {
                   disabled={uploading}
                   className="hidden"
                 />
-                {uploading ? (
-                  <span className="text-blue-600">⏳ Subiendo...</span>
-                ) : reporte.fotoUrl ? (
-                  <span className="text-green-600">✅ {reporte.fotoName}</span>
-                ) : (
-                  <span className="text-gray-500"><Camera className="w-4 h-4 inline-block mr-1" /> Tomar foto</span>
-                )}
+                {renderFotoLabel(uploading, reporte)}
               </label>
             </div>
 

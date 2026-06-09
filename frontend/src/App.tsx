@@ -70,6 +70,12 @@ function UnauthHandler() {
   return null
 }
 
+function getDefaultPath(user: { rol: string } | null) {
+  if (!user) return '/login'
+  if (user.rol === 'ADMIN') return '/admin'
+  return '/reporte'
+}
+
 function App() {
   // P3-1 + P3-5: Initialize from localStorage con role
   const [user, setUser] = useState<{ user_id: string; email: string; rol: string; nombre: string } | null>(() => {
@@ -165,7 +171,7 @@ function App() {
           
           {/* Rutas genéricas */}
           <Route path="/vecino" element={<Navigate to="/reporte" replace />} />
-          <Route path="/" element={<Navigate to={user ? (user.rol === 'ADMIN' ? '/admin' : '/reporte') : '/login'} replace />} />
+          <Route path="/" element={<Navigate to={getDefaultPath(user)} replace />} />
         </Routes>
       </BrowserRouter>
     </AuthContext.Provider>

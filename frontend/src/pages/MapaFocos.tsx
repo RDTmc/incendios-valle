@@ -19,6 +19,28 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+function splitFocosByGroup(
+  focos: FocoData[],
+  misIdSet: Set<string>,
+  corte: number
+): { misReportes: FocoData[]; comunidad: FocoData[] } {
+  const misReportes: FocoData[] = []
+  const comunidad: FocoData[] = []
+  const validEstados = new Set(['ACTIVO', 'PENDIENTE'])
+  for (const f of focos) {
+    if (misIdSet.has(f.id)) {
+      misReportes.push(f)
+      continue
+    }
+    if (!validEstados.has(f.estado.toUpperCase())) continue
+    if (haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) > RADIO_MAX_KM) continue
+    const t = new Date(f.created_at).getTime()
+    if (Number.isNaN(t) || t < corte) continue
+    comunidad.push(f)
+  }
+  return { misReportes, comunidad }
+}
+
 const estadoDot = (estado: string) => {
   switch (estado.toUpperCase()) {
     case 'ACTIVO':     return '#dc2626'
@@ -105,22 +127,7 @@ export default function MapaFocos() {
 
   const focosFiltrados = useMemo(() => {
     const corte = Date.now() - HORAS_VENTANA * 60 * 60 * 1000
-    const VALID_ESTADOS = new Set(['ACTIVO', 'PENDIENTE'])
-
-    const misReportes: FocoData[] = []
-    const comunidad: FocoData[] = []
-
-    for (const f of focos) {
-      if (misIdSet.has(f.id)) {
-        misReportes.push(f)
-        continue
-      }
-      if (!VALID_ESTADOS.has(f.estado.toUpperCase())) continue
-      if (haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], f.lat, f.lng) > RADIO_MAX_KM) continue
-      const t = new Date(f.created_at).getTime()
-      if (Number.isNaN(t) || t < corte) continue
-      comunidad.push(f)
-    }
+    const { misReportes, comunidad } = splitFocosByGroup(focos, misIdSet, corte)
 
     comunidad.sort((a, b) => {
       const dA = haversineKm(VALLE_DEL_SOL[0], VALLE_DEL_SOL[1], a.lat, a.lng)
@@ -224,13 +231,11 @@ export default function MapaFocos() {
         ) : (
           <div className="space-y-2">
             {focosFiltrados.map((foco) => (
-              <div
+              <button
+                type="button"
                 key={foco.id}
                 onClick={() => flyToFoco(foco)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') flyToFoco(foco); }}
-                role="button"
-                tabIndex={0}
-                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors w-full text-left ${
                   foco.id === highlightId ? 'bg-blue-50 ring-2 ring-blue-400' : 'bg-gray-50 hover:bg-gray-100'
                 }`}
               >
@@ -259,7 +264,7 @@ export default function MapaFocos() {
                 <span className={`ml-auto px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${estadoColor(foco.estado)}`}>
                   {foco.estado}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         )}

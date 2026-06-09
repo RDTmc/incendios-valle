@@ -46,6 +46,82 @@ function BottomNav() {
   )
 }
 
+function getEstadoColor(estado: string) {
+  switch (estado) {
+    case 'VALIDADO': return 'bg-green-100 text-green-700'
+    case 'CONTROLADO': return 'bg-blue-100 text-blue-700'
+    case 'PENDIENTE': return 'bg-yellow-100 text-yellow-700'
+    case 'RECHAZADO': return 'bg-red-100 text-red-700'
+    default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+function formatDate(dateStr: string) {
+  try {
+    return new Date(dateStr).toLocaleString('es-CL')
+  } catch {
+    return dateStr
+  }
+}
+
+function renderReportList(loading: boolean, reportes: Reporte[], navigate: (path: string) => void) {
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Cargando...</p>
+      </div>
+    )
+  }
+  if (reportes.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <span className="text-4xl">📋</span>
+        <p className="text-gray-500 mt-2">No tienes reportes aún</p>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/reporte')}>
+          Reportar un incendio
+        </Button>
+      </div>
+    )
+  }
+  return reportes.map((reporte) => (
+    <Card key={reporte.report_id}>
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <CardTitle className="text-sm">Reporte #{reporte.report_id.slice(0, 8)}</CardTitle>
+          <p className="text-xs text-gray-500">{formatDate(reporte.created_at)}</p>
+        </div>
+        <span className={`px-2 py-1 rounded text-xs font-medium ${getEstadoColor(reporte.estado)}`}>
+          {reporte.estado}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 mt-2">
+        <span className="text-lg">
+          {reporte.tipo === 'FORESTAL' ? '🌲' : '🏠'}
+        </span>
+        <span className="text-sm text-gray-600">
+          Incendio {reporte.tipo.toLowerCase()}
+        </span>
+        <span className="text-xs text-gray-400 ml-auto">
+          {reporte.latitud}, {reporte.longitud}
+        </span>
+      </div>
+
+      {reporte.descripcion && (
+        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{reporte.descripcion}</p>
+      )}
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate('/mapa', { state: { lat: Number.parseFloat(reporte.latitud), lng: Number.parseFloat(reporte.longitud), reportId: reporte.report_id } })}
+      >
+        Ver en mapa →
+      </Button>
+    </Card>
+  ))
+}
+
 export default function Historial() {
   const { user, token, logout } = useAuth()
   const navigate = useNavigate()
@@ -61,24 +137,6 @@ export default function Historial() {
     }
   }, [token, user])
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'VALIDADO': return 'bg-green-100 text-green-700'
-      case 'CONTROLADO': return 'bg-blue-100 text-blue-700'
-      case 'PENDIENTE': return 'bg-yellow-100 text-yellow-700'
-      case 'RECHAZADO': return 'bg-red-100 text-red-700'
-      default: return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const formatDate = (dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleString('es-CL')
-    } catch {
-      return dateStr
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 pb-20">
       <div className="bg-white p-4 shadow flex items-center justify-between">
@@ -92,57 +150,7 @@ export default function Historial() {
       </div>
 
       <div className="p-4 space-y-4">
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Cargando...</p>
-          </div>
-        ) : reportes.length === 0 ? (
-          <div className="text-center py-8">
-            <span className="text-4xl">📋</span>
-            <p className="text-gray-500 mt-2">No tienes reportes aún</p>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/reporte')}>
-              Reportar un incendio
-            </Button>
-          </div>
-        ) : (
-          reportes.map((reporte) => (
-            <Card key={reporte.report_id}>
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <CardTitle className="text-sm">Reporte #{reporte.report_id.slice(0, 8)}</CardTitle>
-                  <p className="text-xs text-gray-500">{formatDate(reporte.created_at)}</p>
-                </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${getEstadoColor(reporte.estado)}`}>
-                  {reporte.estado}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-lg">
-                  {reporte.tipo === 'FORESTAL' ? '🌲' : '🏠'}
-                </span>
-                <span className="text-sm text-gray-600">
-                  Incendio {reporte.tipo.toLowerCase()}
-                </span>
-                <span className="text-xs text-gray-400 ml-auto">
-                  {reporte.latitud}, {reporte.longitud}
-                </span>
-              </div>
-
-              {reporte.descripcion && (
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{reporte.descripcion}</p>
-              )}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/mapa', { state: { lat: Number.parseFloat(reporte.latitud), lng: Number.parseFloat(reporte.longitud), reportId: reporte.report_id } })}
-              >
-                Ver en mapa →
-              </Button>
-            </Card>
-          ))
-        )}
+        {renderReportList(loading, reportes, navigate)}
       </div>
 
       <BottomNav />

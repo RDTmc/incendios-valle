@@ -24,7 +24,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   readonly children: ReactNode
 }
 
-export function Button({ variant = 'primary', size = 'md', loading, icon, children, className = '', disabled, ...props }: ButtonProps) {
+export function Button({ variant = 'primary', size = 'md', loading, icon, children, className = '', disabled, ...props }: Readonly<ButtonProps>) {
   return (
     <button
       className={`inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:opacity-50 ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}

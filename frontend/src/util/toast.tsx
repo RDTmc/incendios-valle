@@ -23,6 +23,10 @@ export const useToast = () => {
   return context
 }
 
+function removeToastFromList(toasts: Toast[], id: string): Toast[] {
+  return toasts.filter(t => t.id !== id)
+}
+
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -31,7 +35,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     setToasts(prev => [...prev, { id, message, type, duration }])
     if (duration > 0) {
       setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id))
+        setToasts(prev => removeToastFromList(prev, id))
       }, duration)
     }
   }, [])
