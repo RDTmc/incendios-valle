@@ -5,6 +5,7 @@ echo "=========================================================="
 JWT_ACTUAL=$(grep JWT_SECRET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 SYNC_ACTUAL=$(grep SYNC_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 GRAFANA_ACTUAL=$(grep GRAFANA_ADMIN_PASSWORD /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+GRAFANA_TOKEN_ACTUAL=$(grep GRAFANA_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 FIRMS_ACTUAL=$(grep FIRMS_API_KEY /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 OWM_ACTUAL=$(grep OWM_API_KEY /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 S3_BUCKET=$(grep AWS_S3_BUCKET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
@@ -14,6 +15,7 @@ echo -e "\n Actualizando archivo .env (sin credenciales AWS - usando LabRole)...
 echo "JWT_SECRET=$JWT_ACTUAL" > /home/ec2-user/.env
 echo "SYNC_TOKEN=$SYNC_ACTUAL" >> /home/ec2-user/.env
 echo "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ACTUAL" >> /home/ec2-user/.env
+echo "GRAFANA_TOKEN=$GRAFANA_TOKEN_ACTUAL" >> /home/ec2-user/.env
 echo "AWS_S3_BUCKET=$S3_BUCKET" >> /home/ec2-user/.env
 echo "FIRMS_API_KEY=$FIRMS_ACTUAL" >> /home/ec2-user/.env
 echo "OWM_API_KEY=$OWM_ACTUAL" >> /home/ec2-user/.env
