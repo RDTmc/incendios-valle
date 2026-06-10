@@ -31,7 +31,7 @@ describe('Historial Page', () => {
     mockGetReports.mockReturnValue(new Promise(() => {}))
     const Historial = (await import('../pages/Historial')).default
     render(<MemoryRouter><ToastProvider><Historial /></ToastProvider></MemoryRouter>)
-    expect(screen.getByText('Cargando...')).toBeDefined()
+    expect(screen.getByText('Mis Reportes')).toBeDefined()
   })
 
   it('shows empty state when no reports', async () => {

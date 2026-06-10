@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
+import { useToast } from '../util/toast'
 
 interface AdminUser {
   user_id: string
@@ -54,9 +55,18 @@ function sortUsers(users: AdminUser[], key: SortKey, asc: boolean): AdminUser[] 
   })
 }
 
+function Spinner() {
+  return (
+    <div className="flex justify-center py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const { token, logout } = useAuth()
   const navigate = useNavigate()
+  const { addToast } = useToast()
 
   const [tab, setTab] = useState<Tab>('users')
 
@@ -88,8 +98,8 @@ export default function AdminPage() {
     try {
       const data = await API.adminGetUsers(token, search || undefined)
       setUsers(data.users || [])
-    } catch (err) {
-      console.error('Error fetching users:', err)
+    } catch {
+      if (showLoader) addToast('Error al cargar usuarios', 'error')
     } finally {
       if (showLoader) setLoading(false)
     }
@@ -101,8 +111,8 @@ export default function AdminPage() {
     try {
       const data = await API.getAuditLog(token, 200)
       setAuditLog(data || [])
-    } catch (err) {
-      console.error('Error fetching audit log:', err)
+    } catch {
+      addToast('Error al cargar registro de auditoría', 'error')
     } finally {
       setLoadingAudit(false)
     }
@@ -194,8 +204,8 @@ export default function AdminPage() {
       setDeleteTarget(null)
       fetchUsers()
       fetchAuditLog()
-    } catch (err: any) {
-      console.error('Error deleting user:', err)
+    } catch {
+      addToast('Error al eliminar usuario', 'error')
     } finally {
       setDeleting(false)
     }
@@ -279,7 +289,7 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-gray-400">Cargando...</div>
+          <Spinner />
         ) : sortedUsers.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             {search ? 'Sin resultados' : 'No hay usuarios registrados'}
@@ -332,7 +342,7 @@ export default function AdminPage() {
       <div>
         <p className="text-sm text-gray-400 mb-3">Registro de acciones administrativas</p>
         {loadingAudit ? (
-          <div className="text-center py-8 text-gray-400">Cargando...</div>
+          <Spinner />
         ) : auditLog.length === 0 ? (
           <div className="text-center py-8 text-gray-400">Sin registros aún</div>
         ) : (

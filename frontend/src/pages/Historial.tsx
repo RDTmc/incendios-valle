@@ -4,6 +4,7 @@ import { API } from '../api'
 import { useNavigate, useLocation, type NavigateFunction } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardTitle } from '../components/ui/Card'
+import { useToast } from '../util/toast'
 
 interface Reporte {
   report_id: string
@@ -64,13 +65,17 @@ function formatDate(dateStr: string) {
   }
 }
 
+function Spinner() {
+  return (
+    <div className="flex justify-center py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fire-500" />
+    </div>
+  )
+}
+
 function renderReportList(loading: boolean, reportes: Reporte[], navigate: NavigateFunction) {
   if (loading) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">Cargando...</p>
-      </div>
-    )
+    return <Spinner />
   }
   if (reportes.length === 0) {
     return (
@@ -125,6 +130,7 @@ function renderReportList(loading: boolean, reportes: Reporte[], navigate: Navig
 export default function Historial() {
   const { user, token, logout } = useAuth()
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const [reportes, setReportes] = useState<Reporte[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -132,7 +138,7 @@ export default function Historial() {
     if (token && user) {
       API.getReports(token, user.user_id)
         .then(data => setReportes(data))
-        .catch(err => console.error('Error:', err))
+        .catch(() => addToast('Error al cargar tus reportes. Intenta de nuevo.', 'error'))
         .finally(() => setLoading(false))
     }
   }, [token, user])
