@@ -89,7 +89,7 @@ function renderReportList(loading: boolean, reportes: Reporte[], navigate: Navig
     )
   }
   return reportes.map((reporte) => (
-    <Card key={reporte.report_id}>
+    <Card key={reporte.report_id} className="bg-white">
       <div className="flex justify-between items-start mb-2">
         <div>
           <CardTitle className="text-sm">Reporte #{reporte.report_id.slice(0, 8)}</CardTitle>

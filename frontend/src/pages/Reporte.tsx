@@ -202,7 +202,7 @@ export default function Reporte() {
             </div>
           )}
 
-          <Card>
+          <Card className="bg-white">
 
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Tipo de incendio */}

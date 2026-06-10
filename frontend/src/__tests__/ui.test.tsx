@@ -98,19 +98,19 @@ describe('Card', () => {
 
   it('applies padding styles', () => {
     const { container } = render(<Card padding="sm">Small</Card>)
-    const div = container.querySelector('.bg-white')
+    const div = container.querySelector('.rounded-lg')
     expect(div?.className).toContain('p-3')
   })
 
   it('applies shadow by default', () => {
     const { container } = render(<Card>Shadow</Card>)
-    const div = container.querySelector('.bg-white')
+    const div = container.querySelector('.rounded-lg')
     expect(div?.className).toContain('shadow')
   })
 
   it('removes shadow when shadow=false', () => {
     const { container } = render(<Card shadow={false}>No shadow</Card>)
-    const div = container.querySelector('.bg-white')
+    const div = container.querySelector('.rounded-lg')
     expect(div?.className).not.toContain('shadow')
   })
 })

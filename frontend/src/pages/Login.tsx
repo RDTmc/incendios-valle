@@ -45,7 +45,7 @@ export default function Login() {
 
   return (
     <div className="h-screen overflow-hidden bg-gray-100 flex items-center justify-center p-4">
-      <Card padding="lg" className="w-full max-w-md">
+      <Card padding="lg" className="bg-white w-full max-w-md">
         <div className="text-center mb-4">
           <div className="w-full flex justify-center mb-3">
             <img

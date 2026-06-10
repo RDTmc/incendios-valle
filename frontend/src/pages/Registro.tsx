@@ -62,7 +62,7 @@ export default function Registro() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <Card padding="lg" className="w-full max-w-md">
+      <Card padding="lg" className="bg-white w-full max-w-md">
         <div className="text-center mb-6">
           <img
             src="/logo-muni.png"

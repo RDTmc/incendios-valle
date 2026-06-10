@@ -56,7 +56,7 @@ export default function Confirmacion() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-lg mx-auto">
-        <Card padding="lg">
+        <Card padding="lg" className="bg-white">
           {/* Estado */}
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
