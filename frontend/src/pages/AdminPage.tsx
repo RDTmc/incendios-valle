@@ -318,7 +318,7 @@ export default function AdminPage() {
         {loading ? (
           <Spinner />
         ) : sortedUsers.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-gray-300">
             {search ? 'Sin resultados' : 'No hay usuarios registrados'}
           </div>
         ) : (
@@ -371,7 +371,7 @@ export default function AdminPage() {
         {loadingAudit ? (
           <Spinner />
         ) : auditLog.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">Sin registros aún</div>
+          <div className="text-center py-8 text-gray-300">Sin registros aún</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -420,7 +420,7 @@ export default function AdminPage() {
         {loadingNotifications ? (
           <Spinner />
         ) : notifications.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">Sin notificaciones aún</div>
+          <div className="text-center py-8 text-gray-300">Sin notificaciones aún</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -500,7 +500,7 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        <Card className="p-4">
+        <Card className="bg-gray-800 p-4">
           {tab === 'users' ? renderUsersTab() : tab === 'audit' ? renderAuditTab() : renderNotificationsTab()}
         </Card>
       </div>

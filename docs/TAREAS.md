@@ -6,11 +6,11 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 
 ### SNS + Grafana annotations pipeline
 - **SNS welcome notification**: `notification_service.notify_new_user()` publica JSON a SNS topic `incendios-alerts` y guarda en SQLite (`notifications` table)
-- **Backend endpoints**: `POST /register` y `POST /admin/create-user` llaman `notify_new_user`
+- **Grafana annotation al crear reporte**: `notification_service.notify_new_report()` crea anotación en Grafana vía Docker internal network
+- **Backend endpoints**: `POST /register` y `POST /admin/create-user` llaman `notify_new_user`; `POST /reports` llama `notify_new_report`
 - **Admin panel Notificaciones**: tab en AdminPage con historial (email, nombre, status, SNS ID, fecha)
-- **Grafana annotation directa desde API**: `_create_grafana_annotation()` POSTea a `http://incendios-grafana:3000/api/annotations` vía Docker internal network. Se eliminó dependencia de Lambda sns-to-grafana (devolvía 403).
 - **Grafana token persistido**: agregado `GRAFANA_TOKEN` a docker-compose.yml y refresh_api.sh
-- **Commit**: `0b8ac34` (Grafana directo desde API, salta Lambda)
+- **Commits**: `8fd45f9` (SNS welcome), `4815999` (JSON para Grafana), `87101e5` (Lambda Grafana), `0b8ac34` (Grafana directo desde API), `9bca859` (notify_new_report)
 
 ### PWA UX improvements
 - **Historial**: spinner + toast error en carga/fallo
@@ -53,7 +53,8 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 ## MEDIA PRIORIDAD
 
 5. **SendGrid welcome email**
-   - API key, `send_welcome_email()` en notification_service.py
+   - Obtener API key SendGrid (o alternativa si bloqueado en AWS Academy)
+   - `send_welcome_email()` en notification_service.py
    - Probar flujo completo: registro → SNS broadcast + SendGrid + Grafana annotation
 6. **Dashboard Grafana**
    - Persistencia de configuraciones (allowUiUpdates)
