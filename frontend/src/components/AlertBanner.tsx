@@ -48,9 +48,11 @@ const API_BASE = getApiBase()
 export default function AlertBanner() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchAlerts = async () => {
+      setLoading(true)
       try {
         const data = await fetch(`${API_BASE}/alerts?read=0&limit=5`)
         if (data.ok) {
@@ -59,10 +61,14 @@ export default function AlertBanner() {
         }
       } catch {
         // silent fail
+      } finally {
+        setLoading(false)
       }
     }
     fetchAlerts()
-    const interval = setInterval(fetchAlerts, POLL_INTERVAL)
+    const interval = setInterval(() => {
+      fetchAlerts()
+    }, POLL_INTERVAL)
     return () => clearInterval(interval)
   }, [])
 
@@ -75,6 +81,14 @@ export default function AlertBanner() {
   }
 
   const visibleAlerts = alerts.filter(a => !dismissed.has(a.id))
+
+  if (loading) {
+    return (
+      <div className="fixed bottom-20 left-4 right-4 z-50 flex justify-center">
+        <div className="w-8 h-8 border-2 border-fire-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   if (visibleAlerts.length === 0) return null
 

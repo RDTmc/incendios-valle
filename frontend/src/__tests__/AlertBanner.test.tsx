@@ -38,8 +38,10 @@ describe('AlertBanner', () => {
     mockSuccess([])
     const AlertBanner = (await import('../components/AlertBanner')).default
     const { container } = render(<AlertBanner />)
-    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
-    expect(container.innerHTML).toBe('')
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalled()
+      expect(container.innerHTML).toBe('')
+    })
   })
 
   it('renders alerts from API', async () => {
@@ -89,7 +91,9 @@ describe('AlertBanner', () => {
     mockFetch.mockRejectedValue(new Error('Network error'))
     const AlertBanner = (await import('../components/AlertBanner')).default
     const { container } = render(<AlertBanner />)
-    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
-    expect(container.innerHTML).toBe('')
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalled()
+      expect(container.innerHTML).toBe('')
+    })
   })
 })

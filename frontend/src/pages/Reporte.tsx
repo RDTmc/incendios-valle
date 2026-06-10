@@ -39,7 +39,12 @@ function MapController({ lat, lng }: { lat: number; lng: number }) {
 }
 
 function renderFotoLabel(uploading: boolean, reporte: { fotoUrl?: string; fotoName?: string }) {
-  if (uploading) return <span className="text-blue-600">⏳ Subiendo...</span>
+  if (uploading) return (
+    <span className="flex items-center justify-center gap-2 text-blue-600">
+      <span className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      Subiendo imagen...
+    </span>
+  )
   if (reporte.fotoUrl) return <span className="text-green-600">✅ {reporte.fotoName}</span>
   return <span className="text-gray-500"><Camera className="w-4 h-4 inline-block mr-1" /> Tomar foto</span>
 }
