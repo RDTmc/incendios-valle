@@ -31,6 +31,9 @@ package_lambda "ms-incidencias" "ms-incidencias"
 # 3. ms-notificaciones (SNS alerts)
 package_lambda "ms-notificaciones" "ms-notificaciones"
 
+# 4. sns-to-grafana (SNS subscriber -> Grafana annotations)
+package_lambda "sns-to-grafana" "sns-to-grafana"
+
 echo ""
 echo "=== Creando/Actualizando Lambdas ==="
 
@@ -62,6 +65,8 @@ create_or_update "ms-incidencias" "app.lambda_handler"
 
 create_or_update "ms-notificaciones" "app.lambda_handler"
 
+create_or_update "sns-to-grafana" "app.lambda_handler"
+
 echo ""
 echo "=== Configurando environment variables ==="
 
@@ -73,6 +78,11 @@ aws lambda update-function-configuration \
 aws lambda update-function-configuration \
     --function-name "ms-notificaciones" \
     --environment "Variables={SNS_TOPIC_ARN=arn:aws:sns:us-east-1:${ACCOUNT_ID}:incendios-alerts}" \
+    --region "$REGION" --no-cli-pager 2>/dev/null || true
+
+aws lambda update-function-configuration \
+    --function-name "sns-to-grafana" \
+    --environment "Variables={GRAFANA_URL=https://dashboard.keogh.lat/dashboard,GRAFANA_TOKEN=glsa_xzECDdWZO6ixPttXFZI3oGVfXD0XPmJR_5019d7a0}" \
     --region "$REGION" --no-cli-pager 2>/dev/null || true
 
 echo ""
@@ -103,5 +113,24 @@ if [ -n "$API_ID" ]; then
 fi
 
 echo ""
+echo "=== Suscribiendo sns-to-grafana al topic SNS ==="
+SNS_TOPIC="arn:aws:sns:us-east-1:${ACCOUNT_ID}:incendios-alerts"
+SNS_SUB_ARN=$(aws sns subscribe \
+    --topic-arn "$SNS_TOPIC" \
+    --protocol lambda \
+    --notification-endpoint "arn:aws:lambda:us-east-1:${ACCOUNT_ID}:function:sns-to-grafana" \
+    --region "$REGION" \
+    --query "SubscriptionArn" --output text 2>/dev/null || true)
+echo "   Subscription: $SNS_SUB_ARN"
+
+aws lambda add-permission \
+    --function-name "sns-to-grafana" \
+    --statement-id "sns-topic-sub" \
+    --action "lambda:InvokeFunction" \
+    --principal "sns.amazonaws.com" \
+    --source-arn "$SNS_TOPIC" \
+    --region "$REGION" 2>/dev/null || echo "   (permiso ya existe)"
+
+echo ""
 echo "=== Lambdas listas ==="
-aws lambda list-functions --region "$REGION" --query "Functions[?contains(FunctionName, 'ms-') || contains(FunctionName, 'upload')].[FunctionName,Runtime,Handler]" --output table
+aws lambda list-functions --region "$REGION" --query "Functions[?contains(FunctionName, 'ms-') || contains(FunctionName, 'sns-to-') || contains(FunctionName, 'upload')].[FunctionName,Runtime,Handler]" --output table

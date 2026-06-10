@@ -1,4 +1,5 @@
 import os
+import json
 import boto3
 import sqlite3
 from datetime import datetime, timezone
@@ -27,13 +28,12 @@ def notify_new_user(email: str, nombre: str = "", rol: str = "VECINO") -> dict:
     name = nombre or email.split("@")[0]
     welcome_msg = WELCOME_TEMPLATE.format(nombre=name, rol=rol)
     sns_subject = "[Admin Valle del Sol] Nuevo usuario registrado"
-    sns_msg = (
-        f"Nuevo usuario registrado en el Sistema de Alerta Temprana.\n\n"
-        f"Email: {email}\n"
-        f"Nombre: {nombre or '—'}\n"
-        f"Rol: {rol}\n"
-        f"Hora: {datetime.now(timezone.utc).isoformat()}"
-    )
+    now = datetime.now(timezone.utc).isoformat()
+    sns_msg = json.dumps({
+        "text": f"Nuevo usuario: {email} ({nombre or '—'}) - Rol: {rol}",
+        "tags": ["usuario", "registro", "admin"],
+        "timestamp": now,
+    })
     sns_id = ""
     status = "sent"
 
