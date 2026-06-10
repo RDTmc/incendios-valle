@@ -26,7 +26,16 @@ type Tab = 'users' | 'audit'
 
 type ModalMode = 'create' | 'edit' | null
 
+type SortKey = 'email' | 'nombre' | 'rol' | 'created_at'
+
 const roles = ['VECINO', 'ADMIN']
+
+const SORT_LABELS: Record<SortKey, string> = {
+  email: 'Email',
+  nombre: 'Nombre',
+  rol: 'Rol',
+  created_at: 'Creado',
+}
 
 function formatDate(dateStr: string) {
   try {
@@ -34,6 +43,15 @@ function formatDate(dateStr: string) {
   } catch {
     return dateStr
   }
+}
+
+function sortUsers(users: AdminUser[], key: SortKey, asc: boolean): AdminUser[] {
+  return [...users].sort((a, b) => {
+    const aVal = a[key] || ''
+    const bVal = b[key] || ''
+    const cmp = aVal.localeCompare(bVal, 'es')
+    return asc ? cmp : -cmp
+  })
 }
 
 export default function AdminPage() {
@@ -60,6 +78,9 @@ export default function AdminPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const [sortKey, setSortKey] = useState<SortKey>('created_at')
+  const [sortAsc, setSortAsc] = useState(false)
 
   const fetchUsers = useCallback(async () => {
     if (!token) return
@@ -89,6 +110,22 @@ export default function AdminPage() {
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
   useEffect(() => { if (tab === 'audit') fetchAuditLog() }, [tab, fetchAuditLog])
+
+  useEffect(() => {
+    const interval = setInterval(() => { fetchUsers() }, 15000)
+    return () => clearInterval(interval)
+  }, [fetchUsers])
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const sortedUsers = sortUsers(users, sortKey, sortAsc)
 
   function openCreateModal() {
     setModalMode('create')
@@ -222,6 +259,11 @@ export default function AdminPage() {
     )
   }
 
+  function renderSortIcon(key: SortKey) {
+    if (sortKey !== key) return <span className="ml-1 text-gray-600">⇅</span>
+    return <span className="ml-1">{sortAsc ? '↑' : '↓'}</span>
+  }
+
   function renderUsersTab() {
     return (
       <div>
@@ -238,7 +280,7 @@ export default function AdminPage() {
 
         {loading ? (
           <div className="text-center py-8 text-gray-400">Cargando...</div>
-        ) : users.length === 0 ? (
+        ) : sortedUsers.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             {search ? 'Sin resultados' : 'No hay usuarios registrados'}
           </div>
@@ -247,15 +289,21 @@ export default function AdminPage() {
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-700 text-gray-400">
-                  <th className="py-2 px-3">Email</th>
-                  <th className="py-2 px-3">Nombre</th>
-                  <th className="py-2 px-3">Rol</th>
-                  <th className="py-2 px-3">Creado</th>
+                  {(['email', 'nombre', 'rol', 'created_at'] as SortKey[]).map(key => (
+                    <th
+                      key={key}
+                      className="py-2 px-3 cursor-pointer select-none hover:text-gray-200 transition-colors"
+                      onClick={() => toggleSort(key)}
+                    >
+                      {SORT_LABELS[key]}
+                      {renderSortIcon(key)}
+                    </th>
+                  ))}
                   <th className="py-2 px-3">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
+                {sortedUsers.map(u => (
                   <tr key={u.user_id} className="border-b border-gray-700 hover:bg-gray-700/50">
                     <td className="py-2 px-3 text-gray-200">{u.email}</td>
                     <td className="py-2 px-3 text-gray-300">{u.nombre || '—'}</td>
@@ -329,8 +377,12 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white pb-8">
       <div className="bg-gray-800 p-4 shadow flex items-center justify-between">
-        <h1 className="text-xl font-bold">Admin Panel</h1>
         <div className="flex items-center gap-3">
+          <img src="/logo-muni.png" alt="Municipalidad" className="h-10 w-auto" />
+          <h1 className="text-xl font-bold">Admin Panel</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium px-2 py-1 rounded bg-purple-900 text-purple-200">ADMIN</span>
           <span className="text-sm text-gray-400 truncate max-w-[120px]">{user?.nombre || user?.email}</span>
           <Button variant="ghost" size="sm" className="!text-red-400 hover:!text-red-300" onClick={() => { logout(); navigate('/login') }}>
             Salir
@@ -363,6 +415,12 @@ export default function AdminPage() {
 
       {renderModal()}
       {renderDeleteConfirm()}
+
+      <div className="text-center text-xs text-gray-500 mt-8 px-4">
+        Panel de Administración — Municipalidad de Valle del Sol
+        <br />
+        Sistema de Gestión de Incendios — Datos actualizados cada 15 segundos
+      </div>
     </div>
   )
 }
