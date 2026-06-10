@@ -3,6 +3,7 @@ from typing import Optional, Annotated
 from dependencies import get_report_repository, verify_token, verify_token_optional, sync_to_sqlite
 from models import ReportRequest
 from factories import ReportFactory
+from notification_service import notify_new_report
 from datetime import datetime, timezone
 
 router = APIRouter(tags=["reports"])
@@ -39,6 +40,13 @@ def create_report(req: ReportRequest, payload: Annotated[Optional[dict], Depends
 
         report_id = item.get('reports_id', '')
         sync_to_sqlite('reports', 'INSERT', item)
+
+        notify_new_report(
+            report_id=report_id,
+            email=payload.get('email', '') if payload else '',
+            nombre=payload.get('nombre', '') if payload else '',
+            tipo=req.tipo,
+        )
 
         return {
             "report_id": report_id,

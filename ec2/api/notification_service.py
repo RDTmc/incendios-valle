@@ -101,3 +101,12 @@ def notify_new_user(email: str, nombre: str = "", rol: str = "VECINO") -> dict:
             conn.close()
 
     return {"status": status, "message_id": sns_id}
+
+
+def notify_new_report(report_id: str, email: str = "", nombre: str = "", tipo: str = "") -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    reporter = nombre or email or "Anónimo"
+    _create_grafana_annotation(
+        text=f"Nuevo reporte #{report_id[:8]}: {tipo} por {reporter}",
+        tags=["reporte", tipo.lower() if tipo else "general"],
+    )
