@@ -38,6 +38,7 @@ def db_connection():
     cursor.execute("CREATE TABLE IF NOT EXISTS firms_hotspots (id INTEGER PRIMARY KEY AUTOINCREMENT, latitude REAL, longitude REAL, brightness REAL, frp REAL, confidence TEXT, satellite TEXT, acq_date TEXT, acq_time INTEGER, daynight TEXT, source TEXT, fetched_at TEXT DEFAULT (datetime('now')), UNIQUE(latitude, longitude, acq_date, acq_time, satellite))")
     cursor.execute("CREATE TABLE IF NOT EXISTS weather_readings (id INTEGER PRIMARY KEY AUTOINCREMENT, lat REAL, lon REAL, region TEXT, temperature REAL, humidity INTEGER, wind_speed REAL, wind_direction REAL, weather_desc TEXT, pressure INTEGER, fetched_at TEXT DEFAULT (datetime('now')))")
     cursor.execute("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, alert_type TEXT NOT NULL DEFAULT 'INFO', message TEXT NOT NULL, report_id TEXT DEFAULT '', latitud REAL DEFAULT 0, longitud REAL DEFAULT 0, source TEXT DEFAULT 'system', read INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
+    cursor.execute("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, admin_id TEXT NOT NULL, target_id TEXT, details TEXT DEFAULT '', created_at TEXT NOT NULL)")
     conn.commit()
     yield conn
     conn.close()

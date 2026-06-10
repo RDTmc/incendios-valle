@@ -9,6 +9,7 @@ import Reporte from './pages/Reporte'
 import Confirmacion from './pages/Confirmacion'
 import MapaFocos from './pages/MapaFocos'
 import Historial from './pages/Historial'
+import AdminPage from './pages/AdminPage'
 import RedireccionQr from './pages/RedireccionQr'
 import AfichePreview from './pages/AfichePreview'
 
@@ -147,7 +148,7 @@ function App() {
           {/* Rutas Admin */}
           <Route path="/admin" element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
-              <Historial />
+              <AdminPage />
             </ProtectedRoute>
           } />
           

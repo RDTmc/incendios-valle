@@ -2,7 +2,7 @@ import os
 import sqlite3
 import jwt
 from datetime import datetime, timezone
-from fastapi import HTTPException, Header
+from fastapi import Depends, HTTPException, Header
 from typing import Optional
 
 SECRET_KEY = os.environ['JWT_SECRET']
@@ -49,6 +49,12 @@ def verify_token(authorization: Optional[str] = Header(None)):
         raise HTTPException(status_code=401, detail="Token expirado")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token inválido")
+
+
+def require_admin(payload: dict = Depends(verify_token)):
+    if payload.get('rol') != 'ADMIN':
+        raise HTTPException(status_code=403, detail="Se requiere rol ADMIN")
+    return payload
 
 
 def verify_token_optional(authorization: Optional[str] = Header(None)):

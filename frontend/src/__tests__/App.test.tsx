@@ -162,7 +162,7 @@ describe('App routing', () => {
     const App = (await import('../App')).default
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('Cerrar Sesión')).toBeDefined()
+      expect(screen.getByText('Admin Panel')).toBeDefined()
     })
   })
 
@@ -172,9 +172,9 @@ describe('App routing', () => {
     const App = (await import('../App')).default
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('Cerrar Sesión')).toBeDefined()
+      expect(screen.getByText('Admin Panel')).toBeDefined()
     })
-    fireEvent.click(screen.getByText('Cerrar Sesión'))
+    fireEvent.click(screen.getByText('Salir'))
     await waitFor(() => {
       expect(localStorage.getItem('incendios_user')).toBeNull()
       expect(localStorage.getItem('incendios_token')).toBeNull()

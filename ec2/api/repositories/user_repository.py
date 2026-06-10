@@ -43,6 +43,37 @@ class UserRepository:
         self.table.put_item(Item=item)
         return item
 
+    def find_all(self) -> list[dict]:
+        response = self.table.scan()
+        return response.get('Items', [])
+
+    def update(self, user_id: str, email: str | None = None, nombre: str | None = None, rol: str | None = None) -> dict:
+        user = self.find_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        update_expr = []
+        expr_attrs = {':user_id': user_id}
+        if email is not None:
+            update_expr.append('email = :email')
+            expr_attrs[':email'] = email
+        if nombre is not None:
+            update_expr.append('nombre = :nombre')
+            expr_attrs[':nombre'] = nombre
+        if rol is not None:
+            update_expr.append('rol = :rol')
+            expr_attrs[':rol'] = rol
+        if not update_expr:
+            return user
+        expr = 'SET ' + ', '.join(update_expr)
+        self.table.update_item(Key={'user_id': user_id}, UpdateExpression=expr, ExpressionAttributeValues=expr_attrs)
+        return self.find_by_id(user_id)
+
+    def delete(self, user_id: str) -> None:
+        user = self.find_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        self.table.delete_item(Key={'user_id': user_id})
+
     def authenticate(self, email: str, password: str) -> dict:
         user = self.find_by_email(email)
         if not user:

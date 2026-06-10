@@ -23,6 +23,7 @@ from routers.auth import router as auth_router
 from routers.reports import router as reports_router
 from routers.public import router as public_router
 from routers.alerts import router as alerts_router
+from routers.admin import router as admin_router
 from dependencies import verify_token, verify_token_optional, sync_to_sqlite
 from models import SyncRequest, ExternalReportRequest
 
@@ -52,6 +53,7 @@ app.include_router(auth_router)
 app.include_router(reports_router)
 app.include_router(public_router)
 app.include_router(alerts_router)
+app.include_router(admin_router)
 
 
 def get_dynamodb_resource():
@@ -192,6 +194,16 @@ def init_db():
             source TEXT DEFAULT 'system',
             read INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now'))
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            admin_id TEXT NOT NULL,
+            target_id TEXT,
+            details TEXT DEFAULT '',
+            created_at TEXT NOT NULL
         )
     ''')
     try:

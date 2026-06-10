@@ -119,5 +119,67 @@ export const API = {
       throw new Error(err.error || err.detail || `Failed to create anonymous report: HTTP ${res.status}`)
     }
     return res.json()
+  },
+
+  adminGetUsers: async (token: string, search?: string) => {
+    const url = search ? `${API_URL}/admin/users?search=${encodeURIComponent(search)}` : `${API_URL}/admin/users`
+    const res = await handleAuth(await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to fetch users: HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
+  adminCreateUser: async (token: string, data: { email: string; password: string; nombre: string; rol: string }) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data)
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to create user: HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
+  adminUpdateUser: async (token: string, userId: string, data: { email?: string; nombre?: string; rol?: string }) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data)
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to update user: HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
+  adminDeleteUser: async (token: string, userId: string) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to delete user: HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
+  getAuditLog: async (token: string, limit?: number) => {
+    const url = limit ? `${API_URL}/admin/audit-log?limit=${limit}` : `${API_URL}/admin/audit-log`
+    const res = await handleAuth(await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to fetch audit log: HTTP ${res.status}`)
+    }
+    return res.json()
   }
 }
