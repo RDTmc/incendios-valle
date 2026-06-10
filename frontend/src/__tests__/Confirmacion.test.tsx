@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { ToastProvider } from '../util/toast'
 
 const mockNavigate = vi.fn()
 let mockLocationState: any = null
@@ -35,7 +36,7 @@ describe('Confirmacion Page', () => {
       tipo: 'URBANO',
     }
     const Confirmacion = (await import('../pages/Confirmacion')).default
-    render(<MemoryRouter><Confirmacion /></MemoryRouter>)
+    render(<MemoryRouter><ToastProvider><Confirmacion /></ToastProvider></MemoryRouter>)
     expect(screen.getByText('Reporte Enviado')).toBeDefined()
     expect(screen.getByText('ID: abc-123')).toBeDefined()
     expect(screen.getByText(/Urbano/)).toBeDefined()
@@ -43,12 +44,10 @@ describe('Confirmacion Page', () => {
     expect(screen.getByTestId('map-container')).toBeDefined()
   })
 
-  it('renders fallback values without location state', async () => {
+  it('redirects to /reporte without location state', async () => {
     const Confirmacion = (await import('../pages/Confirmacion')).default
-    render(<MemoryRouter><Confirmacion /></MemoryRouter>)
-    expect(screen.getByText('ID: ---')).toBeDefined()
-    expect(screen.getByText(/Forestal/)).toBeDefined()
-    expect(screen.getByText(/Pendiente de validación/)).toBeDefined()
+    render(<MemoryRouter><ToastProvider><Confirmacion /></ToastProvider></MemoryRouter>)
+    expect(mockNavigate).toHaveBeenCalledWith('/reporte', { replace: true })
   })
 
   it('renders foto when present', async () => {
@@ -58,7 +57,7 @@ describe('Confirmacion Page', () => {
       fotoUrl: 'https://cdn.example.com/foto.jpg',
     }
     const Confirmacion = (await import('../pages/Confirmacion')).default
-    render(<MemoryRouter><Confirmacion /></MemoryRouter>)
+    render(<MemoryRouter><ToastProvider><Confirmacion /></ToastProvider></MemoryRouter>)
     const img = screen.getByAltText('Foto del incendio') as HTMLImageElement
     expect(img).toBeDefined()
     expect(img.src).toContain('foto.jpg')
@@ -70,7 +69,7 @@ describe('Confirmacion Page', () => {
       lat: 0, lng: 0, tipo: 'FORESTAL',
     }
     const Confirmacion = (await import('../pages/Confirmacion')).default
-    render(<MemoryRouter><Confirmacion /></MemoryRouter>)
+    render(<MemoryRouter><ToastProvider><Confirmacion /></ToastProvider></MemoryRouter>)
     fireEvent.click(screen.getByText('Nuevo Reporte'))
     expect(mockNavigate).toHaveBeenCalledWith('/reporte')
   })
@@ -81,7 +80,7 @@ describe('Confirmacion Page', () => {
       lat: -33.45, lng: -70.67, tipo: 'FORESTAL',
     }
     const Confirmacion = (await import('../pages/Confirmacion')).default
-    render(<MemoryRouter><Confirmacion /></MemoryRouter>)
+    render(<MemoryRouter><ToastProvider><Confirmacion /></ToastProvider></MemoryRouter>)
     fireEvent.click(screen.getByText('Ver Mapa de Focos'))
     expect(mockNavigate).toHaveBeenCalledWith('/mapa', {
       state: { centerTo: [-33.45, -70.67], highlightId: 'r1' },

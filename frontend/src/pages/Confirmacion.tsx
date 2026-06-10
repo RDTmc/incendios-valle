@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect } from 'react'
 import { Button } from '../components/ui/Button'
 import { Card, CardTitle } from '../components/ui/Card'
+import { useToast } from '../util/toast'
 
 function createUserMarkerIcon() {
   return L.divIcon({
@@ -27,6 +28,7 @@ function MapPreview({ lat, lng }: { lat: number; lng: number }) {
 export default function Confirmacion() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { addToast } = useToast()
   const data = location.state as {
     reporte: { report_id: string; estado: string; created_at: string }
     lat: number
@@ -35,10 +37,19 @@ export default function Confirmacion() {
     fotoUrl?: string
   } | null
 
-  const reportId = data?.reporte?.report_id ?? '---'
-  const lat = data?.lat ?? 0
-  const lng = data?.lng ?? 0
-  const tipo = data?.tipo ?? 'FORESTAL'
+  useEffect(() => {
+    if (!data) {
+      addToast('No hay datos del reporte. Reporta un incendio primero.', 'warning')
+      navigate('/reporte', { replace: true })
+    }
+  }, [data, addToast, navigate])
+
+  if (!data) return null
+
+  const reportId = data.reporte?.report_id ?? '---'
+  const lat = data.lat ?? 0
+  const lng = data.lng ?? 0
+  const tipo = data.tipo ?? 'FORESTAL'
   const createdAt = data?.reporte?.created_at ?? ''
   const fotoUrl = data?.fotoUrl ?? ''
 
