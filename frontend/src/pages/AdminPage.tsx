@@ -55,7 +55,7 @@ function sortUsers(users: AdminUser[], key: SortKey, asc: boolean): AdminUser[] 
 }
 
 export default function AdminPage() {
-  const { user, token, logout } = useAuth()
+  const { token, logout } = useAuth()
   const navigate = useNavigate()
 
   const [tab, setTab] = useState<Tab>('users')
@@ -82,16 +82,16 @@ export default function AdminPage() {
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortAsc, setSortAsc] = useState(false)
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (showLoader = true) => {
     if (!token) return
-    setLoading(true)
+    if (showLoader) setLoading(true)
     try {
       const data = await API.adminGetUsers(token, search || undefined)
       setUsers(data.users || [])
     } catch (err) {
       console.error('Error fetching users:', err)
     } finally {
-      setLoading(false)
+      if (showLoader) setLoading(false)
     }
   }, [token, search])
 
@@ -112,7 +112,7 @@ export default function AdminPage() {
   useEffect(() => { if (tab === 'audit') fetchAuditLog() }, [tab, fetchAuditLog])
 
   useEffect(() => {
-    const interval = setInterval(() => { fetchUsers() }, 15000)
+    const interval = setInterval(() => { fetchUsers(false) }, 15000)
     return () => clearInterval(interval)
   }, [fetchUsers])
 
@@ -377,13 +377,15 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white pb-8">
       <div className="bg-gray-800 p-4 shadow flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src="/logo-muni.png" alt="Municipalidad" className="h-10 w-auto" />
-          <h1 className="text-xl font-bold">Admin Panel</h1>
+        <div className="flex items-center gap-4">
+          <img src="/logo-muni.png" alt="Municipalidad de Valle del Sol" className="h-14 w-auto" />
+          <div>
+            <h1 className="text-xl font-bold">Panel de Administración</h1>
+            <p className="text-xs text-gray-400">Sistema de Gestión de Incendios</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs font-medium px-2 py-1 rounded bg-purple-900 text-purple-200">ADMIN</span>
-          <span className="text-sm text-gray-400 truncate max-w-[120px]">{user?.nombre || user?.email}</span>
+          <span className="text-xs font-bold px-3 py-1.5 rounded bg-purple-900 text-purple-200 border border-purple-700">ADMIN</span>
           <Button variant="ghost" size="sm" className="!text-red-400 hover:!text-red-300" onClick={() => { logout(); navigate('/login') }}>
             Salir
           </Button>
@@ -417,9 +419,9 @@ export default function AdminPage() {
       {renderDeleteConfirm()}
 
       <div className="text-center text-xs text-gray-500 mt-8 px-4">
-        Panel de Administración — Municipalidad de Valle del Sol
+        Panel de Administración
         <br />
-        Sistema de Gestión de Incendios — Datos actualizados cada 15 segundos
+        Sistema de Gestión de Incendios
       </div>
     </div>
   )

@@ -162,7 +162,7 @@ describe('App routing', () => {
     const App = (await import('../App')).default
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('Admin Panel')).toBeDefined()
+      expect(screen.getByText('Panel de Administración')).toBeDefined()
     })
   })
 
@@ -172,7 +172,7 @@ describe('App routing', () => {
     const App = (await import('../App')).default
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('Admin Panel')).toBeDefined()
+      expect(screen.getByText('Panel de Administración')).toBeDefined()
     })
     fireEvent.click(screen.getByText('Salir'))
     await waitFor(() => {
