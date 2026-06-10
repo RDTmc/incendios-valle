@@ -23,7 +23,17 @@ interface AuditEntry {
   created_at: string
 }
 
-type Tab = 'users' | 'audit'
+interface NotificationEntry {
+  id: number
+  type: string
+  recipient_email: string
+  recipient_name: string
+  status: string
+  sns_message_id: string
+  created_at: string
+}
+
+type Tab = 'users' | 'audit' | 'notifications'
 
 type ModalMode = 'create' | 'edit' | null
 
@@ -77,6 +87,9 @@ export default function AdminPage() {
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
   const [loadingAudit, setLoadingAudit] = useState(false)
 
+  const [notifications, setNotifications] = useState<NotificationEntry[]>([])
+  const [loadingNotifications, setLoadingNotifications] = useState(false)
+
   const [modalMode, setModalMode] = useState<ModalMode>(null)
   const [editUser, setEditUser] = useState<AdminUser | null>(null)
   const [formEmail, setFormEmail] = useState('')
@@ -118,8 +131,22 @@ export default function AdminPage() {
     }
   }, [token])
 
+  const fetchNotifications = useCallback(async () => {
+    if (!token) return
+    setLoadingNotifications(true)
+    try {
+      const data = await API.adminGetNotifications(token, 200)
+      setNotifications(data || [])
+    } catch {
+      addToast('Error al cargar notificaciones', 'error')
+    } finally {
+      setLoadingNotifications(false)
+    }
+  }, [token])
+
   useEffect(() => { fetchUsers() }, [fetchUsers])
   useEffect(() => { if (tab === 'audit') fetchAuditLog() }, [tab, fetchAuditLog])
+  useEffect(() => { if (tab === 'notifications') fetchNotifications() }, [tab, fetchNotifications])
 
   useEffect(() => {
     const interval = setInterval(() => { fetchUsers(false) }, 15000)
@@ -384,6 +411,52 @@ export default function AdminPage() {
     )
   }
 
+  function renderNotificationsTab() {
+    return (
+      <div>
+        <p className="text-sm text-gray-400 mb-3">
+          Notificaciones de bienvenida enviadas a nuevos usuarios
+        </p>
+        {loadingNotifications ? (
+          <Spinner />
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">Sin notificaciones aún</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-700 text-gray-400">
+                  <th className="py-2 px-3">Email</th>
+                  <th className="py-2 px-3">Nombre</th>
+                  <th className="py-2 px-3">Estado</th>
+                  <th className="py-2 px-3">SNS ID</th>
+                  <th className="py-2 px-3">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {notifications.map((n) => (
+                  <tr key={n.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td className="py-2 px-3 text-gray-200">{n.recipient_email}</td>
+                    <td className="py-2 px-3 text-gray-300">{n.recipient_name || '—'}</td>
+                    <td className="py-2 px-3">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        n.status === 'sent' ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'
+                      }`}>
+                        {n.status === 'sent' ? 'Enviado' : 'Fallido'}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-gray-400 font-mono text-xs">{n.sns_message_id || '—'}</td>
+                    <td className="py-2 px-3 text-gray-400 text-xs">{formatDate(n.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white pb-8">
       <div className="bg-gray-800 p-4 shadow flex items-center justify-between">
@@ -418,10 +491,17 @@ export default function AdminPage() {
           >
             Auditoría
           </Button>
+          <Button
+            variant={tab === 'notifications' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab('notifications')}
+          >
+            Notificaciones ({notifications.length})
+          </Button>
         </div>
 
         <Card className="p-4">
-          {tab === 'users' ? renderUsersTab() : renderAuditTab()}
+          {tab === 'users' ? renderUsersTab() : tab === 'audit' ? renderAuditTab() : renderNotificationsTab()}
         </Card>
       </div>
 

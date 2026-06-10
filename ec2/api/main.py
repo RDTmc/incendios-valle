@@ -206,6 +206,18 @@ def init_db():
             created_at TEXT NOT NULL
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,
+            recipient_email TEXT NOT NULL,
+            recipient_name TEXT DEFAULT '',
+            message TEXT NOT NULL,
+            status TEXT DEFAULT 'sent',
+            sns_message_id TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    ''')
     try:
         cursor.execute("ALTER TABLE reports ADD COLUMN foto_url TEXT DEFAULT ''")
     except sqlite3.OperationalError:

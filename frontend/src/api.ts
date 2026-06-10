@@ -181,5 +181,17 @@ export const API = {
       throw new Error(err.error || err.detail || `Failed to fetch audit log: HTTP ${res.status}`)
     }
     return res.json()
+  },
+
+  adminGetNotifications: async (token: string, limit?: number) => {
+    const url = limit ? `${API_URL}/admin/notifications?limit=${limit}` : `${API_URL}/admin/notifications`
+    const res = await handleAuth(await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to fetch notifications: HTTP ${res.status}`)
+    }
+    return res.json()
   }
 }

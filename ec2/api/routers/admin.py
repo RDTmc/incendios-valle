@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from dependencies import get_db_connection, require_admin, get_user_repository
+from notification_service import send_welcome_notification
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -69,6 +70,13 @@ def admin_create_user(req: AdminCreateUserRequest, payload: dict = Depends(requi
         raise HTTPException(status_code=409, detail="El email ya está registrado")
     user = repo.create(email=req.email, password=req.password, nombre=req.nombre, rol=req.rol)
     log_audit("create_user", payload["user_id"], user["user_id"], f"Creó usuario {req.email} con rol {req.rol}")
+
+    send_welcome_notification(
+        email=user['email'],
+        nombre=user['nombre'],
+        rol=user['rol'],
+    )
+
     return {
         "user_id": user["user_id"],
         "email": user["email"],
@@ -104,6 +112,23 @@ def admin_audit_log(payload: dict = Depends(require_admin), limit: int = 100):
         return [{"action": r[0], "admin_id": r[1], "target_id": r[2], "details": r[3], "created_at": r[4]} for r in rows]
     except Exception as e:
         print(f"[admin] audit_log error: {e}")
+        return []
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@router.get("/notifications")
+def admin_notifications(payload: dict = Depends(require_admin), limit: int = 100):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, type, recipient_email, recipient_name, status, sns_message_id, created_at FROM notifications ORDER BY created_at DESC LIMIT ?", (limit,))
+        rows = cursor.fetchall()
+        return [{"id": r[0], "type": r[1], "recipient_email": r[2], "recipient_name": r[3], "status": r[4], "sns_message_id": r[5], "created_at": r[6]} for r in rows]
+    except Exception as e:
+        print(f"[admin] notifications error: {e}")
         return []
     finally:
         if conn is not None:

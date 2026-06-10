@@ -39,6 +39,7 @@ def db_connection():
     cursor.execute("CREATE TABLE IF NOT EXISTS weather_readings (id INTEGER PRIMARY KEY AUTOINCREMENT, lat REAL, lon REAL, region TEXT, temperature REAL, humidity INTEGER, wind_speed REAL, wind_direction REAL, weather_desc TEXT, pressure INTEGER, fetched_at TEXT DEFAULT (datetime('now')))")
     cursor.execute("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, alert_type TEXT NOT NULL DEFAULT 'INFO', message TEXT NOT NULL, report_id TEXT DEFAULT '', latitud REAL DEFAULT 0, longitud REAL DEFAULT 0, source TEXT DEFAULT 'system', read INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
     cursor.execute("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, admin_id TEXT NOT NULL, target_id TEXT, details TEXT DEFAULT '', created_at TEXT NOT NULL)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, recipient_email TEXT NOT NULL, recipient_name TEXT DEFAULT '', message TEXT NOT NULL, status TEXT DEFAULT 'sent', sns_message_id TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')))")
     conn.commit()
     yield conn
     conn.close()
@@ -58,6 +59,14 @@ def mock_lambda_service():
     with patch('main.upload_image') as mock:
         mock.return_value = "https://test-bucket.s3.amazonaws.com/test.jpg"
         yield mock
+
+@pytest.fixture(autouse=True)
+def mock_sns():
+    with patch('notification_service.boto3.client') as mock:
+        sns_mock = MagicMock()
+        sns_mock.publish.return_value = {"MessageId": "mock-sns-id-123"}
+        mock.return_value = sns_mock
+        yield sns_mock
 
 @pytest.fixture
 def client(mock_dynamodb, db_connection):

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from dependencies import get_user_repository, verify_token, sync_to_sqlite, SECRET_KEY
 from models import LoginRequest, RegisterRequest
+from notification_service import send_welcome_notification
 import jwt
 from datetime import datetime, timezone, timedelta
 
@@ -36,6 +37,12 @@ def register(req: RegisterRequest):
             'rol': user['rol'],
             'created_at': user['created_at'],
         })
+
+        send_welcome_notification(
+            email=user['email'],
+            nombre=user['nombre'],
+            rol=user['rol'],
+        )
 
         token = jwt.encode({
             'user_id': user['user_id'],
