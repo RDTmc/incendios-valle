@@ -78,6 +78,10 @@ DB_PATH = os.environ.get('DB_PATH', "/app/data/incendios.db")
 SYNC_TOKEN = os.environ['SYNC_TOKEN']
 
 Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
+try:
+    os.chmod(Path(DB_PATH).parent, 0o777)
+except OSError:
+    pass
 
 
 def get_db_connection():
@@ -196,6 +200,11 @@ def init_db():
         pass
     conn.commit()
     conn.close()
+    try:
+        os.chmod(DB_PATH, 0o666)
+        os.chmod(Path(DB_PATH).parent, 0o777)
+    except OSError:
+        pass
 
 
 init_db()
