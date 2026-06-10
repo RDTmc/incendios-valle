@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from dependencies import get_db_connection, require_admin, get_user_repository
-from notification_service import send_welcome_notification
+from notification_service import notify_new_user
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -71,7 +71,7 @@ def admin_create_user(req: AdminCreateUserRequest, payload: dict = Depends(requi
     user = repo.create(email=req.email, password=req.password, nombre=req.nombre, rol=req.rol)
     log_audit("create_user", payload["user_id"], user["user_id"], f"Creó usuario {req.email} con rol {req.rol}")
 
-    send_welcome_notification(
+    notify_new_user(
         email=user['email'],
         nombre=user['nombre'],
         rol=user['rol'],

@@ -1,12 +1,10 @@
 import os
-import json
 import boto3
 import sqlite3
+from datetime import datetime, timezone
 
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:887513569063:incendios-alerts')
 DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
-
-WELCOME_SUBJECT = "[Municipalidad Valle del Sol] Bienvenido al Sistema de Alerta Temprana"
 
 WELCOME_TEMPLATE = """Estimado/a {nombre},
 
@@ -25,20 +23,28 @@ Dirección de Gestión del Riesgo
 Municipalidad de Valle del Sol"""
 
 
-def send_welcome_notification(email: str, nombre: str = "", rol: str = "VECINO") -> dict:
+def notify_new_user(email: str, nombre: str = "", rol: str = "VECINO") -> dict:
     name = nombre or email.split("@")[0]
-    message = WELCOME_TEMPLATE.format(nombre=name, rol=rol)
+    welcome_msg = WELCOME_TEMPLATE.format(nombre=name, rol=rol)
+    sns_subject = "[Admin Valle del Sol] Nuevo usuario registrado"
+    sns_msg = (
+        f"Nuevo usuario registrado en el Sistema de Alerta Temprana.\n\n"
+        f"Email: {email}\n"
+        f"Nombre: {nombre or '—'}\n"
+        f"Rol: {rol}\n"
+        f"Hora: {datetime.now(timezone.utc).isoformat()}"
+    )
     sns_id = ""
     status = "sent"
 
     try:
         sns = boto3.client("sns")
-        response = sns.publish(
+        resp = sns.publish(
             TopicArn=SNS_TOPIC_ARN,
-            Message=message,
-            Subject=WELCOME_SUBJECT,
+            Message=sns_msg,
+            Subject=sns_subject,
         )
-        sns_id = response.get("MessageId", "")
+        sns_id = resp.get("MessageId", "")
     except Exception as e:
         print(f"[notifications] SNS publish error: {e}")
         status = "failed"
@@ -49,8 +55,9 @@ def send_welcome_notification(email: str, nombre: str = "", rol: str = "VECINO")
         conn.execute("PRAGMA journal_mode=WAL")
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO notifications (type, recipient_email, recipient_name, message, status, sns_message_id) VALUES (?, ?, ?, ?, ?, ?)",
-            ("welcome", email, nombre or "", message, status, sns_id),
+            "INSERT INTO notifications (type, recipient_email, recipient_name, message, status, sns_message_id) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            ("welcome", email, nombre or "", welcome_msg, status, sns_id),
         )
         conn.commit()
     except Exception as e:
