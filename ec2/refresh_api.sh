@@ -7,6 +7,8 @@ SYNC_ACTUAL=$(grep SYNC_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 GRAFANA_ACTUAL=$(grep GRAFANA_ADMIN_PASSWORD /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 GRAFANA_TOKEN_ACTUAL=$(grep GRAFANA_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 MAILTRAP_ACTUAL=$(grep MAILTRAP_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+MAILTRAP_SENDER_ACTUAL=$(grep MAILTRAP_SENDER /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+MAILTRAP_SENDER_NAME_ACTUAL=$(grep MAILTRAP_SENDER_NAME /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 FIRMS_ACTUAL=$(grep FIRMS_API_KEY /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 OWM_ACTUAL=$(grep OWM_API_KEY /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 S3_BUCKET=$(grep AWS_S3_BUCKET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
@@ -18,6 +20,8 @@ echo "SYNC_TOKEN=$SYNC_ACTUAL" >> /home/ec2-user/.env
 echo "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ACTUAL" >> /home/ec2-user/.env
 echo "GRAFANA_TOKEN=$GRAFANA_TOKEN_ACTUAL" >> /home/ec2-user/.env
 echo "MAILTRAP_TOKEN=$MAILTRAP_ACTUAL" >> /home/ec2-user/.env
+echo "MAILTRAP_SENDER=$MAILTRAP_SENDER_ACTUAL" >> /home/ec2-user/.env
+echo "MAILTRAP_SENDER_NAME=$MAILTRAP_SENDER_NAME_ACTUAL" >> /home/ec2-user/.env
 echo "AWS_S3_BUCKET=$S3_BUCKET" >> /home/ec2-user/.env
 echo "FIRMS_API_KEY=$FIRMS_ACTUAL" >> /home/ec2-user/.env
 echo "OWM_API_KEY=$OWM_ACTUAL" >> /home/ec2-user/.env

@@ -2,9 +2,10 @@ import os
 import json
 import boto3
 import sqlite3
+import http.client
+import ssl
 import urllib.request
 from datetime import datetime, timezone
-from urllib.error import URLError
 
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:887513569063:incendios-alerts')
 DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
@@ -43,23 +44,21 @@ def _send_email_via_mailtrap(to_email: str, subject: str, text: str, html: str =
             "text": text,
             "html": html or "",
             "category": "welcome",
-        }).encode()
-        req = urllib.request.Request(
-            url="https://send.api.mailtrap.io/api/send",
-            data=payload,
-            headers={
-                "Authorization": f"Bearer {MAILTRAP_TOKEN}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            body = resp.read().decode()
+        })
+        ctx = ssl.create_default_context()
+        conn = http.client.HTTPSConnection("send.api.mailtrap.io", 443, context=ctx, timeout=10)
+        conn.request("POST", "/api/send", body=payload, headers={
+            "Authorization": f"Bearer {MAILTRAP_TOKEN}",
+            "Content-Type": "application/json",
+        })
+        resp = conn.getresponse()
+        body = resp.read().decode()
+        if resp.status == 200:
             print(f"[notifications] Mailtrap email sent to {to_email}: {resp.status}")
             return True
-    except URLError as e:
-        print(f"[notifications] Mailtrap error: {e}")
-        return False
+        else:
+            print(f"[notifications] Mailtrap error: {resp.status} {body[:200]}")
+            return False
     except Exception as e:
         print(f"[notifications] Mailtrap error: {e}")
         return False
