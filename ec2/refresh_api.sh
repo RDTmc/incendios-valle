@@ -3,7 +3,7 @@ echo "REFRESH API - Modo Lambda Proxy (LabRole)"
 echo "=========================================================="
 
 # Sanitizar .env: eliminar lineas corruptas sin KEY=VALUE
-sed -i '/^[A-Za-z_][A-Za-z0-9_]*=/!d' /home/ec2-user/.env 2>/dev/null || true
+sed -ni '/^[A-Za-z_][A-Za-z0-9_]*=/p' /home/ec2-user/.env 2>/dev/null || true
 
 JWT_ACTUAL=$(grep JWT_SECRET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 SYNC_ACTUAL=$(grep SYNC_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
@@ -17,17 +17,20 @@ OWM_ACTUAL=$(grep OWM_API_KEY /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 S3_BUCKET=$(grep AWS_S3_BUCKET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 S3_BUCKET=${S3_BUCKET:-incendios-valle-sol}
 
-echo -e "\n Actualizando archivo .env (sin credenciales AWS - usando LabRole)..."
-echo "JWT_SECRET=$JWT_ACTUAL" > /home/ec2-user/.env
-echo "SYNC_TOKEN=$SYNC_ACTUAL" >> /home/ec2-user/.env
-echo "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ACTUAL" >> /home/ec2-user/.env
-echo "GRAFANA_TOKEN=$GRAFANA_TOKEN_ACTUAL" >> /home/ec2-user/.env
-echo "MAILTRAP_TOKEN=$MAILTRAP_ACTUAL" >> /home/ec2-user/.env
-echo "MAILTRAP_SENDER=$MAILTRAP_SENDER_ACTUAL" >> /home/ec2-user/.env
-echo "MAILTRAP_SENDER_NAME=$MAILTRAP_SENDER_NAME_ACTUAL" >> /home/ec2-user/.env
-echo "AWS_S3_BUCKET=$S3_BUCKET" >> /home/ec2-user/.env
-echo "FIRMS_API_KEY=$FIRMS_ACTUAL" >> /home/ec2-user/.env
-echo "OWM_API_KEY=$OWM_ACTUAL" >> /home/ec2-user/.env
+echo -e "\nSanitizando y reescribiendo .env completo..."
+
+cat > /home/ec2-user/.env << ENVEOF
+JWT_SECRET=$JWT_ACTUAL
+SYNC_TOKEN=$SYNC_ACTUAL
+GRAFANA_ADMIN_PASSWORD=$GRAFANA_ACTUAL
+GRAFANA_TOKEN=$GRAFANA_TOKEN_ACTUAL
+MAILTRAP_TOKEN=$MAILTRAP_ACTUAL
+MAILTRAP_SENDER=$MAILTRAP_SENDER_ACTUAL
+MAILTRAP_SENDER_NAME=$MAILTRAP_SENDER_NAME_ACTUAL
+AWS_S3_BUCKET=$S3_BUCKET
+FIRMS_API_KEY=$FIRMS_ACTUAL
+OWM_API_KEY=$OWM_ACTUAL
+ENVEOF
 
 echo -e "\n--- Backup SQLite a S3 ---"
 aws s3 cp /home/ec2-user/incendios-data/api/incendios.db \
