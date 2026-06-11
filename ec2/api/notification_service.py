@@ -48,7 +48,7 @@ def _send_email_via_mailtrap(to_email: str, subject: str, text: str, html: str =
             url="https://send.api.mailtrap.io/api/send",
             data=payload,
             headers={
-                "Authorization": f"Api-Token {MAILTRAP_TOKEN}",
+                "Authorization": f"Bearer {MAILTRAP_TOKEN}",
                 "Content-Type": "application/json",
             },
             method="POST",
