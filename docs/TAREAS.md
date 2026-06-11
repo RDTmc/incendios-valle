@@ -19,6 +19,13 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - **Reporte**: spinner animado durante upload de foto
 - **AlertBanner**: loading spinner inicial mientras carga alertas
 
+### Fix UI AdminPage
+- **Card.tsx**: quitado `bg-white` forzado — cada llamador decide su fondo
+- **AdminPage**: Card con `bg-gray-800` (fondo grafito) para tabla legible
+- **Login/Registro/Historial/Reporte/Confirmacion**: `bg-white` explícito (sin cambio visual)
+- **Empty states**: `text-gray-400` → `text-gray-300` para mejor contraste sobre grafito
+- **Commit**: `416e6ae` (fix bg-white en Card, AdminPage grafito)
+
 ### Cobertura final
 - Backend: **157 tests**, routers 100%, overall **97%**
 - Frontend: **165 tests**, **96.49%** coverage, MapboxStrategy 100%

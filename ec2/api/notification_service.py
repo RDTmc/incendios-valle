@@ -4,11 +4,15 @@ import boto3
 import sqlite3
 import urllib.request
 from datetime import datetime, timezone
+from urllib.error import URLError
 
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:887513569063:incendios-alerts')
 DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
 GRAFANA_INTERNAL = os.environ.get('GRAFANA_INTERNAL', 'http://incendios-grafana:3000')
 GRAFANA_TOKEN = os.environ.get('GRAFANA_TOKEN', 'glsa_xzECDdWZO6ixPttXFZI3oGVfXD0XPmJR_5019d7a0')
+MAILTRAP_TOKEN = os.environ.get('MAILTRAP_TOKEN', '')
+MAILTRAP_SENDER = os.environ.get('MAILTRAP_SENDER', 'hello@demomailtrap.co')
+MAILTRAP_SENDER_NAME = os.environ.get('MAILTRAP_SENDER_NAME', 'Incendios Valle del Sol')
 
 WELCOME_TEMPLATE = """Estimado/a {nombre},
 
@@ -25,6 +29,47 @@ Ante cualquier emergencia, reporte de inmediato a través de la aplicación.
 Atentamente,
 Dirección de Gestión del Riesgo
 Municipalidad de Valle del Sol"""
+
+
+def _send_email_via_mailtrap(to_email: str, subject: str, text: str, html: str = "") -> bool:
+    if not MAILTRAP_TOKEN:
+        print("[notifications] Mailtrap token not configured, skipping email")
+        return False
+    try:
+        payload = json.dumps({
+            "from": {"email": MAILTRAP_SENDER, "name": MAILTRAP_SENDER_NAME},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "text": text,
+            "html": html or "",
+            "category": "welcome",
+        }).encode()
+        req = urllib.request.Request(
+            url="https://send.api.mailtrap.io/api/send",
+            data=payload,
+            headers={
+                "Authorization": f"Api-Token {MAILTRAP_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = resp.read().decode()
+            print(f"[notifications] Mailtrap email sent to {to_email}: {resp.status}")
+            return True
+    except URLError as e:
+        print(f"[notifications] Mailtrap error: {e}")
+        return False
+    except Exception as e:
+        print(f"[notifications] Mailtrap error: {e}")
+        return False
+
+
+def _send_welcome_email(to_email: str, nombre: str, rol: str):
+    name = nombre or to_email.split("@")[0]
+    subject = "Bienvenido/a al Sistema de Alerta Temprana de Incendios"
+    text = WELCOME_TEMPLATE.format(nombre=name, rol=rol)
+    return _send_email_via_mailtrap(to_email, subject, text)
 
 
 def _create_grafana_annotation(text: str, tags: list[str]):
@@ -82,6 +127,10 @@ def notify_new_user(email: str, nombre: str = "", rol: str = "VECINO") -> dict:
         tags=["usuario", "registro", "admin"],
     )
 
+    # Send welcome email via Mailtrap
+    email_ok = _send_welcome_email(email, nombre, rol)
+    mailtrap_status = "sent" if email_ok else "skipped" if not MAILTRAP_TOKEN else "failed"
+
     # Save to SQLite notifications table
     conn = None
     try:
@@ -91,7 +140,7 @@ def notify_new_user(email: str, nombre: str = "", rol: str = "VECINO") -> dict:
         cursor.execute(
             "INSERT INTO notifications (type, recipient_email, recipient_name, message, status, sns_message_id) "
             "VALUES (?, ?, ?, ?, ?, ?)",
-            ("welcome", email, nombre or "", welcome_msg, status, sns_id),
+            ("welcome", email, nombre or "", f"{welcome_msg}\n---\nMailtrap: {mailtrap_status}", status, sns_id),
         )
         conn.commit()
     except Exception as e:

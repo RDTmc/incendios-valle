@@ -32,6 +32,9 @@ services:
       - OWM_API_KEY=${OWM_API_KEY}
       - LAMBDA_FUNCTION_NAME=upload-proxy
       - GRAFANA_TOKEN=${GRAFANA_TOKEN}
+      - MAILTRAP_TOKEN=${MAILTRAP_TOKEN}
+      - MAILTRAP_SENDER=${MAILTRAP_SENDER:-hello@demomailtrap.co}
+      - MAILTRAP_SENDER_NAME=Incendios Valle del Sol
     volumes:
       - /home/ec2-user/incendios-data/api:/app/data  # Carpeta aislada para la API
     restart: unless-stopped
