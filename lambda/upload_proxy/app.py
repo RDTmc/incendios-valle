@@ -22,13 +22,10 @@ def lambda_handler(event, context):
             Key=key,
             Body=image_bytes,
             ContentType=content_type,
+            ACL='public-read',
         )
 
-        url = s3.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": S3_BUCKET, "Key": key},
-            ExpiresIn=7200,
-        )
+        url = f"https://{S3_BUCKET}.s3.amazonaws.com/{key}"
 
         return {
             "statusCode": 200,
