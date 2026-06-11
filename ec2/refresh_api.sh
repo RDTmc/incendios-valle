@@ -5,16 +5,16 @@ echo "=========================================================="
 # Sanitizar .env: eliminar lineas corruptas sin KEY=VALUE
 sed -ni '/^[A-Za-z_][A-Za-z0-9_]*=/p' /home/ec2-user/.env 2>/dev/null || true
 
-JWT_ACTUAL=$(grep JWT_SECRET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-SYNC_ACTUAL=$(grep SYNC_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-GRAFANA_ACTUAL=$(grep GRAFANA_ADMIN_PASSWORD /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-GRAFANA_TOKEN_ACTUAL=$(grep GRAFANA_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-MAILTRAP_ACTUAL=$(grep MAILTRAP_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-MAILTRAP_SENDER_ACTUAL=$(grep MAILTRAP_SENDER /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-MAILTRAP_SENDER_NAME_ACTUAL=$(grep MAILTRAP_SENDER_NAME /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-FIRMS_ACTUAL=$(grep FIRMS_API_KEY /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-OWM_ACTUAL=$(grep OWM_API_KEY /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
-S3_BUCKET=$(grep AWS_S3_BUCKET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+JWT_ACTUAL=$(grep "^JWT_SECRET=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+SYNC_ACTUAL=$(grep "^SYNC_TOKEN=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+GRAFANA_ACTUAL=$(grep "^GRAFANA_ADMIN_PASSWORD=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+GRAFANA_TOKEN_ACTUAL=$(grep "^GRAFANA_TOKEN=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+MAILTRAP_ACTUAL=$(grep "^MAILTRAP_TOKEN=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+MAILTRAP_SENDER_ACTUAL=$(grep "^MAILTRAP_SENDER=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+MAILTRAP_SENDER_NAME_ACTUAL=$(grep "^MAILTRAP_SENDER_NAME=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+FIRMS_ACTUAL=$(grep "^FIRMS_API_KEY=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+OWM_ACTUAL=$(grep "^OWM_API_KEY=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+S3_BUCKET=$(grep "^AWS_S3_BUCKET=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 S3_BUCKET=${S3_BUCKET:-incendios-valle-sol}
 
 echo -e "\nSanitizando y reescribiendo .env completo..."
