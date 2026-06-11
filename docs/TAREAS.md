@@ -26,6 +26,13 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - **Empty states**: `text-gray-400` → `text-gray-300` para mejor contraste sobre grafito
 - **Commit**: `416e6ae` (fix bg-white en Card, AdminPage grafito)
 
+### Mailtrap welcome email
+- **Mailtrap Email API**: cuenta creada, dominio `keogh.lat` verificado (4 registros DNS en Cloudflare)
+- **`_send_email_via_mailtrap()`**: implementado con `http.client` (reemplazó `urllib.request` que daba 403)
+- **Config persistida**: `MAILTRAP_TOKEN`, `MAILTRAP_SENDER`, `MAILTRAP_SENDER_NAME` en docker-compose.yml y refresh_api.sh
+- **Prueba de campo exitosa**: usuario nuevo recibe correo de bienvenida vía Mailtrap
+- **Commits**: `acfd206` (Mailtrap init), `581059a` (Bearer fix), `21fe77d` (http.client fix)
+
 ### Cobertura final
 - Backend: **157 tests**, routers 100%, overall **97%**
 - Frontend: **165 tests**, **96.49%** coverage, MapboxStrategy 100%
@@ -59,19 +66,17 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 
 ## MEDIA PRIORIDAD
 
-5. **SendGrid welcome email**
-   - Obtener API key SendGrid (o alternativa si bloqueado en AWS Academy)
-   - `send_welcome_email()` en notification_service.py
-   - Probar flujo completo: registro → SNS broadcast + SendGrid + Grafana annotation
-6. **Dashboard Grafana**
+5. ✅ **Mailtrap welcome email** — Completado (reemplazó SendGrid, bloqueado por Twilio)
+6. ☐ **Dashboard Grafana**
    - Persistencia de configuraciones (allowUiUpdates)
    - DevOps dashboard con logs en tiempo real
 
 ## BAJA PRIORIDAD
 
-7. **Guión demo**
-   - Preparar escenarios de demostración
-   - Datos de prueba precargados
+7. ☐ **Guión demo** — Iniciado en `docs/GUION_DEMO.md`
+   - ✅ Persistencia (bind mount EBS) documentada
+   - ☐ Escenarios de demostración
+   - ☐ Datos de prueba precargados
 8. **Documentación**
    - Actualizar docs existentes
    - README con instrucciones de desarrollo local
