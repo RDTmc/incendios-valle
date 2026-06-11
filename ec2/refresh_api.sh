@@ -35,18 +35,16 @@ aws s3 cp /home/ec2-user/incendios-data/api/incendios.db \
 aws s3 cp /home/ec2-user/incendios-data/api/incendios.db \
   s3://$S3_BUCKET/backups/incendios-$(date +%Y%m%d-%H%M%S).db 2>/dev/null || true
 
-echo -e "\n--- Backup Grafana interno a S3 ---"
+echo -e "\n--- Backup Grafana interno a S3 (solo backup, no restore) ---"
 aws s3 cp /home/ec2-user/incendios-data/grafana/grafana.db \
   s3://$S3_BUCKET/backups/grafana-latest.db 2>/dev/null || true
 
 echo -e "\n Descargando nueva imagen de API desde Docker Hub..."
 docker-compose pull api
 
-echo -e "\n--- Restore SQLite desde S3 (si existe backup) ---"
+echo -e "\n--- Restore SQLite desde S3 (solo API, NO sobrescribir grafana.db) ---"
 aws s3 cp s3://$S3_BUCKET/backups/incendios-latest.db \
   /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
-aws s3 cp s3://$S3_BUCKET/backups/grafana-latest.db \
-  /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
 echo -e "\n--- Fijando ownership para que Grafana (uid 472) pueda escribir ---"
 # Datos de Grafana (internos)
 sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
