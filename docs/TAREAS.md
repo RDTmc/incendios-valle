@@ -68,8 +68,14 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 
 5. ✅ **Mailtrap welcome email** — Completado (reemplazó SendGrid, bloqueado por Twilio)
 6. ☐ **Dashboard Grafana**
-   - ✅ **Fase 1 — Persistencia**: deploy.yml condiciona restart Grafana (hash check), backup grafana.db a S3 pre-deploy
-   - ✅ **export_dashboards.sh**: exporta dashboards vía API Grafana → JSON files
+   - ✅ **Fase 1 — Persistencia**:
+     - deploy.yml: restart Grafana condicionado a hash del provisioning (no siempre)
+     - `refresh_api.sh`: ya no restaura `grafana-latest.db` desde S3 (solo backup)
+     - backup `grafana.db` a S3 pre-deploy
+     - `export_dashboards.sh`: exporta dashboards vía API Grafana → JSON files
+     - Fix `.env` corrupto: heredoc `cat > .env <<EOF` + greps anclados `^KEY=` + sanitización automática `sed -n /regex/p`
+     - Fix Grafana 500 "attempt to write a readonly database": DB corrupta por restore cíclico desde S3
+     - **Commits**: `67c69ea` (condicionar restart), `07a5d7e` (sanitización), `75dc338` (no restore grafana.db), `1e6ed9b` (heredoc), `7c3917a` (grep anclado)
    - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
 
 ## BAJA PRIORIDAD

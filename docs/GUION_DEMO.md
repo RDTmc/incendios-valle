@@ -48,7 +48,19 @@ No era por el volumen (ese siempre fue persistente). Era porque el CI/CD:
 
 **Solución**: Separar provisioning inicial de cambios UI, y no recrear Grafana si no cambió el provisioning.
 
+### Lección aprendida: .env corrupto y DB readonly
+
+**Problema 1 — `.env` corrupto**: `grep MAILTRAP_SENDER` sin ancla `^` también matcheaba `MAILTRAP_SENDER_NAME`. Al devolver 2 líneas, `cut -d'=' -f2` producía un string con `\n` (2 valores). El heredoc expandía ese `\n` como una línea sin `KEY=VALUE`, rompiendo `docker-compose`.
+
+**Solución**: `grep ^KEY=` (anclado) + heredoc `cat > .env <<EOF` en vez de múltiples `echo >>`.
+
+**Problema 2 — Grafana 500 "readonly database"**: `refresh_api.sh` respaldaba `grafana.db` a S3 y luego lo restauraba en el mismo deploy. Si la copia en S3 estaba corrupta (permisos, schema viejo), se reintroducía en cada ciclo.
+
+**Solución**: Solo backup a S3, nunca restore automático de `grafana.db`. La DB persiste en el bind mount EBS.
+
 ---
+
+## 2. FLUJO DE DATOS
 
 ## 2. FLUJO DE DATOS
 
