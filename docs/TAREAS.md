@@ -68,8 +68,9 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 
 5. ✅ **Mailtrap welcome email** — Completado (reemplazó SendGrid, bloqueado por Twilio)
 6. ☐ **Dashboard Grafana**
-   - Persistencia de configuraciones (allowUiUpdates)
-   - DevOps dashboard con logs en tiempo real
+   - ✅ **Fase 1 — Persistencia**: deploy.yml condiciona restart Grafana (hash check), backup grafana.db a S3 pre-deploy
+   - ✅ **export_dashboards.sh**: exporta dashboards vía API Grafana → JSON files
+   - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
 
 ## BAJA PRIORIDAD
 

@@ -111,7 +111,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "ec2/refresh_api.sh,ec2/docker-compose.yml"
+          source: "ec2/refresh_api.sh,ec2/docker-compose.yml,ec2/export_dashboards.sh"
           target: "/home/ec2-user"
           strip_components: 1
 
@@ -156,6 +156,7 @@ jobs:
             fi
 
             chmod +x ./refresh_api.sh
+            chmod +x ./export_dashboards.sh || true
             ./refresh_api.sh
 
             echo ""
@@ -195,9 +196,28 @@ jobs:
             chmod 664 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
 
             echo ""
-            echo "--- Actualizando imagen Grafana + recreando contenedor ---"
-            docker-compose pull grafana
-            docker-compose up -d --no-deps --force-recreate grafana
+            echo "--- Backup Grafana DB a S3 (pre-deploy) ---"
+            S3_BUCKET_VAL=$(grep AWS_S3_BUCKET /home/ec2-user/.env 2>/dev/null | cut -d= -f2)
+            S3_BUCKET_VAL=${S3_BUCKET_VAL:-incendios-valle-sol}
+            aws s3 cp /home/ec2-user/incendios-data/grafana/grafana.db \
+              s3://$S3_BUCKET_VAL/backups/grafana-pre-deploy.db 2>/dev/null || echo "Backup skipped"
+
+            echo ""
+            echo "--- Verificando si cambio provisioning de Grafana ---"
+            PROVISIONING_DIR="/home/ec2-user/grafana-provisioning/dashboards"
+            CURRENT_HASH=$(find "$PROVISIONING_DIR" -name "*.json" -o -name "*.yml" -exec sha256sum {} \; 2>/dev/null | sha256sum | cut -d' ' -f1)
+            STORED_HASH_FILE="/home/ec2-user/.grafana_provisioning_hash"
+            STORED_HASH=""
+            [ -f "$STORED_HASH_FILE" ] && STORED_HASH=$(cat "$STORED_HASH_FILE")
+
+            if [ "$CURRENT_HASH" != "$STORED_HASH" ] && [ -n "$CURRENT_HASH" ]; then
+                echo "Provisioning cambiado. Actualizando Grafana..."
+                echo "$CURRENT_HASH" > "$STORED_HASH_FILE"
+                docker-compose pull grafana
+                docker-compose up -d --no-deps --force-recreate grafana
+            else
+                echo "Provisioning sin cambios. Se omite reinicio de Grafana."
+            fi
 
             echo ""
             echo "--- Deploy completado ---"
