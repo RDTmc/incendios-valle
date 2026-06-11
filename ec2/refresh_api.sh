@@ -2,6 +2,9 @@ echo "=========================================================="
 echo "REFRESH API - Modo Lambda Proxy (LabRole)"
 echo "=========================================================="
 
+# Sanitizar .env: eliminar lineas corruptas sin KEY=VALUE
+sed -i '/^[A-Za-z_][A-Za-z0-9_]*=/!d' /home/ec2-user/.env 2>/dev/null || true
+
 JWT_ACTUAL=$(grep JWT_SECRET /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 SYNC_ACTUAL=$(grep SYNC_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 GRAFANA_ACTUAL=$(grep GRAFANA_ADMIN_PASSWORD /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)

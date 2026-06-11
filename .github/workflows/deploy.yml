@@ -143,6 +143,9 @@ jobs:
           script: |
             cd /home/ec2-user
 
+            echo "--- Sanitizando .env (eliminar lineas corruptas sin KEY=VALUE) ---"
+            sed -i '/^[A-Za-z_][A-Za-z0-9_]*=/!d' /home/ec2-user/.env 2>/dev/null || true
+
             echo "--- Inyectando API keys desde GitHub Secrets ---"
             if [ -n "$FIRMS_API_KEY" ]; then
               grep -q "^FIRMS_API_KEY=" /home/ec2-user/.env 2>/dev/null \
