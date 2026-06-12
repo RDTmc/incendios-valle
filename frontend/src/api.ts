@@ -202,7 +202,7 @@ export const API = {
 
   updateReportStatus: async (token: string, reportId: string, estado: string) => {
     const res = await handleAuth(await fetch(`${API_URL}/admin/reports/${reportId}/status`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ estado })
     }))

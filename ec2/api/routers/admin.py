@@ -119,7 +119,7 @@ def admin_audit_log(payload: dict = Depends(require_admin), limit: int = 100):
             conn.close()
 
 
-@router.patch("/reports/{report_id}/status")
+@router.put("/reports/{report_id}/status")
 def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, payload: dict = Depends(require_admin)):
     valid_statuses = {"PENDIENTE", "ACTIVO", "CONTROLADO", "EXTINGUIDO"}
     estado_upper = req.estado.upper()
