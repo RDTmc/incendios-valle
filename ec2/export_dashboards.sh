@@ -4,28 +4,18 @@
 # Los JSON se guardan en /home/ec2-user/incendios-data/api/grafana-exports/
 set -euo pipefail
 
-echo "Exportando dashboards desde Grafana..."
-
-GRAFANA_TOKEN=$(grep GRAFANA_TOKEN /home/ec2-user/.env 2>/dev/null | cut -d= -f2)
-if [ -z "$GRAFANA_TOKEN" ]; then
-    echo "ERROR: GRAFANA_TOKEN no encontrado en /home/ec2-user/.env"
-    exit 1
-fi
+echo "Exportando dashboards desde Grafana (usando admin credentials)..."
 
 OUTPUT_DIR="/app/data/grafana-exports"
 
-docker exec \
-    -e GRAFANA_TOKEN="$GRAFANA_TOKEN" \
-    -e OUTPUT_DIR="$OUTPUT_DIR" \
-    incendios-api python3 <<'PYEOF'
-import urllib.request, json, os
+docker exec incendios-api python3 <<'PYEOF'
+import urllib.request, json, base64, os
 
-token = os.environ["GRAFANA_TOKEN"]
-out_dir = os.environ["OUTPUT_DIR"]
-
+auth = "Basic " + base64.b64encode(b"admin:ValleSol2026!Secure").decode()
+out_dir = "/app/data/grafana-exports"
 os.makedirs(out_dir, exist_ok=True)
 
-headers = {"Authorization": f"Bearer {token}"}
+headers = {"Authorization": auth}
 
 req = urllib.request.Request(
     "http://incendios-grafana:3000/api/search?type=dash-db",
@@ -45,7 +35,7 @@ for db in dashboards:
     data = json.loads(resp2.read())
     filepath = os.path.join(out_dir, f"{title}.json")
     with open(filepath, "w") as f:
-        json.dump(data["dashboard"], f, indent=2)
+        json.dump(data["dashboard"], f, indent=2, ensure_ascii=False)
     print(f"  OK  {title}.json")
 
 print(f"\nExportados {len(dashboards)} dashboards a {out_dir}")
@@ -54,4 +44,11 @@ PYEOF
 HOST_DIR="/home/ec2-user/incendios-data/api/grafana-exports"
 echo ""
 echo "Los archivos estan en: $HOST_DIR"
-echo "Para copiarlos local: scp -i key.pem ec2-user@HOST:$HOST_DIR/*.json ./"
+echo ""
+echo "Para copiarlos local:"
+echo "  scp -i key.pem ec2-user@HOST:$HOST_DIR/Dashboard_Incendios_-_Valle_del_Sol.json ./"
+echo ""
+echo "Luego reemplazar el provisioning:"
+echo "  cp Dashboard_Incendios_-_Valle_del_Sol.json ec2/grafana-provisioning/dashboards/dashboard_incendios.json"
+echo "  git commit -m 'sync: exportar dashboard desde Grafana'"
+echo "  git push"
