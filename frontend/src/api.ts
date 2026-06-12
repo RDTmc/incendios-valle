@@ -105,7 +105,12 @@ export const API = {
       const err = await safeJson(res)
       throw new Error(err.error || err.detail || `Failed to fetch reports: HTTP ${res.status}`)
     }
-    return res.json()
+    const text = await res.text()
+    try {
+      return JSON.parse(text)
+    } catch {
+      throw new Error('Failed to parse reports response')
+    }
   },
 
   createReportAnonimo: async (data: { tipo: string; latitud: number; longitud: number; descripcion: string; foto_url?: string; device_id: string }) => {

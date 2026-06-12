@@ -166,7 +166,8 @@ export default function AdminPage() {
     setLoadingReports(true)
     try {
       const data = await API.getReports(token)
-      setReports(data.reports || data || [])
+      const items = Array.isArray(data) ? data : (Array.isArray(data?.reports) ? data.reports : [])
+      setReports(items)
     } catch {
       addToast('Error al cargar reportes', 'error')
     } finally {
