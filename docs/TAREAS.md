@@ -66,6 +66,29 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - Validado: Grafana ya veía el cambio (lee SQLite), ahora AdminPage también
 - Commit: `a7323fe` — CI/CD verde ✅
 
+## 🔁 RETROSPECTIVA — Lecciones aprendidas (14 jun 2026)
+
+Esta sección documenta errores recurrentes para revisar ANTES de implementar cualquier cambio futuro.
+
+### Error 1: Asumir permisos sin verificar
+- **Qué pasó**: Agregué `repo.update()` a DynamoDB sin verificar si el rol IAM de EC2 tiene permisos de escritura. Funcionaba en local (tests con mock) pero producía 500 en producción.
+- **Lección**: Verificar permisos reales del entorno de producción (IAM, red, etc.) antes de agregar operaciones de escritura a recursos externos.
+
+### Error 2: No mapear el flujo de datos completo antes de un cambio
+- **Qué pasó**: El cambio de estado se escribía solo en SQLite, pero el frontend leía de DynamoDB. Primero intenté sync a DynamoDB (error 1), luego creé endpoint SQLite sin considerar que datos pueden diferir entre fuentes.
+- **Lección**: Antes de tocar código, trazar: `frontend → endpoint → fuente de datos (DynamoDB vs SQLite) → otras fuentes`. Verificar de dónde lee cada componente.
+
+### Error 3: Asumir limpieza de datos en SQLite
+- **Qué pasó**: El endpoint SQLite retornó reportes con `report_id = null` porque la tabla tenía filas sin ese campo. En DynamoDB era imposible (clave de tabla), pero SQLite lo permite.
+- **Lección**: SQLite no tiene las mismas restricciones que DynamoDB. Siempre filtrar/validar datos al leer desde SQLite.
+
+### Regla para futuros cambios
+1. Trazar flujo de datos completo (frontend → Worker → API Gateway → backend → fuente de datos)
+2. Verificar permisos IAM/red antes de tocar recursos AWS externos
+3. Revisar esquemas y datos reales de SQLite (puede tener filas inválidas)
+4. Testear siempre en producción con un usuario/sesión real después del deploy
+5. NO asumir que tablas "equivalentes" (DynamoDB vs SQLite) tienen los mismos datos
+
 ## ALTA PRIORIDAD
 
 1. ☐ **Dashboard Grafana — Diseño UI** (Fase 2)
