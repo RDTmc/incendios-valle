@@ -24,7 +24,7 @@ interface AuditEntry {
 }
 
 interface ReportItem {
-  id: string
+  report_id: string
   user_id: string
   tipo: string
   latitud: number
@@ -550,16 +550,16 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {filteredReports.map(r => (
-                  <tr key={r.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td className="py-2 px-3 text-gray-400 font-mono text-xs">{r.id.slice(0, 8)}</td>
+                  <tr key={r.report_id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td className="py-2 px-3 text-gray-400 font-mono text-xs">{r.report_id.slice(0, 8)}</td>
                     <td className="py-2 px-3 text-gray-200">{r.tipo}</td>
                     <td className="py-2 px-3 text-gray-300 max-w-xs truncate">{r.descripcion || '—'}</td>
                     <td className="py-2 px-3 text-gray-400 text-xs">{r.latitud?.toFixed(4)}, {r.longitud?.toFixed(4)}</td>
                     <td className="py-2 px-3">
                       <select
                         value={r.estado}
-                        onChange={e => handleUpdateReportStatus(r.id, e.target.value)}
-                        disabled={updatingReport === r.id}
+                        onChange={e => handleUpdateReportStatus(r.report_id, e.target.value)}
+                        disabled={updatingReport === r.report_id}
                         className={`px-2 py-1 rounded text-xs font-medium border-0 cursor-pointer ${
                           ESTADO_COLORS[r.estado] || 'bg-gray-700 text-gray-200'
                         } disabled:opacity-50`}
