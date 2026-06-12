@@ -46,11 +46,28 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 - **Frontend coverage 91.37%**: 20+ archivos con test sobre 30+ fuente
 - **Admin CRUD usuarios**: backend endpoints protegidos + frontend AdminPage + auditoría SQLite + prueba de campo validada
 
+## Últimos cambios — Sesión 13 jun 2026
+
+### AdminPage — Gestión de estados de reportes
+- Backend: `PUT /admin/reports/{report_id}/status` en `routers/admin.py` (commit `ac520f8`, original PATCH → PUT)
+- Frontend: tab "Reportes" en AdminPage con tabla ordenable + dropdown de estado coloreado
+- Fixes aplicados:
+  - `r.id` → `r.report_id` (commit `e1b7c2b`)
+  - `r.latitud?.toFixed(4)` → `Number(r.latitud).toFixed(4)` (commit `95c8e4a`)
+  - Null descripcion short-circuit (commit `95c8e4a`)
+  - Tabla ordenable por columna + logo municipal blanco (commit `65e223c`)
+  - PATCH → PUT para compatibilidad API Gateway (commit `ac520f8`)
+- ⚠️ **Bloqueado**: navegador del usuario sirve JS cacheados (Service Worker), envía `PATCH` en vez de `PUT`. API Gateway responde `IncompleteSignatureException` (403).
+
+### Worker CORS
+- `cloudflare-worker.js`: agregado `PATCH` a `Access-Control-Allow-Methods`, desplegado manualmente
+
 ## Lo que NO está hecho
 
 - 1 Reliability Issue (Medium) remanente — aceptado
 - Dashboard Grafana — Diseño UI Fase 2 (tipografía, colores, layout)
 - Lambda upload-proxy no está en pipeline CI/CD (deploy manual)
+- **Error 403**: resolver IncompleteSignatureException en API Gateway al cambiar estado de reporte
 - Guión demo
 - Documentación
 

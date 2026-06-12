@@ -129,10 +129,10 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM reports WHERE id = ?", (report_id,))
+        cursor.execute("SELECT report_id FROM reports WHERE report_id = ?", (report_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Reporte no encontrado")
-        cursor.execute("UPDATE reports SET estado = ? WHERE id = ?", (estado_upper, report_id))
+        cursor.execute("UPDATE reports SET estado = ? WHERE report_id = ?", (estado_upper, report_id))
         conn.commit()
         log_audit("update_report_status", payload["user_id"], report_id, f"Cambió estado a {estado_upper}")
         return {"status": "updated", "report_id": report_id, "estado": estado_upper}

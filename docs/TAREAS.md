@@ -55,24 +55,39 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - Total: 322 tests, 0 failures
 - Security: C→A, Reliability: C→A, Code Smells: 82→0
 
+## 🔴 BLOQUEADO — Error 403 al cambiar estado de reporte
+
+El navegador del usuario sirve JS cacheados (Service Worker) que aún contienen `method: 'PATCH'`. Aunque el código deployado (commit `ac520f8`) usa `PUT`, el SW intercepta y sirve el bundle viejo.
+
+**Causa raíz investigar**:
+1. API Gateway `/api/{proxy+}` con `ANY` debería pasar PATCH, pero responde `IncompleteSignatureException`
+2. Posible causa: `authorization-type` en `ANY` podría ser `AWS_IAM` en vez de `NONE`
+3. `IncompleteSignatureException` = API Gateway intenta validar `Authorization: Bearer <jwt>` como SigV4
+
+**Fix tentativo**: verificar `authorization-type` del método `ANY` en recurso `/api/{proxy+}` via AWS CLI/Console, cambiarlo a `NONE` si está en `AWS_IAM`, redeployar stage.
+
 ## ALTA PRIORIDAD
 
-1. ☐ **Dashboard Grafana — Diseño UI** (Fase 2)
+1. ☐ **Resolver error 403 IncompleteSignatureException**
+   - Verificar API Gateway config (authorization-type en /api/{proxy+})
+   - Verificar si hay Worker de por medio
+   - Forzar hard refresh / desregistrar SW en navegador
+2. ☐ **Dashboard Grafana — Diseño UI** (Fase 2)
    - Rediseñar los 9 paneles con nueva configuración visual (tipografía, colores, layout)
    - Exportar JSON + commit + CI/CD
 
 ## MEDIA PRIORIDAD
 
-2. ☐ **Agregar Lambda `upload-proxy` al pipeline CI/CD**
+3. ☐ **Agregar Lambda `upload-proxy` al pipeline CI/CD**
    - Actualmente se deploya manualmente desde AWS Console
 
-3. ☐ **Notificar cambio de estado de reporte via SNS?** (evaluar si es necesario)
+4. ☐ **Notificar cambio de estado de reporte via SNS?** (evaluar si es necesario)
 
 ## BAJA PRIORIDAD
 
-4. ☐ **Guión demo** — `docs/GUION_DEMO.md`
+5. ☐ **Guión demo** — `docs/GUION_DEMO.md`
    - Escenarios de demostración, datos de prueba precargados
 
-5. **Documentación**
+6. **Documentación**
    - Actualizar docs existentes
    - README con instrucciones de desarrollo local
