@@ -513,7 +513,7 @@ export default function AdminPage() {
   const filteredReports = reports.filter(r => {
     if (!reportFilter) return true
     const q = reportFilter.toLowerCase()
-    return r.tipo.toLowerCase().includes(q) || r.descripcion.toLowerCase().includes(q) || r.estado.toLowerCase().includes(q)
+    return r.tipo.toLowerCase().includes(q) || (r.descripcion && r.descripcion.toLowerCase().includes(q)) || r.estado.toLowerCase().includes(q)
   })
 
   function renderReportsTab() {
@@ -554,7 +554,7 @@ export default function AdminPage() {
                     <td className="py-2 px-3 text-gray-400 font-mono text-xs">{r.report_id.slice(0, 8)}</td>
                     <td className="py-2 px-3 text-gray-200">{r.tipo}</td>
                     <td className="py-2 px-3 text-gray-300 max-w-xs truncate">{r.descripcion || '—'}</td>
-                    <td className="py-2 px-3 text-gray-400 text-xs">{r.latitud?.toFixed(4)}, {r.longitud?.toFixed(4)}</td>
+                    <td className="py-2 px-3 text-gray-400 text-xs">{r.latitud ? Number(r.latitud).toFixed(4) : '—'}, {r.longitud ? Number(r.longitud).toFixed(4) : '—'}</td>
                     <td className="py-2 px-3">
                       <select
                         value={r.estado}
