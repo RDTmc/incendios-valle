@@ -1,514 +1,12 @@
 {
-  "id": null,
-  "uid": "incendios-valle-main",
-  "title": "Dashboard Incendios - Valle del Sol",
-  "tags": ["incendios", "valle-del-sol", "produccion"],
-  "timezone": "browser",
-  "schemaVersion": 39,
-  "version": 8,
-  "refresh": "30s",
-  "editable": true,
-  "panels": [
-    {
-      "id": 1,
-      "title": "Focos Cr\u00edticos Activos",
-      "type": "stat",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 1 },
-              { "color": "red", "value": 5 }
-            ]
-          },
-          "mappings": [],
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "focos_activos" },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT CAST(COUNT(*) AS INTEGER) AS focos_activos FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')",
-          "queryText": "SELECT CAST(COUNT(*) AS INTEGER) AS focos_activos FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "title": "Distribuci\u00f3n por Tipo de Incendio",
-      "type": "piechart",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
-          "fieldMinMax": false,
-          "mappings": [],
-          "unit": "none"
-        },
-        "options": {
-          "reduceOptions": { "values": true, "calcs": ["lastNotNull"], "fields": "" },
-          "displayLabels": ["percent"],
-          "legend": { "calcs": [], "displayMode": "table", "placement": "right", "showLegend": true, "values": [] },
-          "pieType": "pie",
-          "tooltip": { "mode": "single", "sort": "none" }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT COALESCE(NULLIF(tipo, ''), 'SIN TIPO') AS \"Tipo\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY \"Tipo\" ORDER BY \"Cantidad\" DESC",
-          "queryText": "SELECT COALESCE(NULLIF(tipo, ''), 'SIN TIPO') AS \"Tipo\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY \"Tipo\" ORDER BY \"Cantidad\" DESC",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "title": "Estatus Global de Reportes",
-      "type": "bargauge",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 3 },
-              { "color": "red", "value": 5 }
-            ]
-          },
-          "mappings": [],
-          "unit": "none",
-          "min": 0
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": { "values": true, "calcs": [], "fields": "" },
-        "orientation": "horizontal",
-        "displayMode": "lcd",
-        "namePlacement": "left",
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY estado ORDER BY \"Cantidad\" DESC",
-          "queryText": "SELECT estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY estado ORDER BY \"Cantidad\" DESC",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "title": "Mapa de Focos por Estado",
-      "type": "geomap",
-      "gridPos": { "h": 13, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "estado" },
-            "properties": [
-              { "id": "displayName", "value": "Estado" },
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixed": {
-                    "ACTIVO": "#d62728",
-                    "PENDIENTE": "#ff7f0e",
-                    "CONTROLADO": "#f4e542",
-                    "EXTINGUIDO": "#2ca02c"
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "lat" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "lng" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "intensidad" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          }
-        ]
-      },
-      "options": {
-        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
-        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
-        "layers": [
-          {
-            "name": "Focos por Estado",
-            "type": "markers",
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": { "field": "estado" },
-                "size": { "field": "intensidad", "min": 6, "max": 18 },
-                "show": "details",
-                "label": "${__field.tipo}: ${__field.estado}"
-              }
-            }
-          }
-        ],
-        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
-        "tooltip": { "mode": "details" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "title": "Hist\u00f3rico CONAF - 3 Regiones Centrales",
-      "type": "geomap",
-      "gridPos": { "h": 13, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "lat" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "lng" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          }
-        ]
-      },
-      "options": {
-        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
-        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
-        "layers": [
-          {
-            "name": "Incendios CONAF",
-            "type": "markers",
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": { "field": "superficie" },
-                "size": { "field": "superficie", "min": 4, "max": 20 },
-                "show": "details",
-                "label": "${__field.nombre}: ${__field.superficie} ha"
-              }
-            }
-          }
-        ],
-        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
-        "tooltip": { "mode": "details" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, CAST(COALESCE(superficie, 0) AS REAL) AS superficie, COALESCE(NULLIF(causa, ''), 'Sin dato') AS causa, COALESCE(NULLIF(fh_inicio, ''), 'Sin fecha') AS fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "title": "Reportes Ciudadanos",
-      "type": "table",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 21 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Imagen" },
-            "properties": [
-              { "id": "custom.cellOptions", "value": { "type": "image" } },
-              { "id": "custom.width", "value": 80 },
-              { "id": "links", "value": [ { "title": "Ver imagen", "url": "${__value.raw}" } ] }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "ID" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          }
-        ]
-      },
-      "options": {
-        "footer": { "show": false, "countRows": false, "enablePagination": false },
-        "showHeader": true,
-        "sortBy": [ { "displayName": "Fecha", "desc": true } ]
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT report_id AS \"ID\", COALESCE(NULLIF(foto_url, ''), '') AS \"Imagen\", descripcion AS \"Descripcion\", tipo AS \"Tipo\", estado AS \"Estado\", created_at AS \"Fecha\" FROM reports ORDER BY created_at DESC LIMIT 10",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 6,
-      "title": "Recursos por Incidente",
-      "type": "table",
-"gridPos": { "h": 9, "w": 12, "x": 0, "y": 29 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Estado" },
-            "properties": [ { "id": "custom.width", "value": 80 } ]
-          }
-        ]
-      },
-      "options": {
-        "footer": { "show": false, "countRows": false, "enablePagination": false },
-        "showHeader": true
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
-          "queryText": "SELECT r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 8,
-      "title": "Clima 30-30-30",
-      "type": "table",
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 29 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Regi\u00f3n" },
-            "properties": [ { "id": "custom.width", "value": 60 } ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Temp" },
-            "properties": [
-              {
-                "id": "thresholds",
-                "value": { "mode": "absolute", "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "orange", "value": 25 },
-                  { "color": "red", "value": 30 }
-                ]}
-              },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
-              { "id": "unit", "value": "celsius" }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Hum" },
-            "properties": [
-              {
-                "id": "thresholds",
-                "value": { "mode": "absolute", "steps": [
-                  { "color": "red", "value": null },
-                  { "color": "orange", "value": 30 },
-                  { "color": "green", "value": 40 }
-                ]}
-              },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
-              { "id": "unit", "value": "percent" }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Viento" },
-            "properties": [
-              {
-                "id": "thresholds",
-                "value": { "mode": "absolute", "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "orange", "value": 25 },
-                  { "color": "red", "value": 30 }
-                ]}
-              },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
-              { "id": "unit", "value": "kmh" }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Riesgo" },
-            "properties": [
-              { "id": "custom.width", "value": 50 },
-              {
-                "id": "thresholds",
-                "value": { "mode": "absolute", "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "orange", "value": 1 },
-                  { "color": "red", "value": 2 }
-                ]}
-              },
-              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "footer": { "show": false, "countRows": false, "enablePagination": false },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
-          "queryText": "SELECT w1.region AS \"Regi\u00f3n\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "title": "Focos de Calor Satelital - NASA FIRMS",
-      "type": "geomap",
-      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 38 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] }
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "lat" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "lng" },
-            "properties": [ { "id": "custom.hidden", "value": true } ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "frp" },
-            "properties": [
-              { "id": "displayName", "value": "Potencia T\u00e9rmica (MW)" },
-              { "id": "color", "value": { "mode": "continuous-blues" } }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Confianza" },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixed": {
-                    "low": "#2ca02c",
-                    "nominal": "#ff7f0e",
-                    "high": "#d62728"
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "view": { "lat": -33.7, "lng": -71.2, "zoom": 9 },
-        "controls": { "showZoom": true, "showAttribution": false, "mouseWheelZoom": true },
-        "layers": [
-          {
-            "name": "Focos VIIRS/MODIS",
-            "type": "markers",
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": { "field": "frp" },
-                "size": { "field": "frp", "min": 5, "max": 15 },
-                "show": "details",
-                "label": "${__field.Sat\u00e9lite}: ${__field.frp} MW"
-              }
-            }
-          }
-        ],
-        "basemap": { "type": "osm-standard", "name": "Layer 0", "config": {}, "tooltip": false },
-        "tooltip": { "mode": "details" }
-      },
-      "targets": [
-        {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
-          "refId": "A",
-          "rawQueryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Sat\u00e9lite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
-          "queryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Sat\u00e9lite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
-          "queryType": "table",
-          "timeColumns": []
-        }
-      ]
-    }
-  ],
-  "time": { "from": "now-6h", "to": "now" },
-  "timepicker": {},
-  "templating": { "list": [] },
   "annotations": {
     "list": [
       {
         "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -516,5 +14,1070 @@
         "type": "dashboard"
       }
     ]
-  }
+  },
+  "editable": true,
+  "id": 1,
+  "panels": [
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "focos_activos",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT CAST(COUNT(*) AS INTEGER) AS focos_activos FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')",
+          "queryType": "table",
+          "rawQueryText": "SELECT CAST(COUNT(*) AS INTEGER) AS focos_activos FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Focos Críticos Activos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "unit": "none"
+        },
+        "options": {
+          "displayLabels": [
+            "percent"
+          ],
+          "legend": {
+            "calcs": [],
+            "displayMode": "table",
+            "placement": "right",
+            "showLegend": true,
+            "values": []
+          },
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT COALESCE(NULLIF(tipo, ''), 'SIN TIPO') AS \"Tipo\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY \"Tipo\" ORDER BY \"Cantidad\" DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT COALESCE(NULLIF(tipo, ''), 'SIN TIPO') AS \"Tipo\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY \"Tipo\" ORDER BY \"Cantidad\" DESC",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Distribución por Tipo de Incendio",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "displayMode": "lcd",
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY estado ORDER BY \"Cantidad\" DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY estado ORDER BY \"Cantidad\" DESC",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Estatus Global de Reportes",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "estado"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Estado"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixed": {
+                    "ACTIVO": "#d62728",
+                    "CONTROLADO": "#f4e542",
+                    "EXTINGUIDO": "#2ca02c",
+                    "PENDIENTE": "#ff7f0e"
+                  },
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lat"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lng"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "intensidad"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "tooltip": false,
+          "type": "osm-standard"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "estado"
+                },
+                "label": "${__field.tipo}: ${__field.estado}",
+                "show": "details",
+                "size": {
+                  "field": "intensidad",
+                  "max": 18,
+                  "min": 6
+                }
+              }
+            },
+            "name": "Focos por Estado",
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "lat": -33.7,
+          "lng": -71.2,
+          "zoom": 9
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryType": "table",
+          "rawQueryText": "SELECT CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, CASE estado WHEN 'ACTIVO' THEN 3 WHEN 'PENDIENTE' THEN 2 WHEN 'CONTROLADO' THEN 1 ELSE 0 END AS intensidad FROM reports WHERE latitud IS NOT NULL AND latitud != '' AND longitud IS NOT NULL AND longitud != ''",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Mapa de Focos por Estado",
+      "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lat"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lng"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 7,
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "tooltip": false,
+          "type": "osm-standard"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "superficie"
+                },
+                "label": "${__field.nombre}: ${__field.superficie} ha",
+                "show": "details",
+                "size": {
+                  "field": "superficie",
+                  "max": 20,
+                  "min": 4
+                }
+              }
+            },
+            "name": "Incendios CONAF",
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "lat": -33.7,
+          "lng": -71.2,
+          "zoom": 9
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryType": "table",
+          "rawQueryText": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, CAST(COALESCE(superficie, 0) AS REAL) AS superficie, COALESCE(NULLIF(causa, ''), 'Sin dato') AS causa, COALESCE(NULLIF(fh_inicio, ''), 'Sin fecha') AS fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Histórico CONAF - 3 Regiones Centrales",
+      "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Imagen"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "image"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Ver imagen",
+                    "url": "${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ID"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "id": 5,
+      "options": {
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Fecha"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryType": "table",
+          "rawQueryText": "SELECT report_id AS \"ID\", COALESCE(NULLIF(foto_url, ''), '') AS \"Imagen\", descripcion AS \"Descripcion\", tipo AS \"Tipo\", estado AS \"Estado\", created_at AS \"Fecha\" FROM reports ORDER BY created_at DESC LIMIT 10",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Reportes Ciudadanos",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Estado"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
+      "id": 6,
+      "options": {
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "queryType": "table",
+          "rawQueryText": "SELECT r.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", ir.unidad AS \"Unidad\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Recursos por Incidente",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Región"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temp"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 25
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hum"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 30
+                    },
+                    {
+                      "color": "green",
+                      "value": 40
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Viento"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 25
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "kmh"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Riesgo"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 2
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "id": 8,
+      "options": {
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT w1.region AS \"Región\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "queryType": "table",
+          "rawQueryText": "SELECT w1.region AS \"Región\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Clima 30-30-30",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lat"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lng"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "frp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Potencia Térmica (MW)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-blues"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Confianza"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixed": {
+                    "high": "#d62728",
+                    "low": "#2ca02c",
+                    "nominal": "#ff7f0e"
+                  },
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 9,
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "tooltip": false,
+          "type": "osm-standard"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "frp"
+                },
+                "label": "${__field.Satélite}: ${__field.frp} MW",
+                "show": "details",
+                "size": {
+                  "field": "frp",
+                  "max": 15,
+                  "min": 5
+                }
+              }
+            },
+            "name": "Focos VIIRS/MODIS",
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "lat": -33.7,
+          "lng": -71.2,
+          "zoom": 9
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Satélite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Satélite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE fetched_at >= datetime('now', '-3 days') ORDER BY acq_date DESC",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Focos de Calor Satelital - NASA FIRMS",
+      "type": "geomap"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "incendios",
+    "valle-del-sol",
+    "produccion"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Dashboard Incendios - Valle del Sol",
+  "uid": "incendios-valle-main",
+  "version": 36
 }
