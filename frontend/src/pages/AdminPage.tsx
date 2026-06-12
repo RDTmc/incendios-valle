@@ -50,6 +50,7 @@ type Tab = 'users' | 'audit' | 'notifications' | 'reports'
 type ModalMode = 'create' | 'edit' | null
 
 type SortKey = 'email' | 'nombre' | 'rol' | 'created_at'
+type ReportSortKey = 'report_id' | 'tipo' | 'descripcion' | 'estado' | 'created_at'
 
 const roles = ['VECINO', 'ADMIN']
 
@@ -66,6 +67,20 @@ function formatDate(dateStr: string) {
   } catch {
     return dateStr
   }
+}
+
+function sortReports(reports: ReportItem[], key: ReportSortKey, asc: boolean): ReportItem[] {
+  return [...reports].sort((a, b) => {
+    const aVal = a[key] ?? ''
+    const bVal = b[key] ?? ''
+    if (key === 'created_at') {
+      const at = new Date(aVal).getTime()
+      const bt = new Date(bVal).getTime()
+      return asc ? at - bt : bt - at
+    }
+    const cmp = String(aVal).localeCompare(String(bVal), 'es')
+    return asc ? cmp : -cmp
+  })
 }
 
 function sortUsers(users: AdminUser[], key: SortKey, asc: boolean): AdminUser[] {
@@ -121,6 +136,9 @@ export default function AdminPage() {
 
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortAsc, setSortAsc] = useState(false)
+
+  const [reportSortKey, setReportSortKey] = useState<ReportSortKey>('created_at')
+  const [reportSortAsc, setReportSortAsc] = useState(false)
 
   const fetchUsers = useCallback(async (showLoader = true) => {
     if (!token) return
@@ -191,6 +209,15 @@ export default function AdminPage() {
     } else {
       setSortKey(key)
       setSortAsc(true)
+    }
+  }
+
+  function toggleReportSort(key: ReportSortKey) {
+    if (reportSortKey === key) {
+      setReportSortAsc(!reportSortAsc)
+    } else {
+      setReportSortKey(key)
+      setReportSortAsc(true)
     }
   }
 
@@ -345,6 +372,11 @@ export default function AdminPage() {
   function renderSortIcon(key: SortKey) {
     if (sortKey !== key) return <span className="ml-1 text-gray-600">⇅</span>
     return <span className="ml-1">{sortAsc ? '↑' : '↓'}</span>
+  }
+
+  function renderReportSortIcon(key: ReportSortKey) {
+    if (reportSortKey !== key) return <span className="ml-1 text-gray-600">⇅</span>
+    return <span className="ml-1">{reportSortAsc ? '↑' : '↓'}</span>
   }
 
   function renderUsersTab() {
@@ -516,6 +548,8 @@ export default function AdminPage() {
     return r.tipo.toLowerCase().includes(q) || (r.descripcion && r.descripcion.toLowerCase().includes(q)) || r.estado.toLowerCase().includes(q)
   })
 
+  const sortedReports = sortReports(filteredReports, reportSortKey, reportSortAsc)
+
   function renderReportsTab() {
     return (
       <div>
@@ -540,16 +574,26 @@ export default function AdminPage() {
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="border-b border-gray-700 text-gray-400">
-                  <th className="py-2 px-3">ID</th>
-                  <th className="py-2 px-3">Tipo</th>
-                  <th className="py-2 px-3">Descripción</th>
+                  <th className="py-2 px-3 cursor-pointer select-none hover:text-gray-200 transition-colors" onClick={() => toggleReportSort('report_id')}>
+                    ID{renderReportSortIcon('report_id')}
+                  </th>
+                  <th className="py-2 px-3 cursor-pointer select-none hover:text-gray-200 transition-colors" onClick={() => toggleReportSort('tipo')}>
+                    Tipo{renderReportSortIcon('tipo')}
+                  </th>
+                  <th className="py-2 px-3 cursor-pointer select-none hover:text-gray-200 transition-colors" onClick={() => toggleReportSort('descripcion')}>
+                    Descripción{renderReportSortIcon('descripcion')}
+                  </th>
                   <th className="py-2 px-3">Ubicación</th>
-                  <th className="py-2 px-3">Estado</th>
-                  <th className="py-2 px-3">Fecha</th>
+                  <th className="py-2 px-3 cursor-pointer select-none hover:text-gray-200 transition-colors" onClick={() => toggleReportSort('estado')}>
+                    Estado{renderReportSortIcon('estado')}
+                  </th>
+                  <th className="py-2 px-3 cursor-pointer select-none hover:text-gray-200 transition-colors" onClick={() => toggleReportSort('created_at')}>
+                    Fecha{renderReportSortIcon('created_at')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredReports.map(r => (
+                {sortedReports.map(r => (
                   <tr key={r.report_id} className="border-b border-gray-700 hover:bg-gray-700/50">
                     <td className="py-2 px-3 text-gray-400 font-mono text-xs">{r.report_id.slice(0, 8)}</td>
                     <td className="py-2 px-3 text-gray-200">{r.tipo}</td>
@@ -575,7 +619,7 @@ export default function AdminPage() {
                 ))}
               </tbody>
             </table>
-            <p className="text-xs text-gray-500 mt-2">Total: {filteredReports.length} reporte{filteredReports.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-500 mt-2">Total: {reports.length} reporte{reports.length !== 1 ? 's' : ''}</p>
           </div>
         )}
       </div>
@@ -586,7 +630,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-900 text-white pb-8">
       <div className="bg-gray-800 p-4 shadow flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <img src="/logo-muni.png" alt="Municipalidad de Valle del Sol" className="h-14 w-auto" />
+          <img src="/logo-muni.png" alt="Municipalidad de Valle del Sol" className="h-14 w-auto brightness-0 invert" />
           <div>
             <h1 className="text-xl font-bold">Panel de Administración</h1>
             <p className="text-xs text-gray-400">Sistema de Gestión de Incendios</p>
