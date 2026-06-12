@@ -4,6 +4,7 @@ from typing import Optional
 from dependencies import get_db_connection, require_admin, get_user_repository
 from notification_service import notify_new_user
 from datetime import datetime, timezone
+from models import UpdateReportStatusRequest
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -113,6 +114,33 @@ def admin_audit_log(payload: dict = Depends(require_admin), limit: int = 100):
     except Exception as e:
         print(f"[admin] audit_log error: {e}")
         return []
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@router.patch("/reports/{report_id}/status")
+def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, payload: dict = Depends(require_admin)):
+    valid_statuses = {"PENDIENTE", "ACTIVO", "CONTROLADO", "EXTINGUIDO"}
+    estado_upper = req.estado.upper()
+    if estado_upper not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Válidos: {', '.join(valid_statuses)}")
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM reports WHERE id = ?", (report_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Reporte no encontrado")
+        cursor.execute("UPDATE reports SET estado = ? WHERE id = ?", (estado_upper, report_id))
+        conn.commit()
+        log_audit("update_report_status", payload["user_id"], report_id, f"Cambió estado a {estado_upper}")
+        return {"status": "updated", "report_id": report_id, "estado": estado_upper}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[admin] update_report_status error: {e}")
+        raise HTTPException(status_code=500, detail="Error al actualizar estado")
     finally:
         if conn is not None:
             conn.close()

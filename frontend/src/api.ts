@@ -193,5 +193,18 @@ export const API = {
       throw new Error(err.error || err.detail || `Failed to fetch notifications: HTTP ${res.status}`)
     }
     return res.json()
+  },
+
+  updateReportStatus: async (token: string, reportId: string, estado: string) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/reports/${reportId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ estado })
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to update report status: HTTP ${res.status}`)
+    }
+    return res.json()
   }
 }

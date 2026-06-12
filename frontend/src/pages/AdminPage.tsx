@@ -23,6 +23,18 @@ interface AuditEntry {
   created_at: string
 }
 
+interface ReportItem {
+  id: string
+  user_id: string
+  tipo: string
+  latitud: number
+  longitud: number
+  descripcion: string
+  foto_url: string
+  estado: string
+  created_at: string
+}
+
 interface NotificationEntry {
   id: number
   type: string
@@ -33,7 +45,7 @@ interface NotificationEntry {
   created_at: string
 }
 
-type Tab = 'users' | 'audit' | 'notifications'
+type Tab = 'users' | 'audit' | 'notifications' | 'reports'
 
 type ModalMode = 'create' | 'edit' | null
 
@@ -90,6 +102,11 @@ export default function AdminPage() {
   const [notifications, setNotifications] = useState<NotificationEntry[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
 
+  const [reports, setReports] = useState<ReportItem[]>([])
+  const [loadingReports, setLoadingReports] = useState(false)
+  const [reportFilter, setReportFilter] = useState('')
+  const [updatingReport, setUpdatingReport] = useState<string | null>(null)
+
   const [modalMode, setModalMode] = useState<ModalMode>(null)
   const [editUser, setEditUser] = useState<AdminUser | null>(null)
   const [formEmail, setFormEmail] = useState('')
@@ -144,9 +161,23 @@ export default function AdminPage() {
     }
   }, [token])
 
+  const fetchReports = useCallback(async () => {
+    if (!token) return
+    setLoadingReports(true)
+    try {
+      const data = await API.getReports(token)
+      setReports(data.reports || data || [])
+    } catch {
+      addToast('Error al cargar reportes', 'error')
+    } finally {
+      setLoadingReports(false)
+    }
+  }, [token])
+
   useEffect(() => { fetchUsers() }, [fetchUsers])
   useEffect(() => { if (tab === 'audit') fetchAuditLog() }, [tab, fetchAuditLog])
   useEffect(() => { if (tab === 'notifications') fetchNotifications() }, [tab, fetchNotifications])
+  useEffect(() => { if (tab === 'reports') fetchReports() }, [tab, fetchReports])
 
   useEffect(() => {
     const interval = setInterval(() => { fetchUsers(false) }, 15000)
@@ -235,6 +266,20 @@ export default function AdminPage() {
       addToast('Error al eliminar usuario', 'error')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  async function handleUpdateReportStatus(reportId: string, estado: string) {
+    if (!token) return
+    setUpdatingReport(reportId)
+    try {
+      await API.updateReportStatus(token, reportId, estado)
+      addToast(`Estado actualizado a ${estado}`, 'success')
+      fetchReports()
+    } catch (err: any) {
+      addToast(err.message || 'Error al actualizar estado', 'error')
+    } finally {
+      setUpdatingReport(null)
     }
   }
 
@@ -457,6 +502,85 @@ export default function AdminPage() {
     )
   }
 
+  const ESTADO_COLORS: Record<string, string> = {
+    PENDIENTE: 'bg-yellow-900 text-yellow-200',
+    ACTIVO: 'bg-red-900 text-red-200',
+    CONTROLADO: 'bg-blue-900 text-blue-200',
+    EXTINGUIDO: 'bg-gray-600 text-gray-200',
+  }
+
+  const filteredReports = reports.filter(r => {
+    if (!reportFilter) return true
+    const q = reportFilter.toLowerCase()
+    return r.tipo.toLowerCase().includes(q) || r.descripcion.toLowerCase().includes(q) || r.estado.toLowerCase().includes(q)
+  })
+
+  function renderReportsTab() {
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Input
+            placeholder="Filtrar por tipo, descripción o estado..."
+            value={reportFilter}
+            onChange={e => setReportFilter(e.target.value)}
+            className="flex-1"
+          />
+          <Button size="sm" onClick={() => fetchReports()}>Refrescar</Button>
+        </div>
+
+        {loadingReports ? (
+          <Spinner />
+        ) : filteredReports.length === 0 ? (
+          <div className="text-center py-8 text-gray-300">
+            {reportFilter ? 'Sin resultados' : 'No hay reportes'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-700 text-gray-400">
+                  <th className="py-2 px-3">ID</th>
+                  <th className="py-2 px-3">Tipo</th>
+                  <th className="py-2 px-3">Descripción</th>
+                  <th className="py-2 px-3">Ubicación</th>
+                  <th className="py-2 px-3">Estado</th>
+                  <th className="py-2 px-3">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredReports.map(r => (
+                  <tr key={r.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td className="py-2 px-3 text-gray-400 font-mono text-xs">{r.id.slice(0, 8)}</td>
+                    <td className="py-2 px-3 text-gray-200">{r.tipo}</td>
+                    <td className="py-2 px-3 text-gray-300 max-w-xs truncate">{r.descripcion || '—'}</td>
+                    <td className="py-2 px-3 text-gray-400 text-xs">{r.latitud?.toFixed(4)}, {r.longitud?.toFixed(4)}</td>
+                    <td className="py-2 px-3">
+                      <select
+                        value={r.estado}
+                        onChange={e => handleUpdateReportStatus(r.id, e.target.value)}
+                        disabled={updatingReport === r.id}
+                        className={`px-2 py-1 rounded text-xs font-medium border-0 cursor-pointer ${
+                          ESTADO_COLORS[r.estado] || 'bg-gray-700 text-gray-200'
+                        } disabled:opacity-50`}
+                      >
+                        <option value="PENDIENTE">PENDIENTE</option>
+                        <option value="ACTIVO">ACTIVO</option>
+                        <option value="CONTROLADO">CONTROLADO</option>
+                        <option value="EXTINGUIDO">EXTINGUIDO</option>
+                      </select>
+                    </td>
+                    <td className="py-2 px-3 text-gray-400 text-xs">{formatDate(r.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-gray-500 mt-2">Total: {filteredReports.length} reporte{filteredReports.length !== 1 ? 's' : ''}</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white pb-8">
       <div className="bg-gray-800 p-4 shadow flex items-center justify-between">
@@ -498,10 +622,17 @@ export default function AdminPage() {
           >
             Notificaciones ({notifications.length})
           </Button>
+          <Button
+            variant={tab === 'reports' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab('reports')}
+          >
+            Reportes ({reports.length})
+          </Button>
         </div>
 
         <Card className="bg-gray-800 p-4">
-          {tab === 'users' ? renderUsersTab() : tab === 'audit' ? renderAuditTab() : renderNotificationsTab()}
+          {tab === 'users' ? renderUsersTab() : tab === 'audit' ? renderAuditTab() : tab === 'notifications' ? renderNotificationsTab() : renderReportsTab()}
         </Card>
       </div>
 

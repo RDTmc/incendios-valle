@@ -30,6 +30,10 @@ class SyncRequest(BaseModel):
     data: dict
 
 
+class UpdateReportStatusRequest(BaseModel):
+    estado: str
+
+
 class ExternalReportRequest(BaseModel):
     source: str = "CIREN"
     nombre: Optional[str] = None
