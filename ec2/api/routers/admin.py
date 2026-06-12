@@ -129,8 +129,11 @@ def admin_list_reports(payload: dict = Depends(require_admin)):
         rows = cursor.fetchall()
         reports = []
         for r in rows:
+            rid = r[0]
+            if not rid:
+                continue
             reports.append({
-                "report_id": r[0],
+                "report_id": rid,
                 "user_id": r[1] or "",
                 "tipo": r[2],
                 "latitud": r[3],

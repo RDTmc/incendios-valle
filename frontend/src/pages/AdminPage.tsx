@@ -593,8 +593,8 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {sortedReports.map(r => (
-                  <tr key={r.report_id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td className="py-2 px-3 text-gray-400 font-mono text-xs">{r.report_id.slice(0, 8)}</td>
+                  <tr key={r.report_id || r.created_at} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <td className="py-2 px-3 text-gray-400 font-mono text-xs">{r.report_id ? r.report_id.slice(0, 8) : '—'}</td>
                     <td className="py-2 px-3 text-gray-200">{r.tipo}</td>
                     <td className="py-2 px-3 text-gray-300 max-w-xs truncate">{r.descripcion || '—'}</td>
                     <td className="py-2 px-3 text-gray-400 text-xs">{r.latitud ? Number(r.latitud).toFixed(4) : '—'}, {r.longitud ? Number(r.longitud).toFixed(4) : '—'}</td>
