@@ -33,6 +33,30 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - **Prueba de campo exitosa**: usuario nuevo recibe correo de bienvenida vía Mailtrap
 - **Commits**: `acfd206` (Mailtrap init), `581059a` (Bearer fix), `21fe77d` (http.client fix)
 
+### Fix imágenes en Grafana — presigned URL 7 días (junio 2026)
+- **Problema ACL**: bucket S3 no permite ACLs (nuevo default), `BlockPublicAcls` forzado por AWS Academy
+- **Lambda `upload-proxy`**: se extendió presigned URL de 2h → **7 días (604800s)**
+- **Lifecycle rule**: `reportes/` → expire a los **30 días** (modificada desde rule `Borrar_24h`)
+- **Panel 5 "Reportes Ciudadanos"**: pendiente ajuste manual en UI Grafana (cell type Image + data link)
+- **Commits**: `dccb337` (ACL public-read, revertido), `5994cc4` (presigned a 7 días, sin ACL)
+
+### Diagnóstico imágenes corruptas en S3 (13 jun 2026)
+- **Causa raíz confirmada**: las imágenes JPEG en S3 están corruptas. La imagen `801270b6` tiene primeros bytes `EF BF BD EF BF BD` (caracteres UTF-8 de reemplazo U+FFFD) en vez de `FF D8 FF E0` (JPEG header). Las otras 11 tienen URLs presigned expiradas (403).
+- **Patrón de corrupción**: compatible con `bytes.decode('utf-8', errors='replace').encode('utf-8')` en algún punto del pipeline (posiblemente una versión anterior del código).
+- **Pipeline actual funciona**: Lambda invocada manualmente con JPEG válido → imagen correcta en S3. Direct boto3 upload → se ve en Grafana.
+- **EC2 instance caída** (13 jun): SSH timeout, Grafana 530/502. Pendiente reinicio desde consola AWS.
+- **Solución**: tomar foto nueva desde PWA tras reiniciar instancia. Las imágenes nuevas se guardarán correctamente.
+
+### Fix imágenes — Causa raíz: Cloudflare corrompe multipart/form-data (13 jun 2026)
+- **Evidencia**: 
+  - Directo a API Gateway (`execute-api` URL) → JPEG válido ✅ (259 bytes)
+  - Directo a custom domain endpoint (sin Cloudflare) → JPEG válido ✅ (259 bytes)
+  - Via Cloudflare (`api.keogh.lat` proxied) → JPEG corrupto ❌ (283 bytes, `efbfbd...`)
+- **Causa raíz**: Cloudflare estaba decodificando el body multipart/form-data como UTF-8, corrompiendo los bytes JPEG binarios no-UTF8
+- **Fix API Gateway**: agregué `multipart/form-data` a `binaryMediaTypes` + redeploy (necesario para el fix completo)
+- **Fix aplicado**: Opción 1 — DNS-only para `api.keogh.lat` en Cloudflare (nube gris). Ahora resuelve directo a API Gateway regional endpoint
+- **Verificado**: upload de prueba POST-fix → JPEG de 259 bytes, header `ffd8ffe0`, 0 patrones U+FFFD ✅
+
 ### Cobertura final
 - Backend: **157 tests**, routers 100%, overall **97%**
 - Frontend: **165 tests**, **96.49%** coverage, MapboxStrategy 100%
@@ -76,7 +100,9 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
      - Fix `.env` corrupto: heredoc `cat > .env <<EOF` + greps anclados `^KEY=` + sanitización automática `sed -n /regex/p`
      - Fix Grafana 500 "attempt to write a readonly database": DB corrupta por restore cíclico desde S3
      - **Commits**: `67c69ea` (condicionar restart), `07a5d7e` (sanitización), `75dc338` (no restore grafana.db), `1e6ed9b` (heredoc), `7c3917a` (grep anclado)
-   - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
+    - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
+      - ✅ **Panel 5 — Imágenes**: Lambda extiende presigned a 7 días, S3 lifecycle rule 30 días
+      - ☐ Panel 5 — Ajuste manual UI Grafana (cell type Image + data link + ancho + fecha)
 
 ## BAJA PRIORIDAD
 

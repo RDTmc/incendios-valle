@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Annotated
@@ -275,12 +276,32 @@ def upload_report_image(file: Annotated[UploadFile, File()]):
         if len(contents) > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="La imagen no debe superar los 5MB")
         url = upload_image(contents, file.content_type)
-        return {"foto_url": url}
+        api_url = f"/api/images/{url}"
+        return {"foto_url": api_url}
     except HTTPException:
         raise
     except Exception as e:
         print(f"[upload] Error: {e}")
         raise HTTPException(status_code=500, detail="Error al subir imagen")
+
+
+IMAGE_EXPIRATION = 604800  # 7 días
+
+
+@app.get("/images/{key:path}")
+def image_proxy(key: str):
+    """Genera presigned URL y redirige. key ej: reportes/uuid.jpg"""
+    try:
+        s3 = boto3.client("s3")
+        url = s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": "incendios-valle-sol", "Key": key},
+            ExpiresIn=IMAGE_EXPIRATION,
+        )
+        return RedirectResponse(url)
+    except Exception as e:
+        print(f"[image_proxy] Error: {e}")
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
 
 
 @app.get("/health")

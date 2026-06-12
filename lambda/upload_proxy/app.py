@@ -15,11 +15,10 @@ def lambda_handler(event, context):
         key = f"reportes/{uuid.uuid4().hex}.{ext}"
 
         s3.put_object(Bucket=S3_BUCKET, Key=key, Body=image_bytes, ContentType=content_type)
-        url = s3.generate_presigned_url("get_object", Params={"Bucket": S3_BUCKET, "Key": key}, ExpiresIn=604800)
 
         return {
             "statusCode": 200,
-            "body": json.dumps({"foto_url": url})
+            "body": json.dumps({"foto_url": key})
         }
     except Exception as e:
         return {

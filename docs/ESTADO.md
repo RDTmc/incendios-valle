@@ -50,6 +50,7 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 
 - 1 Reliability Issue (Medium) remanente — aceptado
 - Dashboard Grafana no persiste config (allowUiUpdates: true pero no guarda)
+- **Panel 5 — Imágenes corruptas en S3**: las 12 imágenes existentes en S3 (`reportes/`) no se muestran en Grafana. 11 URLs presigned expiradas (403), 1 JPEG corrupto (bytes UTF-8 replacement en vez de header JPEG). El pipeline actual (PWA → API → Lambda → S3) funciona correctamente — imágenes nuevas se guardarán válidas. EC2 instance caída (13 jun).
 - Guión demo
 - Documentación
 
