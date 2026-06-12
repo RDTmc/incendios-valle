@@ -276,7 +276,7 @@ def upload_report_image(file: Annotated[UploadFile, File()]):
         if len(contents) > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="La imagen no debe superar los 5MB")
         url = upload_image(contents, file.content_type)
-        api_url = f"/api/images/{url}"
+        api_url = f"https://api.keogh.lat/api/images/{url}"
         return {"foto_url": api_url}
     except HTTPException:
         raise

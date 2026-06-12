@@ -100,9 +100,21 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
      - Fix `.env` corrupto: heredoc `cat > .env <<EOF` + greps anclados `^KEY=` + sanitización automática `sed -n /regex/p`
      - Fix Grafana 500 "attempt to write a readonly database": DB corrupta por restore cíclico desde S3
      - **Commits**: `67c69ea` (condicionar restart), `07a5d7e` (sanitización), `75dc338` (no restore grafana.db), `1e6ed9b` (heredoc), `7c3917a` (grep anclado)
-    - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
-      - ✅ **Panel 5 — Imágenes**: Lambda extiende presigned a 7 días, S3 lifecycle rule 30 días
-      - ☐ Panel 5 — Ajuste manual UI Grafana (cell type Image + data link + ancho + fecha)
+     - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
+       - ✅ **Panel 5 — Imágenes**: Lambda extiende presigned a 7 días, S3 lifecycle rule 30 días
+       - ☐ Panel 5 — Ajuste manual UI Grafana (cell type Image + data link + ancho + fecha)
+
+### Fix doble encoding "Ver imagen" — Opción B: endpoint proxy (12–13 jun 2026)
+- **Problema**: data link "Ver imagen" en Grafana panel 5 daba `InvalidToken` porque el motor Go `html/template` de Grafana URL-escapaba el `href`, convirtiendo `%2B` → `%252B`
+- **Solución elegida**: Opción B — API genera presigned URL al vuelo y redirige 302, eliminando caracteres URL-encoded de las URLs almacenadas
+- **Lambda `upload-proxy`**: cambiada para devolver solo key S3 (`reportes/uuid.jpg`) en vez de presigned URL completa (deploy MANUAL)
+- **API `main.py`**: nuevo endpoint `GET /images/{key:path}` → presigned URL + 302 redirect. Upload construye `foto_url` como ruta de API
+- **Pendiente**: 
+  - ☐ Corregir URL relativa → absoluta en `main.py:279` (`/api/images/{key}` → `https://api.keogh.lat/api/images/{key}`)
+  - ☐ Restaurar data link "Ver imagen" en provisioning JSON del dashboard
+  - ☐ Probar upload real desde PWA → validar thumbnail + link en Grafana
+- **Commits**: `9b17f8d` (Opción B: Lambda key + API proxy), `2713aff` (fix: mover debug scripts fuera de tests/)
+- **Lambda**: commit `5994cc4` (presigned 7 días) → deploy manual con cambio a solo key
 
 ## BAJA PRIORIDAD
 

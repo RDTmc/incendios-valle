@@ -271,7 +271,8 @@
             "matcher": { "id": "byName", "options": "Imagen" },
             "properties": [
               { "id": "custom.cellOptions", "value": { "type": "image" } },
-              { "id": "custom.width", "value": 80 }
+              { "id": "custom.width", "value": 80 },
+              { "id": "links", "value": [ { "title": "Ver imagen", "url": "${__value.raw}" } ] }
             ]
           },
           {
