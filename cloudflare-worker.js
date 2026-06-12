@@ -13,7 +13,7 @@ export default {
 
     const corsHeaders = new Headers();
     corsHeaders.set('Access-Control-Allow-Origin', isAllowed ? ALLOWED_ORIGIN : 'null');
-    corsHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
+    corsHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS');
     corsHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     corsHeaders.set('Vary', 'Origin');
 
@@ -64,7 +64,7 @@ export default {
       const response = await fetch(targetUrl, fetchOptions);
       const responseHeaders = new Headers(response.headers);
       responseHeaders.set('Access-Control-Allow-Origin', isAllowed ? ALLOWED_ORIGIN : 'null');
-      responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
+      responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS');
       responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       responseHeaders.set('Vary', 'Origin');
 
