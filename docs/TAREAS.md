@@ -88,33 +88,50 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 3. ✅ **Mejorar coverage 34.1% → 96.49%** — Completado
 4. ✅ **SNS + Grafana annotations** — Completado
 
+## ALTA PRIORIDAD (nuevo)
+
+6. ☐ **AdminPage — Gestión de estados de reportes**
+   - ☐ Backend: `PATCH /api/reports/{id}/status` → cambiar estado (PENDIENTE/ACTIVO/CONTROLADO/EXTINGUIDO)
+   - ☐ Frontend: nuevo tab "Reportes" en AdminPage con tabla + selector de estado
+   - ☐ Auth: solo admin (Bearer token, role=admin)
+   - ☐ Notificar cambio via SNS? (evaluar)
+
 ## MEDIA PRIORIDAD
 
 5. ✅ **Mailtrap welcome email** — Completado (reemplazó SendGrid, bloqueado por Twilio)
-6. ☐ **Dashboard Grafana**
-   - ✅ **Fase 1 — Persistencia**:
-     - deploy.yml: restart Grafana condicionado a hash del provisioning (no siempre)
-     - `refresh_api.sh`: ya no restaura `grafana-latest.db` desde S3 (solo backup)
-     - backup `grafana.db` a S3 pre-deploy
-     - `export_dashboards.sh`: exporta dashboards vía API Grafana → JSON files
-     - Fix `.env` corrupto: heredoc `cat > .env <<EOF` + greps anclados `^KEY=` + sanitización automática `sed -n /regex/p`
-     - Fix Grafana 500 "attempt to write a readonly database": DB corrupta por restore cíclico desde S3
-     - **Commits**: `67c69ea` (condicionar restart), `07a5d7e` (sanitización), `75dc338` (no restore grafana.db), `1e6ed9b` (heredoc), `7c3917a` (grep anclado)
-     - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
-       - ✅ **Panel 5 — Imágenes**: Lambda extiende presigned a 7 días, S3 lifecycle rule 30 días
-       - ☐ Panel 5 — Ajuste manual UI Grafana (cell type Image + data link + ancho + fecha)
+7. ☐ **Dashboard Grafana — Diseño UI**
+   - ✅ Persistencia validada: export → commit → CI/CD preserva cambios
+   - ☐ **Fase 2 — Diseño UI**: tipografía, colores, layout, imágenes en cada panel
+     - ✅ **Panel 5 — Imágenes**: Lambda + proxy + data link funcionando
+     - ☐ Rediseñar los 9 paneles con la nueva configuración visual
+     - ☐ Exportar JSON + commit + CI/CD
+
+## BAJA PRIORIDAD
+
+8. ☐ **Guión demo** — Iniciado en `docs/GUION_DEMO.md`
+   - ✅ Persistencia (bind mount EBS) documentada
+   - ☐ Escenarios de demostración
+   - ☐ Datos de prueba precargados
+9. **Documentación**
+   - Actualizar docs existentes
+   - README con instrucciones de desarrollo local
 
 ### Fix doble encoding "Ver imagen" — Opción B: endpoint proxy (12–13 jun 2026)
 - **Problema**: data link "Ver imagen" en Grafana panel 5 daba `InvalidToken` porque el motor Go `html/template` de Grafana URL-escapaba el `href`, convirtiendo `%2B` → `%252B`
 - **Solución elegida**: Opción B — API genera presigned URL al vuelo y redirige 302, eliminando caracteres URL-encoded de las URLs almacenadas
 - **Lambda `upload-proxy`**: cambiada para devolver solo key S3 (`reportes/uuid.jpg`) en vez de presigned URL completa (deploy MANUAL)
 - **API `main.py`**: nuevo endpoint `GET /images/{key:path}` → presigned URL + 302 redirect. Upload construye `foto_url` como ruta de API
-- **Pendiente**: 
-  - ☐ Corregir URL relativa → absoluta en `main.py:279` (`/api/images/{key}` → `https://api.keogh.lat/api/images/{key}`)
-  - ☐ Restaurar data link "Ver imagen" en provisioning JSON del dashboard
-  - ☐ Probar upload real desde PWA → validar thumbnail + link en Grafana
-- **Commits**: `9b17f8d` (Opción B: Lambda key + API proxy), `2713aff` (fix: mover debug scripts fuera de tests/)
+- **✅ Completado**: URL absoluta (`https://api.keogh.lat/api/images/{key}`), data link restaurado, prueba de campo exitosa
+- **Commits**: `9b17f8d` (Opción B), `1bf0efd` (URL absoluta + data link), `4dd97fc` (restaurar diseño desde backup), `6e10b02` (validar persistencia con cambio UI)
 - **Lambda**: commit `5994cc4` (presigned 7 días) → deploy manual con cambio a solo key
+
+### Fix: Persistencia de cambios UI en Grafana (13 jun 2026)
+- **Problema**: al reiniciar Grafana, provisioning sobrescribía los cambios hechos desde UI
+- **Solución**: exportar dashboard después de cambios UI → commit JSON → CI/CD deploya el mismo JSON
+- **Flujo validado**: cambio "Focos Activos" sobrevivió a deploy completo
+- **Script**: `export_dashboards.sh` actualizado con admin credentials (GRAFANA_TOKEN expiró con restore DB)
+- **Docs**: flujo documentado en `AGENTS.md`
+- **Commits**: `b1688e9` (docs + fix export_dashboards.sh)
 
 ## BAJA PRIORIDAD
 
