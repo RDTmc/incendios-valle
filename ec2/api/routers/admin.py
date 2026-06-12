@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from dependencies import get_db_connection, require_admin, get_user_repository
+from dependencies import get_db_connection, require_admin, get_user_repository, get_report_repository
 from notification_service import notify_new_user
 from datetime import datetime, timezone
 from models import UpdateReportStatusRequest
@@ -134,6 +134,8 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
             raise HTTPException(status_code=404, detail="Reporte no encontrado")
         cursor.execute("UPDATE reports SET estado = ? WHERE report_id = ?", (estado_upper, report_id))
         conn.commit()
+        repo = get_report_repository()
+        repo.update(report_id, estado=estado_upper)
         log_audit("update_report_status", payload["user_id"], report_id, f"Cambió estado a {estado_upper}")
         return {"status": "updated", "report_id": report_id, "estado": estado_upper}
     except HTTPException:

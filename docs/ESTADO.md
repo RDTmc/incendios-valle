@@ -62,12 +62,24 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 ### Worker CORS
 - `cloudflare-worker.js`: agregado `PATCH` a `Access-Control-Allow-Methods`, desplegado manualmente
 
+## Últimos cambios — Sesión 14 jun 2026
+
+### Fix 500 al cambiar estado — columna SQL incorrecta
+- **Problema**: `admin_update_report_status` usaba `WHERE id = ?` pero la columna en SQLite se llama `report_id` → SQLException → 500
+- **Fix**: `SELECT id` → `SELECT report_id`, `WHERE id` → `WHERE report_id` en `admin.py:132-135`
+- Commits: `a7323fe`
+- CI/CD verde ✅
+
+### Fix dropdown no actualiza — sync DynamoDB
+- **Problema**: `admin_update_report_status` solo actualizaba SQLite, pero `list_reports` lee de DynamoDB → dropdown seguía viendo estado viejo
+- **Fix**: agregar `repo.update(report_id, estado=estado_upper)` después del UPDATE SQLite para sincronizar DynamoDB
+- Commit: incluido en `a7323fe`
+
 ## Lo que NO está hecho
 
 - 1 Reliability Issue (Medium) remanente — aceptado
 - Dashboard Grafana — Diseño UI Fase 2 (tipografía, colores, layout)
 - Lambda upload-proxy no está en pipeline CI/CD (deploy manual)
-- **Error 403**: resolver IncompleteSignatureException en API Gateway al cambiar estado de reporte
 - Guión demo
 - Documentación
 

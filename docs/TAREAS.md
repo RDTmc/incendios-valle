@@ -55,37 +55,33 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - Total: 322 tests, 0 failures
 - Security: C→A, Reliability: C→A, Code Smells: 82→0
 
-## 🔴 BLOQUEADO — Error 403 al cambiar estado de reporte
+### Fix 500 al cambiar estado de reporte — columna SQL incorrecta (14 jun 2026)
+- **Problema**: `admin_update_report_status` usaba `WHERE id = ?` pero columna SQLite es `report_id` → SQLException → 500
+- **Fix**: cambiar a `SELECT report_id` y `WHERE report_id`
+- **Detectado**: request mostraba `PUT 500` en modo incógnito con headers `x-amzn-remapped-server: nginx`
 
-El navegador del usuario sirve JS cacheados (Service Worker) que aún contienen `method: 'PATCH'`. Aunque el código deployado (commit `ac520f8`) usa `PUT`, el SW intercepta y sirve el bundle viejo.
-
-**Causa raíz investigar**:
-1. API Gateway `/api/{proxy+}` con `ANY` debería pasar PATCH, pero responde `IncompleteSignatureException`
-2. Posible causa: `authorization-type` en `ANY` podría ser `AWS_IAM` en vez de `NONE`
-3. `IncompleteSignatureException` = API Gateway intenta validar `Authorization: Bearer <jwt>` como SigV4
-
-**Fix tentativo**: verificar `authorization-type` del método `ANY` en recurso `/api/{proxy+}` via AWS CLI/Console, cambiarlo a `NONE` si está en `AWS_IAM`, redeployar stage.
+### Fix — dropdown no actualiza estado tras cambio (14 jun 2026)
+- **Problema**: `admin_update_report_status` solo actualizaba SQLite, pero `list_reports` (tabla AdminPage) lee de DynamoDB
+- **Fix**: agregar `repo.update(report_id, estado=estado_upper)` para sync DynamoDB después del UPDATE SQLite
+- Validado: Grafana ya veía el cambio (lee SQLite), ahora AdminPage también
+- Commit: `a7323fe` — CI/CD verde ✅
 
 ## ALTA PRIORIDAD
 
-1. ☐ **Resolver error 403 IncompleteSignatureException**
-   - Verificar API Gateway config (authorization-type en /api/{proxy+})
-   - Verificar si hay Worker de por medio
-   - Forzar hard refresh / desregistrar SW en navegador
-2. ☐ **Dashboard Grafana — Diseño UI** (Fase 2)
+1. ☐ **Dashboard Grafana — Diseño UI** (Fase 2)
    - Rediseñar los 9 paneles con nueva configuración visual (tipografía, colores, layout)
    - Exportar JSON + commit + CI/CD
 
 ## MEDIA PRIORIDAD
 
-3. ☐ **Agregar Lambda `upload-proxy` al pipeline CI/CD**
+2. ☐ **Agregar Lambda `upload-proxy` al pipeline CI/CD**
    - Actualmente se deploya manualmente desde AWS Console
 
-4. ☐ **Notificar cambio de estado de reporte via SNS?** (evaluar si es necesario)
+3. ☐ **Notificar cambio de estado de reporte via SNS?** (evaluar si es necesario)
 
 ## BAJA PRIORIDAD
 
-5. ☐ **Guión demo** — `docs/GUION_DEMO.md`
+4. ☐ **Guión demo** — `docs/GUION_DEMO.md`
    - Escenarios de demostración, datos de prueba precargados
 
 6. **Documentación**
