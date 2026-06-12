@@ -16,9 +16,16 @@
     ]
   },
   "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
   "id": 1,
+  "links": [],
   "panels": [
     {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -54,7 +61,7 @@
       },
       "id": 1,
       "options": {
-        "colorMode": "value",
+        "colorMode": "background_solid",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
@@ -65,8 +72,11 @@
           "fields": "focos_activos",
           "values": false
         },
-        "textMode": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -80,7 +90,7 @@
           "timeColumns": []
         }
       ],
-      "title": "Focos Críticos Activos",
+      "title": "Focos Activos",
       "type": "stat"
     },
     {
@@ -104,30 +114,6 @@
           "mappings": [],
           "unit": "none"
         },
-        "options": {
-          "displayLabels": [
-            "percent"
-          ],
-          "legend": {
-            "calcs": [],
-            "displayMode": "table",
-            "placement": "right",
-            "showLegend": true,
-            "values": []
-          },
-          "pieType": "pie",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": true
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
-        },
         "overrides": []
       },
       "gridPos": {
@@ -137,6 +123,25 @@
         "y": 0
       },
       "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
       "targets": [
         {
           "datasource": {
@@ -195,6 +200,9 @@
       "id": 3,
       "options": {
         "displayMode": "lcd",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
         "namePlacement": "left",
         "orientation": "horizontal",
         "reduceOptions": {
@@ -206,6 +214,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -278,42 +287,6 @@
                 }
               }
             ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "lat"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "lng"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "intensidad"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
           }
         ]
       },
@@ -334,6 +307,9 @@
         "controls": {
           "mouseWheelZoom": true,
           "showAttribution": false,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
           "showZoom": true
         },
         "layers": [
@@ -361,11 +337,15 @@
           "mode": "details"
         },
         "view": {
+          "allLayers": true,
+          "id": "zero",
           "lat": -33.7,
           "lng": -71.2,
+          "lon": 0,
           "zoom": 9
         }
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -413,32 +393,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "lat"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "lng"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 13,
@@ -457,6 +412,9 @@
         "controls": {
           "mouseWheelZoom": true,
           "showAttribution": false,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
           "showZoom": true
         },
         "layers": [
@@ -484,11 +442,15 @@
           "mode": "details"
         },
         "view": {
+          "allLayers": true,
+          "id": "zero",
           "lat": -33.7,
           "lng": -71.2,
+          "lon": 0,
           "zoom": 9
         }
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -515,7 +477,8 @@
             "align": "auto",
             "cellOptions": {
               "type": "auto"
-            }
+            },
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -549,6 +512,7 @@
                 "id": "links",
                 "value": [
                   {
+                    "targetBlank": true,
                     "title": "Ver imagen",
                     "url": "${__value.raw}"
                   }
@@ -578,9 +542,14 @@
       },
       "id": 5,
       "options": {
+        "cellHeight": "sm",
         "footer": {
           "countRows": false,
           "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true,
@@ -591,6 +560,7 @@
           }
         ]
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -617,7 +587,8 @@
             "align": "auto",
             "cellOptions": {
               "type": "auto"
-            }
+            },
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -653,13 +624,19 @@
       },
       "id": 6,
       "options": {
+        "cellHeight": "sm",
         "footer": {
           "countRows": false,
           "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -687,7 +664,8 @@
             "align": "auto",
             "cellOptions": {
               "type": "auto"
-            }
+            },
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -875,14 +853,20 @@
       },
       "id": 8,
       "options": {
+        "cellHeight": "sm",
         "footer": {
           "countRows": false,
           "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true,
         "sortBy": []
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -932,30 +916,6 @@
           }
         },
         "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "lat"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "lng"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
           {
             "matcher": {
               "id": "byName",
@@ -1012,6 +972,9 @@
         "controls": {
           "mouseWheelZoom": true,
           "showAttribution": false,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
           "showZoom": true
         },
         "layers": [
@@ -1039,11 +1002,15 @@
           "mode": "details"
         },
         "view": {
+          "allLayers": true,
+          "id": "zero",
           "lat": -33.7,
           "lng": -71.2,
+          "lon": 0,
           "zoom": 9
         }
       },
+      "pluginVersion": "10.4.8",
       "targets": [
         {
           "datasource": {
@@ -1079,5 +1046,6 @@
   "timezone": "browser",
   "title": "Dashboard Incendios - Valle del Sol",
   "uid": "incendios-valle-main",
-  "version": 36
+  "version": 40,
+  "weekStart": ""
 }
