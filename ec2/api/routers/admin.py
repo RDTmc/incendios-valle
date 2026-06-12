@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from dependencies import get_db_connection, require_admin, get_user_repository, get_report_repository
+from dependencies import get_db_connection, require_admin, get_user_repository
 from notification_service import notify_new_user
 from datetime import datetime, timezone
 from models import UpdateReportStatusRequest
@@ -119,6 +119,36 @@ def admin_audit_log(payload: dict = Depends(require_admin), limit: int = 100):
             conn.close()
 
 
+@router.get("/reports")
+def admin_list_reports(payload: dict = Depends(require_admin)):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT report_id, user_id, tipo, latitud, longitud, descripcion, foto_url, estado, created_at FROM reports ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        reports = []
+        for r in rows:
+            reports.append({
+                "report_id": r[0],
+                "user_id": r[1] or "",
+                "tipo": r[2],
+                "latitud": r[3],
+                "longitud": r[4],
+                "descripcion": r[5] or "",
+                "foto_url": r[6] or "",
+                "estado": r[7],
+                "created_at": r[8],
+            })
+        return {"reports": reports, "total": len(reports)}
+    except Exception as e:
+        print(f"[admin] list_reports error: {e}")
+        return {"reports": [], "total": 0}
+    finally:
+        if conn is not None:
+            conn.close()
+
+
 @router.put("/reports/{report_id}/status")
 def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, payload: dict = Depends(require_admin)):
     valid_statuses = {"PENDIENTE", "ACTIVO", "CONTROLADO", "EXTINGUIDO"}
@@ -134,8 +164,6 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
             raise HTTPException(status_code=404, detail="Reporte no encontrado")
         cursor.execute("UPDATE reports SET estado = ? WHERE report_id = ?", (estado_upper, report_id))
         conn.commit()
-        repo = get_report_repository()
-        repo.update(report_id, estado=estado_upper)
         log_audit("update_report_status", payload["user_id"], report_id, f"Cambió estado a {estado_upper}")
         return {"status": "updated", "report_id": report_id, "estado": estado_upper}
     except HTTPException:

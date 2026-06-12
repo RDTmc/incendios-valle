@@ -200,6 +200,17 @@ export const API = {
     return res.json()
   },
 
+  adminGetReports: async (token: string) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/reports`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || `Failed to fetch reports: HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
   updateReportStatus: async (token: string, reportId: string, estado: string) => {
     const res = await handleAuth(await fetch(`${API_URL}/admin/reports/${reportId}/status`, {
       method: 'PUT',
