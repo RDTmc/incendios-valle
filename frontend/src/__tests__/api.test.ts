@@ -157,7 +157,7 @@ describe('API.getReports', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       headers: new Headers({ 'content-type': 'application/json' }),
-      json: () => Promise.resolve(mockReports)
+      text: () => Promise.resolve(JSON.stringify(mockReports))
     })
 
     const { API } = await import('../api')
