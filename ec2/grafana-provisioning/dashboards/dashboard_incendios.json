@@ -124,18 +124,25 @@
       },
       "id": 2,
       "options": {
+        "displayLabels": [
+          "percent"
+        ],
         "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent"
+          ]
         },
-        "pieType": "pie",
+        "pieType": "donut",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
-          "values": false
+          "values": true
         },
         "tooltip": {
           "mode": "single",
@@ -155,7 +162,7 @@
           "timeColumns": []
         }
       ],
-      "title": "Distribución por Tipo de Incendio",
+      "title": "Distribución Tipo de Incendio",
       "type": "piechart"
     },
     {
@@ -166,10 +173,9 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "continuous-GrYlRd"
           },
           "mappings": [],
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -178,16 +184,11 @@
                 "value": null
               },
               {
-                "color": "orange",
-                "value": 3
-              },
-              {
                 "color": "red",
-                "value": 5
+                "value": 80
               }
             ]
-          },
-          "unit": "none"
+          }
         },
         "overrides": []
       },
@@ -199,12 +200,12 @@
       },
       "id": 3,
       "options": {
-        "displayMode": "lcd",
+        "displayMode": "gradient",
         "maxVizHeight": 300,
         "minVizHeight": 16,
         "minVizWidth": 8,
-        "namePlacement": "left",
-        "orientation": "horizontal",
+        "namePlacement": "auto",
+        "orientation": "vertical",
         "reduceOptions": {
           "calcs": [],
           "fields": "",
@@ -212,6 +213,9 @@
         },
         "showUnfilled": true,
         "sizing": "auto",
+        "text": {
+          "titleSize": 18
+        },
         "valueMode": "color"
       },
       "pluginVersion": "10.4.8",
@@ -228,7 +232,7 @@
           "timeColumns": []
         }
       ],
-      "title": "Estatus Global de Reportes",
+      "title": "Estatus de Reportes",
       "type": "bargauge"
     },
     {
@@ -283,6 +287,7 @@
                     "EXTINGUIDO": "#2ca02c",
                     "PENDIENTE": "#ff7f0e"
                   },
+                  "fixedColor": "red",
                   "mode": "fixed"
                 }
               }
@@ -318,16 +323,44 @@
               "showLegend": true,
               "style": {
                 "color": {
-                  "field": "estado"
+                  "fixed": "dark-green"
                 },
-                "label": "${__field.tipo}: ${__field.estado}",
-                "show": "details",
+                "opacity": 0.4,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
                 "size": {
                   "field": "intensidad",
-                  "max": 18,
-                  "min": 6
+                  "fixed": 5,
+                  "max": 15,
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
                 }
               }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "auto"
             },
             "name": "Focos por Estado",
             "type": "markers"
@@ -338,11 +371,11 @@
         },
         "view": {
           "allLayers": true,
-          "id": "zero",
+          "id": "coords",
           "lat": -33.7,
           "lng": -71.2,
-          "lon": 0,
-          "zoom": 9
+          "lon": -71.2,
+          "zoom": 11
         }
       },
       "pluginVersion": "10.4.8",
@@ -358,7 +391,7 @@
           "timeColumns": []
         }
       ],
-      "title": "Mapa de Focos por Estado",
+      "title": "Focos por Estado",
       "type": "geomap"
     },
     {
@@ -443,11 +476,11 @@
         },
         "view": {
           "allLayers": true,
-          "id": "zero",
+          "id": "coords",
           "lat": -33.7,
           "lng": -71.2,
-          "lon": 0,
-          "zoom": 9
+          "lon": -71.2,
+          "zoom": 10
         }
       },
       "pluginVersion": "10.4.8",
@@ -463,7 +496,7 @@
           "timeColumns": []
         }
       ],
-      "title": "Histórico CONAF - 3 Regiones Centrales",
+      "title": "Histórico CONAF",
       "type": "geomap"
     },
     {
@@ -937,7 +970,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Confianza"
+              "options": "Satélite"
             },
             "properties": [
               {
@@ -948,6 +981,7 @@
                     "low": "#2ca02c",
                     "nominal": "#ff7f0e"
                   },
+                  "fixedColor": "red",
                   "mode": "fixed"
                 }
               }
@@ -983,18 +1017,43 @@
               "showLegend": true,
               "style": {
                 "color": {
-                  "field": "frp"
+                  "fixed": "dark-red"
                 },
-                "label": "${__field.Satélite}: ${__field.frp} MW",
-                "show": "details",
+                "opacity": 0.4,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
                 "size": {
-                  "field": "frp",
+                  "field": "lng",
+                  "fixed": 5,
                   "max": 15,
-                  "min": 5
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
                 }
               }
             },
+            "location": {
+              "mode": "auto"
+            },
             "name": "Focos VIIRS/MODIS",
+            "tooltip": false,
             "type": "markers"
           }
         ],
@@ -1003,10 +1062,10 @@
         },
         "view": {
           "allLayers": true,
-          "id": "zero",
+          "id": "coords",
           "lat": -33.7,
           "lng": -71.2,
-          "lon": 0,
+          "lon": -71.2,
           "zoom": 9
         }
       },
@@ -1024,7 +1083,7 @@
           "timeColumns": []
         }
       ],
-      "title": "Focos de Calor Satelital - NASA FIRMS",
+      "title": "Focos de Calor Satelital ",
       "type": "geomap"
     }
   ],
@@ -1046,6 +1105,6 @@
   "timezone": "browser",
   "title": "Dashboard Incendios - Valle del Sol",
   "uid": "incendios-valle-main",
-  "version": 40,
+  "version": 51,
   "weekStart": ""
 }
