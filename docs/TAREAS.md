@@ -66,6 +66,18 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - Validado: Grafana ya veía el cambio (lee SQLite), ahora AdminPage también
 - Commit: `a7323fe` — CI/CD verde ✅
 
+### Fix report_id null desde SQLite (14 jun 2026)
+- **Problema**: endpoint `admin/reports` (SQLite) devolvía reportes con `report_id = null` → crash frontend `can't access property "slice"`
+- **Fix**: filtrar filas sin `report_id` en backend + safe guard `r.report_id?.slice` en frontend
+- Commit: `2059277` — CI/CD verde ✅
+
+### Primer respaldo dashboard Grafana (14 jun 2026)
+- Flujo validado: editar UI → `ssh + bash export_dashboards.sh` → `scp` → `commit + push`
+- ✅ Se exportaron los 2 dashboards (Incendios + DevOps)
+- ✅ JSON cambios detectados: 101 insertions, 42 deletions
+- Commit: `a50c910` — CI/CD verde
+- ⚠️ Nota: el script `export_dashboards.sh` tiene output buffer de Python. Para ver progreso en tiempo real, añadir `flush=True` a los prints o ejecutar con `python3 -u`. El export funciona correctamente aunque no se vean mensajes "OK".
+
 ## 🔁 RETROSPECTIVA — Lecciones aprendidas (14 jun 2026)
 
 Esta sección documenta errores recurrentes para revisar ANTES de implementar cualquier cambio futuro.
@@ -93,7 +105,9 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 
 1. ☐ **Dashboard Grafana — Diseño UI** (Fase 2)
    - Rediseñar los 9 paneles con nueva configuración visual (tipografía, colores, layout)
-   - Exportar JSON + commit + CI/CD
+   - ✅ Flujo validado: editar UI → `ssh + bash export_dashboards.sh` → `scp` → `commit + push`
+   - ✅ Primer respaldo completado (commits `a50c910`)
+   - ⏳ Pendiente: terminar de editar paneles restantes y repetir export
 
 ## MEDIA PRIORIDAD
 
