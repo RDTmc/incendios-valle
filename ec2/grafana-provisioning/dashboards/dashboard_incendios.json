@@ -908,9 +908,9 @@
             "uid": "incendios-sqlite"
           },
           "hide": false,
-          "queryText": "SELECT CAST(r.latitud AS REAL) AS lat, CAST(r.longitud AS REAL) AS lng, ir.tipo_recurso AS \"Recurso\", ir.estado AS \"Estado\", ir.cantidad AS \"Cant\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.tipo AS \"Tipo\", r.direccion AS \"Dirección\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id WHERE r.latitud IS NOT NULL AND r.latitud != '' AND r.longitud IS NOT NULL AND r.longitud != '' ORDER BY ir.created_at DESC",
+          "queryText": "SELECT CAST(r.latitud AS REAL) AS lat, CAST(r.longitud AS REAL) AS lng, ir.tipo_recurso AS \"Recurso\", ir.estado AS \"Estado\", ir.cantidad AS \"Cant\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.tipo AS \"Tipo\", r.descripcion AS \"Dirección\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id WHERE r.latitud IS NOT NULL AND r.latitud != '' AND r.longitud IS NOT NULL AND r.longitud != '' ORDER BY ir.created_at DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT CAST(r.latitud AS REAL) AS lat, CAST(r.longitud AS REAL) AS lng, ir.tipo_recurso AS \"Recurso\", ir.estado AS \"Estado\", ir.cantidad AS \"Cant\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.tipo AS \"Tipo\", r.direccion AS \"Dirección\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id WHERE r.latitud IS NOT NULL AND r.latitud != '' AND r.longitud IS NOT NULL AND r.longitud != '' ORDER BY ir.created_at DESC",
+          "rawQueryText": "SELECT CAST(r.latitud AS REAL) AS lat, CAST(r.longitud AS REAL) AS lng, ir.tipo_recurso AS \"Recurso\", ir.estado AS \"Estado\", ir.cantidad AS \"Cant\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.tipo AS \"Tipo\", r.descripcion AS \"Dirección\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id WHERE r.latitud IS NOT NULL AND r.latitud != '' AND r.longitud IS NOT NULL AND r.longitud != '' ORDER BY ir.created_at DESC",
           "refId": "C",
           "timeColumns": []
         }
@@ -1319,9 +1319,9 @@
             "type": "frser-sqlite-datasource",
             "uid": "incendios-sqlite"
           },
-          "queryText": "SELECT ir.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", r.tipo AS \"Tipo Incendio\", r.estado AS \"Incendio\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.direccion AS \"Ubicación\", ir.created_at AS \"Asignado\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "queryText": "SELECT ir.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", r.tipo AS \"Tipo Incendio\", r.estado AS \"Incendio\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.descripcion AS \"Ubicación\", ir.created_at AS \"Asignado\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
           "queryType": "table",
-          "rawQueryText": "SELECT ir.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", r.tipo AS \"Tipo Incendio\", r.estado AS \"Incendio\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.direccion AS \"Ubicación\", ir.created_at AS \"Asignado\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "rawQueryText": "SELECT ir.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", r.tipo AS \"Tipo Incendio\", r.estado AS \"Incendio\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.descripcion AS \"Ubicación\", ir.created_at AS \"Asignado\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
           "refId": "A",
           "timeColumns": []
         }
