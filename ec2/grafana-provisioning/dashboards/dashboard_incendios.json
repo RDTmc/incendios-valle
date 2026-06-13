@@ -1603,6 +1603,202 @@
       ],
       "title": "Histórico CONAF",
       "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Evaluación"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixed": {
+                    "Pendiente": "#FF9800",
+                    "Asignado": "#4CAF50"
+                  }
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recursos"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Estados"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 55
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "md",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Recursos"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.8",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT SUBSTR(r.report_id, 1, 8) AS \"Reporte\", r.estado AS \"Incendio\", r.tipo AS \"Tipo\", CASE WHEN COUNT(ir.id) = 0 THEN 'Pendiente' ELSE 'Asignado' END AS \"Evaluación\", COUNT(ir.id) AS \"Recursos\", COALESCE(GROUP_CONCAT(DISTINCT ir.estado, ', '), '') AS \"Estados\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id GROUP BY r.report_id ORDER BY r.created_at DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT SUBSTR(r.report_id, 1, 8) AS \"Reporte\", r.estado AS \"Incendio\", r.tipo AS \"Tipo\", CASE WHEN COUNT(ir.id) = 0 THEN 'Pendiente' ELSE 'Asignado' END AS \"Evaluación\", COUNT(ir.id) AS \"Recursos\", COALESCE(GROUP_CONCAT(DISTINCT ir.estado, ', '), '') AS \"Estados\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id GROUP BY r.report_id ORDER BY r.created_at DESC",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Reportes vs Recursos Asignados",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "incendios-sqlite"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 55
+      },
+      "id": 12,
+      "options": {
+        "displayMode": "gradient",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "text": {
+          "titleSize": 18
+        },
+        "valueMode": "color"
+      },
+      "pluginVersion": "10.4.8",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT ir.estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM incident_resources ir GROUP BY ir.estado ORDER BY \"Cantidad\" DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT ir.estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM incident_resources ir GROUP BY ir.estado ORDER BY \"Cantidad\" DESC",
+          "refId": "A",
+          "timeColumns": []
+        }
+      ],
+      "title": "Distribución de Estado de Recursos",
+      "type": "bargauge"
     }
   ],
   "refresh": "",
