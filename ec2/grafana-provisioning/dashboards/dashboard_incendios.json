@@ -1720,9 +1720,9 @@
             "type": "frser-sqlite-datasource",
             "uid": "incendios-sqlite"
           },
-          "queryText": "SELECT SUBSTR(r.report_id, 1, 8) AS \"Reporte\", r.estado AS \"Incendio\", r.tipo AS \"Tipo\", CASE WHEN COUNT(ir.id) = 0 THEN 'Pendiente' ELSE 'Asignado' END AS \"Evaluación\", COUNT(ir.id) AS \"Recursos\", COALESCE(GROUP_CONCAT(DISTINCT ir.estado, ', '), '') AS \"Estados\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id GROUP BY r.report_id ORDER BY r.created_at DESC",
+          "queryText": "SELECT SUBSTR(r.report_id, 1, 8) AS \"Reporte\", r.estado AS \"Incendio\", r.tipo AS \"Tipo\", CASE WHEN COUNT(ir.id) = 0 THEN 'Pendiente' ELSE 'Asignado' END AS \"Evaluación\", COUNT(ir.id) AS \"Recursos\", COALESCE(GROUP_CONCAT(DISTINCT ir.estado), '') AS \"Estados\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id GROUP BY r.report_id ORDER BY r.created_at DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT SUBSTR(r.report_id, 1, 8) AS \"Reporte\", r.estado AS \"Incendio\", r.tipo AS \"Tipo\", CASE WHEN COUNT(ir.id) = 0 THEN 'Pendiente' ELSE 'Asignado' END AS \"Evaluación\", COUNT(ir.id) AS \"Recursos\", COALESCE(GROUP_CONCAT(DISTINCT ir.estado, ', '), '') AS \"Estados\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id GROUP BY r.report_id ORDER BY r.created_at DESC",
+          "rawQueryText": "SELECT SUBSTR(r.report_id, 1, 8) AS \"Reporte\", r.estado AS \"Incendio\", r.tipo AS \"Tipo\", CASE WHEN COUNT(ir.id) = 0 THEN 'Pendiente' ELSE 'Asignado' END AS \"Evaluación\", COUNT(ir.id) AS \"Recursos\", COALESCE(GROUP_CONCAT(DISTINCT ir.estado), '') AS \"Estados\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id GROUP BY r.report_id ORDER BY r.created_at DESC",
           "refId": "A",
           "timeColumns": []
         }
