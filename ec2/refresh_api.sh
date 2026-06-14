@@ -56,8 +56,17 @@ sudo chown 472:472 /home/ec2-user/incendios-data/grafana 2>/dev/null || true
 sudo chown -R 472:472 /home/ec2-user/incendios-data/api 2>/dev/null || true
 sudo chmod 775 /home/ec2-user/incendios-data/api 2>/dev/null || true
 
+echo -e "\n--- Preparando directorios para Prometheus ---"
+sudo mkdir -p /home/ec2-user/prometheus
+sudo mkdir -p /home/ec2-user/incendios-data/prometheus
+sudo chown 472:472 /home/ec2-user/incendios-data/prometheus 2>/dev/null || true
+sudo chmod 775 /home/ec2-user/incendios-data/prometheus 2>/dev/null || true
+
 echo -e "\n Recreando el contenedor de la API..."
 docker-compose up -d --no-deps --force-recreate api
+
+echo -e "\n--- Levantando servicios de monitoreo (Prometheus + node-exporter) ---"
+docker-compose up -d prometheus node-exporter
 
 echo -e "\n=========================================================="
 echo " Refresh completado vía CI/CD — imagen inmutable."
