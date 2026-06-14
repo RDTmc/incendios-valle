@@ -130,7 +130,12 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 
 **Riesgo:** Bajo. ~100MB RAM extra sobre ~700MB libres en t3.micro.
 
-**Próximo paso:** ✅ Documentado — en implementación.
+**Próximo paso:** ✅ Documentado — implementado y commit. Pendiente validar post-deploy que Prometheus + node-exporter estén corriendo y Grafana pueda consultarlos.
+
+**Fixes aplicados post-deploy:**
+1. `datasource.yml`: agregada `url: http://prometheus:9090` (faltaba la URL del servidor)
+2. `deploy.yml`: hash de provisioning ampliado de `dashboards/` a toda la carpeta `grafana-provisioning/` (antes no detectaba cambios en `datasource.yml`)
+3. `refresh_api.sh`: creación de directorios Prometheus + arranque de servicios
 
 ## MEDIA PRIORIDAD
 
