@@ -103,18 +103,10 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 
 ## ALTA PRIORIDAD
 
-1. ☐ **Dashboard Grafana — Diseño UI** (Fase 2)
-   - Rediseñar los 9 paneles con nueva configuración visual (tipografía, colores, layout)
-   - ✅ Flujo validado: editar UI → `ssh + bash export_dashboards.sh` → `scp` → `commit + push`
-   - ✅ Primer respaldo completado (commits `a50c910`)
-   - ⏳ Pendiente: rediseñar Panel 6 (Recursos) y agregar Panel 10 (Recursos en Terreno)
-
-### Dashboard — Panel 6 Recursos + Panel 10 capa Recursos (14 jun 2026)
-- **Panel 6** — tabla mejorada con 8 columnas: Estado (color-text), Recurso, Cant, Tipo Incendio (color-text), Incendio (color-text), Reporte (data link highlight), Ubicación, Asignado
-- **Panel 10** — agregada 3ra capa "Recursos en Terreno" sobre vista calles, manteniendo Focos por Estado + Destacado. Marcadores cuadrados azules en ubicación del incendio
-- Panel 2 reducido a w=6, Panel 6 expandido a w=18 para mostrar todas las columnas
-- Panel 4 (relieve topográfico) sin cambios
-- Pendiente agregar endpoint backend para cambiar estado de recurso
+1. ☐ **Dashboard DevOps / Monitoreo TI**
+   - Habilitar Prometheus + exportadores para monitorear EC2, Docker, API, Grafana
+   - Nuevo dashboard Grafana con métricas de infraestructura
+   - Evaluar CloudWatch vs Prometheus vs ambos
 
 ## MEDIA PRIORIDAD
 

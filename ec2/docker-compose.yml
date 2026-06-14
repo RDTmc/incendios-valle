@@ -53,6 +53,7 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: "dashboard.keogh.lat"
       GF_SERVER_ROOT_URL: "https://dashboard.keogh.lat/dashboard/"
+      GF_AUTH_AWS_ACTIVE: "true"  # Usa el rol IAM de la EC2 para CloudWatch
       GF_INSTALL_PLUGINS: "frser-sqlite-datasource"  # SQLite + Infinity JSON API
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana

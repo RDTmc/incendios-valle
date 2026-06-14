@@ -1,84 +1,307 @@
 {
   "title": "DevOps - Incendios Valle del Sol",
   "uid": "devops-incendios",
-  "tags": ["devops", "incendios"],
+  "tags": ["devops", "incendios", "cloudwatch", "ti"],
   "timezone": "browser",
   "editable": true,
   "panels": [
     {
       "id": 1,
-      "title": "Uptime - API Healthcheck",
+      "title": "CPU Utilization",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/EC2",
+          "metricName": "CPUUtilization",
+          "dimensions": {},
+          "statistic": "Average",
+          "period": "",
+          "hide": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Network Activity",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1000000 },
+              { "color": "red", "value": 5000000 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/EC2",
+          "metricName": "NetworkIn",
+          "dimensions": {},
+          "statistic": "Average",
+          "period": "",
+          "hide": false
+        },
+        {
+          "refId": "B",
+          "region": "default",
+          "namespace": "AWS/EC2",
+          "metricName": "NetworkOut",
+          "dimensions": {},
+          "statistic": "Average",
+          "period": "",
+          "hide": false
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Status Check",
       "type": "stat",
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
-      "datasource": { "type": "frser-sqlite-datasource" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
       "options": {
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
         "orientation": "auto",
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/EC2",
+          "metricName": "StatusCheckFailed",
+          "dimensions": {},
+          "statistic": "Maximum",
+          "period": "",
+          "hide": false
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "API Healthcheck",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [
-            { "color": "red", "value": null },
-            { "color": "red", "value": 0 },
-            { "color": "green", "value": 1 }
-          ]}
+          "unit": "none",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "red", "value": 0 },
+              { "color": "green", "value": 1 }
+            ]
+          }
         },
         "overrides": []
       },
-      "targets": [{
-        "rawSql": "SELECT 1 as status",
-        "format": "table",
-        "refId": "A"
-      }]
-    },
-    {
-      "id": 2,
-      "title": "Reportes por Estado",
-      "type": "bargauge",
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
-      "datasource": { "type": "frser-sqlite-datasource" },
       "options": {
-        "displayMode": "gradient",
-        "orientation": "horizontal",
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "showUnfilled": true
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
       },
+      "targets": [
+        {
+          "rawSql": "SELECT 1 AS status",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "EBS Performance",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "min": 0
+          "unit": "cps",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1000 },
+              { "color": "red", "value": 5000 }
+            ]
+          }
         },
         "overrides": []
       },
-      "targets": [{
-        "rawSql": "SELECT estado, COUNT(*) as count FROM reports GROUP BY estado ORDER BY count DESC",
-        "format": "table",
-        "refId": "A"
-      }]
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "region": "default",
+          "namespace": "AWS/EC2",
+          "metricName": "EBSReadOps",
+          "dimensions": {},
+          "statistic": "Sum",
+          "period": "",
+          "hide": false
+        },
+        {
+          "refId": "B",
+          "region": "default",
+          "namespace": "AWS/EC2",
+          "metricName": "EBSWriteOps",
+          "dimensions": {},
+          "statistic": "Sum",
+          "period": "",
+          "hide": false
+        }
+      ]
     },
     {
-      "id": 3,
+      "id": 6,
       "title": "Alertas Recientes",
       "type": "table",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
-      "datasource": { "type": "frser-sqlite-datasource" },
-      "options": {
-        "sortBy": [{ "desc": true }]
-      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "incendios-sqlite" },
       "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "read" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixed": {
+                    "0": "#FF9800",
+                    "1": "#4CAF50"
+                  }
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "Leída"
+              }
+            ]
+          }
+        ]
       },
-      "targets": [{
-        "rawSql": "SELECT alert_type, message, created_at, read FROM alerts ORDER BY created_at DESC LIMIT 20",
-        "format": "table",
-        "refId": "A"
-      }]
+      "options": {
+        "cellHeight": "md",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "created_at" }]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT alert_type AS \"Tipo\", message AS \"Mensaje\", created_at AS \"Fecha\", read FROM alerts ORDER BY created_at DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
