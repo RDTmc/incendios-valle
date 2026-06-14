@@ -103,10 +103,34 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 
 ## ALTA PRIORIDAD
 
-1. ☐ **Dashboard DevOps / Monitoreo TI**
-   - Habilitar Prometheus + exportadores para monitorear EC2, Docker, API, Grafana
-   - Nuevo dashboard Grafana con métricas de infraestructura
-   - Evaluar CloudWatch vs Prometheus vs ambos
+### En ejecución — Dashboard DevOps con Prometheus (14 jun 2026)
+
+**Contexto:** Primero se intentó CloudWatch, pero el LabRole de AWS Academy no tiene permisos para `iam:AttachRolePolicy` ni `CloudWatchReadOnlyAccess`. Se optó por Prometheus + node_exporter corriendo como containers Docker en la misma EC2.
+
+**Fase — Implementación Prometheus**
+
+| Archivo | Acción |
+|---|---|
+| `ec2/prometheus/prometheus.yml` | **Nuevo** — config scrape: node_exporter (:9100) + API (:8000) |
+| `ec2/docker-compose.yml` | +2 servicios: prometheus + node-exporter |
+| `ec2/grafana-provisioning/datasources/datasource.yml` | CloudWatch → Prometheus datasource |
+| `ec2/grafana-provisioning/dashboards/devops_dashboard.json` | Recablear 4 paneles a PromQL (CPU, Network, Memory, Disk) |
+| `docs/TAREAS.md` | Documentar estado |
+
+**Layout dashboard DevOps (post-Prometheus):**
+
+| Panel | Datasource | Query PromQL |
+|---|---|---|
+| CPU Utilization | Prometheus | `100 - avg(rate(node_cpu_seconds_total{mode="idle"}[1m]))` |
+| Network Activity | Prometheus | `rate(node_network_receive_bytes_total[1m])` + Out |
+| Memory Usage | Prometheus | `(MemTotal - MemAvailable) / MemTotal * 100` |
+| API Healthcheck | SQLite | `SELECT 1` (sin cambios) |
+| Disk Usage | Prometheus | `100 - (avail / size * 100)` |
+| Alertas Recientes | SQLite | alerts table (sin cambios) |
+
+**Riesgo:** Bajo. ~100MB RAM extra sobre ~700MB libres en t3.micro.
+
+**Próximo paso:** ✅ Documentado — en implementación.
 
 ## MEDIA PRIORIDAD
 

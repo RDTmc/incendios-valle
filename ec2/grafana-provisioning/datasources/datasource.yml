@@ -12,12 +12,12 @@ datasources:
       pathPrefix: "file:"
       pathOptions: "_pragma=journal_mode=WAL&_pragma=busy_timeout=5000"
 
-  - name: CloudWatch
-    uid: cloudwatch
-    type: CloudWatch
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
     access: proxy
     isDefault: false
     editable: true
     jsonData:
-      authType: default
-      defaultRegion: us-east-1
+      httpMethod: POST
+      prometheusType: Prometheus

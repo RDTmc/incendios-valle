@@ -1,7 +1,7 @@
 {
   "title": "DevOps - Incendios Valle del Sol",
   "uid": "devops-incendios",
-  "tags": ["devops", "incendios", "cloudwatch", "ti"],
+  "tags": ["devops", "incendios", "prometheus", "ti"],
   "timezone": "browser",
   "editable": true,
   "panels": [
@@ -10,7 +10,7 @@
       "title": "CPU Utilization",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
-      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
@@ -38,14 +38,9 @@
       },
       "targets": [
         {
+          "expr": "100 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m]))",
           "refId": "A",
-          "region": "default",
-          "namespace": "AWS/EC2",
-          "metricName": "CPUUtilization",
-          "dimensions": {},
-          "statistic": "Average",
-          "period": "",
-          "hide": false
+          "legendFormat": "CPU %"
         }
       ]
     },
@@ -54,7 +49,7 @@
       "title": "Network Activity",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
-      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "Bps",
@@ -81,43 +76,34 @@
       },
       "targets": [
         {
+          "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[1m])",
           "refId": "A",
-          "region": "default",
-          "namespace": "AWS/EC2",
-          "metricName": "NetworkIn",
-          "dimensions": {},
-          "statistic": "Average",
-          "period": "",
-          "hide": false
+          "legendFormat": "In"
         },
         {
+          "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[1m])",
           "refId": "B",
-          "region": "default",
-          "namespace": "AWS/EC2",
-          "metricName": "NetworkOut",
-          "dimensions": {},
-          "statistic": "Average",
-          "period": "",
-          "hide": false
+          "legendFormat": "Out"
         }
       ]
     },
     {
       "id": 3,
-      "title": "Status Check",
+      "title": "Memory Usage",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
-      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "percent",
           "min": 0,
-          "max": 1,
+          "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "red", "value": 0.5 }
+              { "color": "orange", "value": 70 },
+              { "color": "red", "value": 90 }
             ]
           }
         },
@@ -137,14 +123,9 @@
       },
       "targets": [
         {
+          "expr": "((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes) * 100",
           "refId": "A",
-          "region": "default",
-          "namespace": "AWS/EC2",
-          "metricName": "StatusCheckFailed",
-          "dimensions": {},
-          "statistic": "Maximum",
-          "period": "",
-          "hide": false
+          "legendFormat": "RAM"
         }
       ]
     },
@@ -198,20 +179,21 @@
     },
     {
       "id": 5,
-      "title": "EBS Performance",
+      "title": "Disk Usage",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "unit": "cps",
+          "unit": "percent",
           "min": 0,
+          "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "orange", "value": 1000 },
-              { "color": "red", "value": 5000 }
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 95 }
             ]
           }
         },
@@ -228,24 +210,9 @@
       },
       "targets": [
         {
+          "expr": "100 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"} * 100)",
           "refId": "A",
-          "region": "default",
-          "namespace": "AWS/EC2",
-          "metricName": "EBSReadOps",
-          "dimensions": {},
-          "statistic": "Sum",
-          "period": "",
-          "hide": false
-        },
-        {
-          "refId": "B",
-          "region": "default",
-          "namespace": "AWS/EC2",
-          "metricName": "EBSWriteOps",
-          "dimensions": {},
-          "statistic": "Sum",
-          "period": "",
-          "hide": false
+          "legendFormat": "Disco %"
         }
       ]
     },
