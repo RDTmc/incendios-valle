@@ -184,9 +184,15 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT 1 AS status",
-          "format": "table",
-          "refId": "A"
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT 1 AS status",
+          "queryType": "table",
+          "rawQueryText": "SELECT 1 AS status",
+          "refId": "A",
+          "timeColumns": []
         }
       ]
     },
@@ -297,9 +303,15 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT alert_type AS \"Tipo\", message AS \"Mensaje\", created_at AS \"Fecha\", read FROM alerts ORDER BY created_at DESC LIMIT 20",
-          "format": "table",
-          "refId": "A"
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "incendios-sqlite"
+          },
+          "queryText": "SELECT alert_type AS \"Tipo\", message AS \"Mensaje\", created_at AS \"Fecha\", read FROM alerts ORDER BY created_at DESC LIMIT 20",
+          "queryType": "table",
+          "rawQueryText": "SELECT alert_type AS \"Tipo\", message AS \"Mensaje\", created_at AS \"Fecha\", read FROM alerts ORDER BY created_at DESC LIMIT 20",
+          "refId": "A",
+          "timeColumns": []
         }
       ]
     }

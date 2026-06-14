@@ -14,7 +14,7 @@ datasources:
 
   - name: CloudWatch
     uid: cloudwatch
-    type: cloudwatch
+    type: CloudWatch
     access: proxy
     isDefault: false
     editable: true
