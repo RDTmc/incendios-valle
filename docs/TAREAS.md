@@ -137,6 +137,25 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 2. `deploy.yml`: hash de provisioning ampliado de `dashboards/` a toda la carpeta `grafana-provisioning/` (antes no detectaba cambios en `datasource.yml`)
 3. `refresh_api.sh`: creación de directorios Prometheus + arranque de servicios
 
+## 🔴 EN PROGRESO — Error 500 en Admin PUT status + readonly database
+
+**Diagnóstico (17 jun 2026):**
+- Síntomas: `PUT /admin/reports/{id}/status` retorna 500 con `{"detail":"Error al actualizar estado: attempt to write a readonly database"}`
+- También afecta: escritura de auditoría (log_audit) y cualquier write a SQLite desde el API
+- **Causa**: `refresh_api.sh` línea 49 hace `aws s3 cp` del backup desde S3, que puede descargar el archivo `.db` con permisos solo lectura (444). Luego `chown -R 472:472` cambia el dueño pero no corrige permisos del archivo. El proceso API (uid 472) no puede escribir.
+- Lecturas (SELECT) funcionan correctamente.
+- **No es un bug de código Python**: `admin.py` fue revertido a lógica original. El error es de permisos de archivo en EC2.
+
+**Fix aplicado (commit `16a0dca`):**
+- `refresh_api.sh`: agregado `chmod 664 /home/ec2-user/incendios-data/api/incendios.db` explícito después del restore desde S3.
+- **Pendiente**: confirmar que el CI/CD deployó el fix y el admin vuelve a funcionar.
+
+**Dashboard TI (Grafana DevOps):** funcionando correctamente.
+- CPU, Network, Memory, Disk Usage con datos Prometheus ✅
+- API Healthcheck y Alertas SQLite OK ✅
+- Node-exporter con `--path.rootfs=/host` para métricas de disco ✅
+- Resolver dinámico DNS en nginx para evitar 502 por stale upstream ✅
+
 ## MEDIA PRIORIDAD
 
 2. ☐ **Agregar Lambda `upload-proxy` al pipeline CI/CD**
