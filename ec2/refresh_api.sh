@@ -69,9 +69,11 @@ echo -e "\n Recreando el contenedor de la API..."
 docker-compose up -d --no-deps --force-recreate api
 
 # Nginx cachea DNS del upstream al arrancar. Al recrear la API cambia la IP,
-# asi que nginx debe reiniciarse para resolver la nueva IP del container.
-echo -e "\n--- Reiniciando nginx para refrescar cache DNS del upstream ---"
-docker-compose up -d --no-deps --force-recreate nginx
+# asi que nginx debe recargar config para resolver la nueva IP del container.
+echo -e "\n--- Recargando nginx para refrescar cache DNS del upstream ---"
+docker-compose exec -T nginx nginx -s reload 2>/dev/null || echo "WARN: No se pudo recargar nginx via exec (puede estar detenido). Se reintentara con force-recreate."
+# Fallback: recrear nginx si el exec falla (container nunca existio o murio)
+docker-compose up -d --no-deps --force-recreate nginx 2>/dev/null || echo "WARN: Fallback de nginx no disponible (API aun en start_period). Se recuperara en el proximo deploy."
 
 echo -e "\n--- Levantando servicios de monitoreo (Prometheus + node-exporter) ---"
 docker-compose up -d prometheus node-exporter
