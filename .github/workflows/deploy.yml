@@ -111,7 +111,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "ec2/refresh_api.sh,ec2/docker-compose.yml,ec2/export_dashboards.sh,ec2/prometheus/"
+          source: "ec2/refresh_api.sh,ec2/docker-compose.yml,ec2/export_dashboards.sh,ec2/prometheus/,ec2/nginx/nginx.conf"
           target: "/home/ec2-user"
           strip_components: 1
 
