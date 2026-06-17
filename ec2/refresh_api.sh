@@ -68,6 +68,11 @@ sudo chmod 777 /home/ec2-user/incendios-data/prometheus 2>/dev/null || true
 echo -e "\n Recreando el contenedor de la API..."
 docker-compose up -d --no-deps --force-recreate api
 
+# Nginx cachea DNS del upstream al arrancar. Al recrear la API cambia la IP,
+# asi que nginx debe reiniciarse para resolver la nueva IP del container.
+echo -e "\n--- Reiniciando nginx para refrescar cache DNS del upstream ---"
+docker-compose up -d --no-deps --force-recreate nginx
+
 echo -e "\n--- Levantando servicios de monitoreo (Prometheus + node-exporter) ---"
 docker-compose up -d prometheus node-exporter
 
