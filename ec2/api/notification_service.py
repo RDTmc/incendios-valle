@@ -158,3 +158,32 @@ def notify_new_report(report_id: str, email: str = "", nombre: str = "", tipo: s
         text=f"Nuevo reporte #{report_id[:8]}: {tipo} por {reporter}",
         tags=["reporte", tipo.lower() if tipo else "general"],
     )
+
+
+def notify_status_change(report_id: str, estado_nuevo: str, admin_id: str, estado_anterior: str = "") -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    short_id = report_id[:8]
+    short_admin = admin_id[:8]
+    labels = {"PENDIENTE": "pendiente", "ACTIVO": "activo", "CONTROLADO": "controlado", "EXTINGUIDO": "extinguido"}
+    tag = labels.get(estado_nuevo, "desconocido")
+
+    # Grafana annotation directa (internal Docker network)
+    _create_grafana_annotation(
+        text=f"Reporte #{short_id}: {estado_anterior or '—'} → {estado_nuevo} (por admin {short_admin})",
+        tags=["reporte", "cambio-estado", tag],
+    )
+
+    # SNS publish (email + Lambda sns-to-grafana)
+    try:
+        sns = boto3.client("sns")
+        sns.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=json.dumps({
+                "text": f"Reporte #{short_id} cambió a {estado_nuevo} (admin {short_admin})",
+                "tags": ["reporte", "cambio-estado", tag],
+                "timestamp": now,
+            }),
+            Subject=f"[Incendios] Reporte {short_id} → {estado_nuevo}",
+        )
+    except Exception as e:
+        print(f"[notifications] SNS publish error en notify_status_change: {e}")

@@ -162,7 +162,7 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 - `dashboard_incendios.json` línea 1804: `"refresh": ""` (vacío) — sin auto-refresh
 - `devops_dashboard.json` línea 288: `"refresh": "30s"` — funcionaba correctamente
 
-**Fix (commit `f2a0302` → `...`):**
+**Fix (commit `f2a0302` → `3b9af58`):**
 - Cambiado `"refresh": ""` a `"refresh": "3s"` en dashboard_incendios.json
 - **Justificación del intervalo**: 3s porque los cambios de estado son manuales (AdminPage), no automáticos. Las queries son livianas (`GROUP BY` sobre ~24 filas, `LIMIT 10`). Incluso con 1000 reportes, cada query se resuelve en < 1ms en SQLite. No hay riesgo de saturación en t3.micro.
 
@@ -171,12 +171,32 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 - Confirmar que 3s no impacta rendimiento en escenario de emergencia con múltiples operadores
 - Documentar métricas de tiempo de respuesta SQLite bajo carga para rúbrica de testing
 
+## ✅ Notificar cambio de estado via SNS + Grafana annotation (17 jun 2026)
+
+**Qué se implementó:**
+- Nueva función `notify_status_change()` en `notification_service.py`
+  - Crea anotación Grafana directa (internal Docker network)
+  - Publica a SNS topic `incendios-alerts` (email + Lambda sns-to-grafana)
+- `admin.py`: captura `estado_anterior` y llama a `notify_status_change` después de persistir el cambio
+- **Patrón fail-open**: cualquier error en notificación se loguea y no bloquea el endpoint
+
+**Infraestructura existente reutilizada:**
+- SNS topic `incendios-alerts` ya operativo (usado por `notify_new_user`)
+- Lambda `sns-to-grafana` ya parsea el formato JSON que enviamos (`text`, `tags`, `timestamp`)
+- Suscriptor email ya confirmado
+
+**Lo que se conserva intacto:**
+- `admin_update_report_status` sigue funcionando exactamente igual — la notificación es post-facto
+- Dashboard auto-refresh 3s sin cambios
+- Pipeline CI/CD sin cambios
+
+**Pendiente:**
+- Revisar cabeceras email para evitar SPAM (SNS envía JSON plano como body)
+
 ## MEDIA PRIORIDAD
 
 2. ☐ **Agregar Lambda `upload-proxy` al pipeline CI/CD**
    - Actualmente se deploya manualmente desde AWS Console
-
-3. ☐ **Notificar cambio de estado de reporte via SNS?** (evaluar si es necesario)
 
 ## BAJA PRIORIDAD
 
