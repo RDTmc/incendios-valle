@@ -41,7 +41,10 @@ def log_audit(action: str, admin_id: str, target_id: str, details: str = ""):
         print(f"[audit] Error logging: {e}")
     finally:
         if conn is not None:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def create_alert(alert_type: str, message: str, report_id: str = "", latitud: float = 0, longitud: float = 0):
@@ -58,7 +61,10 @@ def create_alert(alert_type: str, message: str, report_id: str = "", latitud: fl
         print(f"[alerts] Error creating alert: {e}")
     finally:
         if conn is not None:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 @router.get("/users")
@@ -201,8 +207,10 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[admin] update_report_status error: {e}")
-        raise HTTPException(status_code=500, detail="Error al actualizar estado")
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[admin] update_report_status error: {e}\n{tb}")
+        raise HTTPException(status_code=500, detail=f"Error al actualizar estado: {e}")
     finally:
         if conn is not None:
             conn.close()
