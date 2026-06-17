@@ -63,6 +63,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: incendios-prometheus
+    user: "472:472"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

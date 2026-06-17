@@ -59,8 +59,10 @@ sudo chmod 775 /home/ec2-user/incendios-data/api 2>/dev/null || true
 echo -e "\n--- Preparando directorios para Prometheus ---"
 sudo mkdir -p /home/ec2-user/prometheus
 sudo mkdir -p /home/ec2-user/incendios-data/prometheus
-# Prometheus corre como usuario por defecto (nobody:65534 en la imagen)
-# Se da permisos universales porque el UID varía según distro
+# Limpiar TSDB corrupto de ejecuciones previas con configuracion rota
+# (no habia datos utiles — scrape targets apuntaban mal)
+sudo rm -rf /home/ec2-user/incendios-data/prometheus/* 2>/dev/null || true
+sudo chown 472:472 /home/ec2-user/incendios-data/prometheus 2>/dev/null || true
 sudo chmod 777 /home/ec2-user/incendios-data/prometheus 2>/dev/null || true
 
 echo -e "\n Recreando el contenedor de la API..."
