@@ -75,6 +75,10 @@ services:
     image: prom/node-exporter:latest
     container_name: incendios-node-exporter
     network_mode: "host"
+    volumes:
+      - "/:/host:ro,rslave"
+    command:
+      - '--path.rootfs=/host'
     restart: unless-stopped
 
 networks:
