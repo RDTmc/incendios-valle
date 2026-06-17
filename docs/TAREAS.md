@@ -137,24 +137,39 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 2. `deploy.yml`: hash de provisioning ampliado de `dashboards/` a toda la carpeta `grafana-provisioning/` (antes no detectaba cambios en `datasource.yml`)
 3. `refresh_api.sh`: creación de directorios Prometheus + arranque de servicios
 
-## 🔴 EN PROGRESO — Error 500 en Admin PUT status + readonly database
+## ✅ FIX — Error 500 en Admin PUT status + readonly database (17 jun 2026)
 
-**Diagnóstico (17 jun 2026):**
+**Diagnóstico:**
 - Síntomas: `PUT /admin/reports/{id}/status` retorna 500 con `{"detail":"Error al actualizar estado: attempt to write a readonly database"}`
-- También afecta: escritura de auditoría (log_audit) y cualquier write a SQLite desde el API
-- **Causa**: `refresh_api.sh` línea 49 hace `aws s3 cp` del backup desde S3, que puede descargar el archivo `.db` con permisos solo lectura (444). Luego `chown -R 472:472` cambia el dueño pero no corrige permisos del archivo. El proceso API (uid 472) no puede escribir.
-- Lecturas (SELECT) funcionan correctamente.
-- **No es un bug de código Python**: `admin.py` fue revertido a lógica original. El error es de permisos de archivo en EC2.
+- **Causa raíz encontrada**: El `deploy.yml` hacía un **2do `aws s3 cp`** (línea 167-168) después de que `refresh_api.sh` ya había aplicado `chmod 664`. Este segundo restore sobrescribía el archivo con dueño `ec2-user` y permisos 644. Luego el bloque de permisos (líneas 195-199) solo hacía `chmod 644` **sin `chown 472:472`** para el API (solo se hacía para Grafana). El API (uid 472) solo podía leer.
+- Lecturas (SELECT) funcionaban, escrituras fallaban.
 
-**Fix aplicado (commit `16a0dca`):**
-- `refresh_api.sh`: agregado `chmod 664 /home/ec2-user/incendios-data/api/incendios.db` explícito después del restore desde S3.
-- **Pendiente**: confirmar que el CI/CD deployó el fix y el admin vuelve a funcionar.
+**Fix aplicado (commit `592ec01`):**
+1. `deploy.yml`: `sudo chown -R 472:472` sobre `/home/ec2-user/incendios-data/api`
+2. `deploy.yml`: `sudo chmod 775` al directorio + `sudo chmod 664` al archivo `.db`
+3. `deploy.yml`: `docker-compose up -d --no-deps --force-recreate api` después del fix
 
 **Dashboard TI (Grafana DevOps):** funcionando correctamente.
 - CPU, Network, Memory, Disk Usage con datos Prometheus ✅
 - API Healthcheck y Alertas SQLite OK ✅
 - Node-exporter con `--path.rootfs=/host` para métricas de disco ✅
 - Resolver dinámico DNS en nginx para evitar 502 por stale upstream ✅
+
+## ✅ FIX — Auto-refresh dashboard emergencia (17 jun 2026)
+
+**Diagnóstico:**
+- Panel "Estatus de Reportes" y "Reportes Ciudadanos" no se actualizaban sin F5
+- `dashboard_incendios.json` línea 1804: `"refresh": ""` (vacío) — sin auto-refresh
+- `devops_dashboard.json` línea 288: `"refresh": "30s"` — funcionaba correctamente
+
+**Fix (commit `f2a0302` → `...`):**
+- Cambiado `"refresh": ""` a `"refresh": "3s"` en dashboard_incendios.json
+- **Justificación del intervalo**: 3s porque los cambios de estado son manuales (AdminPage), no automáticos. Las queries son livianas (`GROUP BY` sobre ~24 filas, `LIMIT 10`). Incluso con 1000 reportes, cada query se resuelve en < 1ms en SQLite. No hay riesgo de saturación en t3.micro.
+
+**Pendiente para pruebas futuras:**
+- Verificar comportamiento bajo carga simulada (1000+ reportes, escrituras concurrentes)
+- Confirmar que 3s no impacta rendimiento en escenario de emergencia con múltiples operadores
+- Documentar métricas de tiempo de respuesta SQLite bajo carga para rúbrica de testing
 
 ## MEDIA PRIORIDAD
 
