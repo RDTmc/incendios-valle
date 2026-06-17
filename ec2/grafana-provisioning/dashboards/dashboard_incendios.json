@@ -1801,7 +1801,7 @@
       "type": "bargauge"
     }
   ],
-  "refresh": "",
+  "refresh": "15s",
   "schemaVersion": 39,
   "tags": [
     "incendios",
