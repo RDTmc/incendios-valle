@@ -48,7 +48,11 @@ docker-compose pull api
 echo -e "\n--- Restore SQLite desde S3 (solo API, NO sobrescribir grafana.db) ---"
 aws s3 cp s3://$S3_BUCKET/backups/incendios-latest.db \
   /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
-echo -e "\n--- Fijando ownership para que Grafana (uid 472) pueda escribir ---"
+echo -e "\n--- Fijando permisos de BD para que API (uid 472) pueda leer/escribir ---"
+# El aws s3 cp puede dejar el archivo con permisos solo lectura.
+# Forzamos ownership + permisos explicitos para que la API pueda escribir.
+sudo chown 472:472 /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
+sudo chmod 664 /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
 # Datos de Grafana (internos)
 sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
 sudo chown 472:472 /home/ec2-user/incendios-data/grafana 2>/dev/null || true
