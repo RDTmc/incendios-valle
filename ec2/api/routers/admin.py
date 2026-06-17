@@ -47,26 +47,6 @@ def log_audit(action: str, admin_id: str, target_id: str, details: str = ""):
                 pass
 
 
-def create_alert(alert_type: str, message: str, report_id: str = "", latitud: float = 0, longitud: float = 0):
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO alerts (alert_type, message, report_id, latitud, longitud, source) VALUES (?, ?, ?, ?, ?, 'system')",
-            (alert_type, message, report_id, latitud, longitud)
-        )
-        conn.commit()
-    except Exception as e:
-        print(f"[alerts] Error creating alert: {e}")
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
-
-
 @router.get("/users")
 def admin_list_users(payload: dict = Depends(require_admin), search: Optional[str] = None):
     repo = get_user_repository()
@@ -185,24 +165,12 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT report_id, tipo, latitud, longitud, estado FROM reports WHERE report_id = ?", (report_id,))
-        row = cursor.fetchone()
-        if not row:
+        cursor.execute("SELECT report_id FROM reports WHERE report_id = ?", (report_id,))
+        if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Reporte no encontrado")
-        estado_anterior = row[4]
         cursor.execute("UPDATE reports SET estado = ? WHERE report_id = ?", (estado_upper, report_id))
         conn.commit()
-        log_audit("update_report_status", payload["user_id"], report_id, f"Cambió estado de {estado_anterior} a {estado_upper}")
-
-        alert_type = "ALTA" if estado_upper == "ACTIVO" else "INFO"
-        create_alert(
-            alert_type=alert_type,
-            message=f"Reporte {row[1]} (ID: {report_id[:8]}) cambió de {estado_anterior} a {estado_upper}",
-            report_id=report_id,
-            latitud=row[2],
-            longitud=row[3]
-        )
-
+        log_audit("update_report_status", payload["user_id"], report_id, f"Cambió estado a {estado_upper}")
         return {"status": "updated", "report_id": report_id, "estado": estado_upper}
     except HTTPException:
         raise
@@ -213,7 +181,10 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
         raise HTTPException(status_code=500, detail=f"Error al actualizar estado: {e}")
     finally:
         if conn is not None:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 @router.get("/notifications")
