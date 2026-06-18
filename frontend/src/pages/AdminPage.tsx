@@ -700,7 +700,7 @@ export default function AdminPage() {
         <br />
         Sistema de Gestión de Incendios
         </div>
-      </Card>
+      </div>
     )
   }
 
