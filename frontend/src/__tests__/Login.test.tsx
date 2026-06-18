@@ -4,15 +4,21 @@ import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastProvider } from '../util/toast'
 
-const mockLogin = vi.fn().mockResolvedValue(undefined)
+const mockSetAuthFrom2FA = vi.fn()
+const mockAPILogin = vi.fn()
 
 vi.mock('../App', () => ({
   useAuth: () => ({
     user: null,
     token: null,
-    login: mockLogin,
-    logout: vi.fn()
+    login: vi.fn(),
+    logout: vi.fn(),
+    setAuthFrom2FA: mockSetAuthFrom2FA
   })
+}))
+
+vi.mock('../api', () => ({
+  API: { login: mockAPILogin }
 }))
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -76,6 +82,7 @@ describe('Login Page', () => {
 
   it('should submit form with email and password', async () => {
     const Login = (await import('../pages/Login')).default
+    mockAPILogin.mockResolvedValue({ token: 'test-token', user: { id: 1, name: 'Test', email: 'user@example.com' } })
     renderWithProviders(<Login />)
 
     const emailInput = screen.getByPlaceholderText('correo@ejemplo.com')
@@ -87,7 +94,8 @@ describe('Login Page', () => {
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith('user@example.com', 'password123')
+      expect(mockAPILogin).toHaveBeenCalledWith('user@example.com', 'password123')
+      expect(mockSetAuthFrom2FA).toHaveBeenCalledWith('test-token', { id: 1, name: 'Test', email: 'user@example.com' })
     })
   })
 })
