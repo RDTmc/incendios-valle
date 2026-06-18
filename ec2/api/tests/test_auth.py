@@ -34,7 +34,7 @@ class TestAuth:
             "password": "wrongpass"
         })
         assert response.status_code == 401
-        assert "Invalid credentials" in response.json()["detail"]
+        assert "Credenciales inválidas" in response.json()["detail"]
 
     def test_login_missing_fields(self, client):
         response = client.post("/login", json={"email": "test@example.com"})
