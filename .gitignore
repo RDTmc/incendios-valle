@@ -233,3 +233,59 @@ __marimo__/
 /docs/ESTADO.md
 /docs/TAREAS.md
 /docs/REGLAS.md
+/docs/GUION_DEMO.md
+/docs/MANUAL_AFICHE_MUNICIPAL.md
+/docs/API_GATEWAY_GUIDE.md
+/docs/ARQUITECTURA_FINAL.md
+/docs/ROADMAP_10_DAYS.md
+
+# Debug scripts (one-time, no afectan runtime)
+ec2/api/debug/
+
+# Duplicados de dashboards (usar ec2/grafana-provisioning/)
+ec2/grafana-dashboards/
+
+# Lambda en ubicación incorrecta (duplicado de lambda/upload_proxy/)
+ec2/lambda/
+
+# Scripts de migración one-time en raíz de ec2/
+ec2/add_geomap.py
+ec2/check_dashboard.py
+ec2/check_plugin.py
+ec2/check_schema.py
+ec2/count_reports.py
+ec2/create_dashboard.py
+ec2/fix_dashboard_type.py
+ec2/fix_import.py
+ec2/fix_nginx.py
+ec2/main_fixed.py
+ec2/patch_map_endpoint.py
+ec2/patch_public_stats.py
+ec2/patch_s3_upload.py
+ec2/purge_datasource.py
+ec2/seed_fixed.py
+ec2/seed_sqlite.py
+
+# Monitoring CloudWatch (reemplazado por Prometheus)
+ec2/monitoring/
+
+# Base de datos local
+ec2/api/incendios.db
+
+# Screenshots e imágenes internas
+Captura de pantalla*.png
+docs/Captura de pantalla*.png
+docs/logo-muni-valle-del-sol.png
+docs/qr-pwa-incendios.png
+
+# Utilería local
+docs/gen_icons.py
+docs/gen_qr.py
+docs/generar_qr.py
+
+# Planificación / PRs
+ROADMAP.md
+pr_body.txt
+
+# Archivo huérfano en raíz (cada subproyecto tiene el suyo)
+package-lock.json
