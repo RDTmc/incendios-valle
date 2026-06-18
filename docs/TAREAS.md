@@ -101,108 +101,21 @@ Esta sección documenta errores recurrentes para revisar ANTES de implementar cu
 4. Testear siempre en producción con un usuario/sesión real después del deploy
 5. NO asumir que tablas "equivalentes" (DynamoDB vs SQLite) tienen los mismos datos
 
-## ALTA PRIORIDAD
+## 🔴 EN PROGRESO — 2FA Email OTP + backup codes para admins (17 jun 2026)
 
-### En ejecución — Dashboard DevOps con Prometheus (14 jun 2026)
+**Decisión:** Se optó por Email OTP (vía Mailtrap) + códigos de backup como método de doble factor para usuarios admin.
 
-**Contexto:** Primero se intentó CloudWatch, pero el LabRole de AWS Academy no tiene permisos para `iam:AttachRolePolicy` ni `CloudWatchReadOnlyAccess`. Se optó por Prometheus + node_exporter corriendo como containers Docker en la misma EC2.
+**Por qué esta opción:**
+- Mailtrap ya está operativo y con SPF configurado → $0 adicional
+- Sin apps externas (el admin recibe código en su correo)
+- Esfuerzo mínimo (~30 líneas backend)
+- Backup codes como recuperación si no llega el email
 
-**Fase — Implementación Prometheus**
-
-| Archivo | Acción |
-|---|---|
-| `ec2/prometheus/prometheus.yml` | **Nuevo** — config scrape: node_exporter (:9100) + API (:8000) |
-| `ec2/docker-compose.yml` | +2 servicios: prometheus + node-exporter |
-| `ec2/grafana-provisioning/datasources/datasource.yml` | CloudWatch → Prometheus datasource |
-| `ec2/grafana-provisioning/dashboards/devops_dashboard.json` | Recablear 4 paneles a PromQL (CPU, Network, Memory, Disk) |
-| `docs/TAREAS.md` | Documentar estado |
-
-**Layout dashboard DevOps (post-Prometheus):**
-
-| Panel | Datasource | Query PromQL |
-|---|---|---|
-| CPU Utilization | Prometheus | `100 - avg(rate(node_cpu_seconds_total{mode="idle"}[1m]))` |
-| Network Activity | Prometheus | `rate(node_network_receive_bytes_total[1m])` + Out |
-| Memory Usage | Prometheus | `(MemTotal - MemAvailable) / MemTotal * 100` |
-| API Healthcheck | SQLite | `SELECT 1` (sin cambios) |
-| Disk Usage | Prometheus | `100 - (avail / size * 100)` |
-| Alertas Recientes | SQLite | alerts table (sin cambios) |
-
-**Riesgo:** Bajo. ~100MB RAM extra sobre ~700MB libres en t3.micro.
-
-**Próximo paso:** ✅ Documentado — implementado y commit. Pendiente validar post-deploy que Prometheus + node-exporter estén corriendo y Grafana pueda consultarlos.
-
-**Fixes aplicados post-deploy:**
-1. `datasource.yml`: agregada `url: http://prometheus:9090` (faltaba la URL del servidor)
-2. `deploy.yml`: hash de provisioning ampliado de `dashboards/` a toda la carpeta `grafana-provisioning/` (antes no detectaba cambios en `datasource.yml`)
-3. `refresh_api.sh`: creación de directorios Prometheus + arranque de servicios
-
-## ✅ FIX — Error 500 en Admin PUT status + readonly database (17 jun 2026)
-
-**Diagnóstico:**
-- Síntomas: `PUT /admin/reports/{id}/status` retorna 500 con `{"detail":"Error al actualizar estado: attempt to write a readonly database"}`
-- **Causa raíz encontrada**: El `deploy.yml` hacía un **2do `aws s3 cp`** (línea 167-168) después de que `refresh_api.sh` ya había aplicado `chmod 664`. Este segundo restore sobrescribía el archivo con dueño `ec2-user` y permisos 644. Luego el bloque de permisos (líneas 195-199) solo hacía `chmod 644` **sin `chown 472:472`** para el API (solo se hacía para Grafana). El API (uid 472) solo podía leer.
-- Lecturas (SELECT) funcionaban, escrituras fallaban.
-
-**Fix aplicado (commit `592ec01`):**
-1. `deploy.yml`: `sudo chown -R 472:472` sobre `/home/ec2-user/incendios-data/api`
-2. `deploy.yml`: `sudo chmod 775` al directorio + `sudo chmod 664` al archivo `.db`
-3. `deploy.yml`: `docker-compose up -d --no-deps --force-recreate api` después del fix
-
-**Dashboard TI (Grafana DevOps):** funcionando correctamente.
-- CPU, Network, Memory, Disk Usage con datos Prometheus ✅
-- API Healthcheck y Alertas SQLite OK ✅
-- Node-exporter con `--path.rootfs=/host` para métricas de disco ✅
-- Resolver dinámico DNS en nginx para evitar 502 por stale upstream ✅
-
-## ✅ FIX — Auto-refresh dashboard emergencia (17 jun 2026)
-
-**Diagnóstico:**
-- Panel "Estatus de Reportes" y "Reportes Ciudadanos" no se actualizaban sin F5
-- `dashboard_incendios.json` línea 1804: `"refresh": ""` (vacío) — sin auto-refresh
-- `devops_dashboard.json` línea 288: `"refresh": "30s"` — funcionaba correctamente
-
-**Fix (commit `f2a0302` → `3b9af58`):**
-- Cambiado `"refresh": ""` a `"refresh": "3s"` en dashboard_incendios.json
-- **Justificación del intervalo**: 3s porque los cambios de estado son manuales (AdminPage), no automáticos. Las queries son livianas (`GROUP BY` sobre ~24 filas, `LIMIT 10`). Incluso con 1000 reportes, cada query se resuelve en < 1ms en SQLite. No hay riesgo de saturación en t3.micro.
-
-**Pendiente para pruebas futuras:**
-- Verificar comportamiento bajo carga simulada (1000+ reportes, escrituras concurrentes)
-- Confirmar que 3s no impacta rendimiento en escenario de emergencia con múltiples operadores
-- Documentar métricas de tiempo de respuesta SQLite bajo carga para rúbrica de testing
-
-## ✅ Notificar cambio de estado via SNS + Grafana annotation (17 jun 2026)
-
-**Qué se implementó:**
-- Nueva función `notify_status_change()` en `notification_service.py`
-  - Crea anotación Grafana directa (internal Docker network)
-  - Publica a SNS topic `incendios-alerts` (email + Lambda sns-to-grafana)
-- `admin.py`: captura `estado_anterior` y llama a `notify_status_change` después de persistir el cambio
-- **Patrón fail-open**: cualquier error en notificación se loguea y no bloquea el endpoint
-
-**Infraestructura existente reutilizada:**
-- SNS topic `incendios-alerts` ya operativo (usado por `notify_new_user`)
-- Lambda `sns-to-grafana` ya parsea el formato JSON que enviamos (`text`, `tags`, `timestamp`)
-- Suscriptor email ya confirmado
-
-**Lo que se conserva intacto:**
-- `admin_update_report_status` sigue funcionando exactamente igual — la notificación es post-facto
-- Dashboard auto-refresh 3s sin cambios
-- Pipeline CI/CD sin cambios
-
-**Pendiente:**
-- Revisar cabeceras email para evitar SPAM (SNS envía JSON plano como body)
-
-## MEDIA PRIORIDAD
-
-2. ☐ **Agregar Lambda `upload-proxy` al pipeline CI/CD**
-   - Actualmente se deploya manualmente desde AWS Console
-
-## BAJA PRIORIDAD
-
-4. ☐ **Guión demo** — `docs/GUION_DEMO.md`
-   - Escenarios de demostración, datos de prueba precargados
-
-6. **Documentación**
-   - Actualizar docs existentes
-   - README con instrucciones de desarrollo local
+**Pendiente de implementar:**
+- [ ] Endpoint `/admin/2fa/setup` — generar secreto OTP + guardar en DB
+- [ ] Modificar `/login` — si usuario tiene 2FA habilitado, exigir código OTP
+- [ ] Frontend: input de 6 dígitos en Login.tsx (condicional)
+- [ ] Frontend: tab "2FA" en AdminPage con opción activar/desactivar
+- [ ] Generar 10 códigos de backup al activar 2FA
+- [ ] Tests backend + frontend
+- [ ] Prueba de campo post-deploy
