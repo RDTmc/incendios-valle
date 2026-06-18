@@ -630,80 +630,6 @@ export default function AdminPage() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white pb-8">
-      <div className="bg-gray-800 p-4 shadow flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <img src="/logo-muni.png" alt="Municipalidad de Valle del Sol" className="h-14 w-auto brightness-0 invert" />
-          <div>
-            <h1 className="text-xl font-bold">Panel de Administración</h1>
-            <p className="text-xs text-gray-400">Sistema de Gestión de Incendios</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold px-3 py-1.5 rounded bg-purple-900 text-purple-200 border border-purple-700">ADMIN</span>
-          <Button variant="ghost" size="sm" className="!text-red-400 hover:!text-red-300" onClick={() => { logout(); navigate('/login') }}>
-            Salir
-          </Button>
-        </div>
-      </div>
-
-      <div className="p-4">
-        <div className="flex gap-2 mb-6">
-          <Button
-            variant={tab === 'users' ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => setTab('users')}
-          >
-            Usuarios ({users.length})
-          </Button>
-          <Button
-            variant={tab === 'audit' ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => setTab('audit')}
-          >
-            Auditoría
-          </Button>
-          <Button
-            variant={tab === 'notifications' ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => setTab('notifications')}
-          >
-            Notificaciones ({notifications.length})
-          </Button>
-          <Button
-            variant={tab === 'reports' ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => setTab('reports')}
-          >
-            Reportes ({reports.length})
-          </Button>
-          <Button
-            variant={tab === 'twofa' ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => setTab('twofa')}
-          >
-            {twoFAEnabled ? '🔒 2FA' : '🔓 2FA'}
-          </Button>
-        </div>
-
-        <Card className="bg-gray-800 p-4">
-          {tab === 'users' ? renderUsersTab() : tab === 'audit' ? renderAuditTab() : tab === 'notifications' ? renderNotificationsTab() : tab === 'reports' ? renderReportsTab() : render2FATab()}
-        </Card>
-      </div>
-
-      {renderModal()}
-      {renderDeleteConfirm()}
-
-      <div className="text-center text-xs text-gray-500 mt-8 px-4">
-        Panel de Administración
-        <br />
-        Sistema de Gestión de Incendios
-        </div>
-      </div>
-    )
-  }
-
   const load2FAStatus = useCallback(async () => {
     if (!token) return
     setTwoFALoading(true)
@@ -824,3 +750,79 @@ export default function AdminPage() {
       </div>
     )
   }
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white pb-8">
+      <div className="bg-gray-800 p-4 shadow flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <img src="/logo-muni.png" alt="Municipalidad de Valle del Sol" className="h-14 w-auto brightness-0 invert" />
+          <div>
+            <h1 className="text-xl font-bold">Panel de Administración</h1>
+            <p className="text-xs text-gray-400">Sistema de Gestión de Incendios</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold px-3 py-1.5 rounded bg-purple-900 text-purple-200 border border-purple-700">ADMIN</span>
+          <Button variant="ghost" size="sm" className="!text-red-400 hover:!text-red-300" onClick={() => { logout(); navigate('/login') }}>
+            Salir
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div className="flex gap-2 mb-6">
+          <Button
+            variant={tab === 'users' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab('users')}
+          >
+            Usuarios ({users.length})
+          </Button>
+          <Button
+            variant={tab === 'audit' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab('audit')}
+          >
+            Auditoría
+          </Button>
+          <Button
+            variant={tab === 'notifications' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab('notifications')}
+          >
+            Notificaciones ({notifications.length})
+          </Button>
+          <Button
+            variant={tab === 'reports' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab('reports')}
+          >
+            Reportes ({reports.length})
+          </Button>
+          <Button
+            variant={tab === 'twofa' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab('twofa')}
+          >
+            {twoFAEnabled ? '🔒 2FA' : '🔓 2FA'}
+          </Button>
+        </div>
+
+        <Card className="bg-gray-800 p-4">
+          {tab === 'users' ? renderUsersTab() : tab === 'audit' ? renderAuditTab() : tab === 'notifications' ? renderNotificationsTab() : tab === 'reports' ? renderReportsTab() : render2FATab()}
+        </Card>
+      </div>
+
+      {renderModal()}
+      {renderDeleteConfirm()}
+
+      <div className="text-center text-xs text-gray-500 mt-8 px-4">
+        Panel de Administración
+        <br />
+        Sistema de Gestión de Incendios
+        </div>
+      </div>
+    )
+  }
+
+

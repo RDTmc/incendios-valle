@@ -18,7 +18,7 @@ export default function Login() {
   const [tempToken, setTempToken] = useState('')
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
-  const { login, setAuthFrom2FA } = useAuth()
+  const { setAuthFrom2FA } = useAuth()
   const navigate = useNavigate()
   const { addToast } = useToast()
 
