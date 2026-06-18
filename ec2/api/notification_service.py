@@ -212,3 +212,33 @@ def notify_status_change(report_id: str, estado_nuevo: str, admin_id: str, estad
         )
     except Exception as e:
         print(f"[notifications] SNS publish error en notify_status_change: {e}")
+
+
+def send_otp_email(to_email: str, codigo: str) -> bool:
+    try:
+        subject = "Código de verificación - Incendios Valle del Sol"
+        text = (
+            f"Su código de verificación es: {codigo}\n\n"
+            f"Este código expira en 5 minutos.\n\n"
+            f"Si no solicitó este código, ignore este mensaje.\n\n"
+            f"Atentamente,\n"
+            f"Dirección de Gestión del Riesgo\n"
+            f"Municipalidad de Valle del Sol"
+        )
+        html = f"""<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #c0392b;">Código de verificación</h2>
+  <p>Su código de verificación es:</p>
+  <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f8f8f8; border-radius: 8px;">
+    <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #c0392b;">{codigo}</span>
+  </div>
+  <p style="font-size: 14px; color: #666;">Este código expira en 5 minutos.</p>
+  <p style="font-size: 14px; color: #666;">Si no solicitó este código, ignore este mensaje.</p>
+  <p style="font-size: 14px; color: #666;">Atentamente,<br>Dirección de Gestión del Riesgo<br>Municipalidad de Valle del Sol</p>
+</body>
+</html>"""
+        return _send_email_via_mailtrap(to_email, subject, text, html)
+    except Exception as e:
+        print(f"[notifications] send_otp_email error: {e}")
+        return False

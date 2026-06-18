@@ -27,6 +27,7 @@ interface AuthContextType {
   token: string | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
+  setAuthFrom2FA: (token: string, user: { user_id: string; email: string; rol: string; nombre: string }) => void
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -120,7 +121,12 @@ function App() {
     setToken(null)
   }
 
-  const authValue = useMemo(() => ({ user, token, login, logout }), [user, token, login, logout])
+  const setAuthFrom2FA = (token: string, userData: { user_id: string; email: string; rol: string; nombre: string }) => {
+    setToken(token)
+    setUser(userData)
+  }
+
+  const authValue = useMemo(() => ({ user, token, login, logout, setAuthFrom2FA }), [user, token, login, logout, setAuthFrom2FA])
 
   return (
     <ErrorBoundary>

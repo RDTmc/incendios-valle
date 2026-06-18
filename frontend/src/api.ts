@@ -222,5 +222,53 @@ export const API = {
       throw new Error(err.error || err.detail || `Failed to update report status: HTTP ${res.status}`)
     }
     return res.json()
+  },
+
+  login2FA: async (tempToken: string, code: string) => {
+    const res = await fetch(`${API_URL}/auth/2fa/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ temp_token: tempToken, code })
+    })
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || 'Código inválido')
+    }
+    return res.json()
+  },
+
+  setup2FA: async (token: string) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/2fa/setup`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || 'Error al activar 2FA')
+    }
+    return res.json()
+  },
+
+  disable2FA: async (token: string) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/2fa/disable`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || 'Error al desactivar 2FA')
+    }
+    return res.json()
+  },
+
+  get2FAStatus: async (token: string) => {
+    const res = await handleAuth(await fetch(`${API_URL}/admin/2fa/status`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }))
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || 'Error al obtener estado 2FA')
+    }
+    return res.json()
   }
 }

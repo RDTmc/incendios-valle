@@ -1,11 +1,112 @@
+import os
+import json
+import secrets
+import random
+import sqlite3
 from fastapi import APIRouter, HTTPException, Depends
-from dependencies import get_user_repository, verify_token, sync_to_sqlite, SECRET_KEY
-from models import LoginRequest, RegisterRequest
-from notification_service import notify_new_user
+from dependencies import get_user_repository, verify_token, require_admin, sync_to_sqlite, SECRET_KEY, get_db_connection, DB_PATH
+from models import LoginRequest, RegisterRequest, TwoFactorVerifyRequest
+from notification_service import notify_new_user, send_otp_email
 import jwt
 from datetime import datetime, timezone, timedelta
 
 router = APIRouter(tags=["auth"])
+
+# In-memory OTP store: temp_token -> {"otp": str, "user_id": str, "expires_at": datetime}
+_otp_store: dict[str, dict] = {}
+
+OTP_EXPIRE_MINUTES = 5
+BACKUP_CODE_COUNT = 10
+
+
+def _init_2fa_table():
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.execute("PRAGMA journal_mode=WAL")
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admin_2fa (
+                user_id TEXT PRIMARY KEY,
+                enabled INTEGER DEFAULT 0,
+                backup_codes TEXT,
+                created_at TEXT
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[2fa] table init error: {e}")
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _get_2fa_config(user_id: str) -> dict | None:
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, enabled, backup_codes FROM admin_2fa WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        if row:
+            codes = json.loads(row[2]) if row[2] else []
+            return {"user_id": row[0], "enabled": bool(row[1]), "backup_codes": codes}
+        return None
+    except Exception as e:
+        print(f"[2fa] get error: {e}")
+        return None
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _save_2fa_config(user_id: str, enabled: bool, backup_codes: list[str] | None = None):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        now = datetime.now(timezone.utc).isoformat()
+        codes_json = json.dumps(backup_codes or [])
+        cursor.execute("""
+            INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (user_id, 1 if enabled else 0, codes_json, now))
+        conn.commit()
+    except Exception as e:
+        print(f"[2fa] save error: {e}")
+        raise HTTPException(status_code=500, detail="Error al guardar configuración 2FA")
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _generate_backup_codes() -> list[str]:
+    codes = []
+    for _ in range(BACKUP_CODE_COUNT):
+        code = ''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(8))
+        code = f"{code[:4]}-{code[4:]}"
+        codes.append(code)
+    return codes
+
+
+def _generate_otp() -> str:
+    return f"{random.randint(0, 999999):06d}"
+
+
+def _clean_expired_otp():
+    now = datetime.now(timezone.utc)
+    expired = [k for k, v in _otp_store.items() if v.get("expires_at", now) < now]
+    for k in expired:
+        _otp_store.pop(k, None)
 
 
 @router.post("/login", responses={
@@ -14,12 +115,175 @@ router = APIRouter(tags=["auth"])
 def login(req: LoginRequest):
     try:
         repo = get_user_repository()
-        return repo.authenticate(req.email, req.password)
+        user = repo.find_by_email(req.email)
+        if not user:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+
+        from repositories.user_repository import UserRepository
+        temp_repo = UserRepository.__new__(UserRepository)
+        temp_repo.table = repo.table
+        # authenticate via the stored hash
+        import bcrypt
+        stored_hash = user.get('password_hash', '')
+        if not bcrypt.checkpw(req.password.encode(), stored_hash.encode()):
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+
+        _init_2fa_table()
+        twofa = _get_2fa_config(user['user_id'])
+
+        if twofa and twofa['enabled']:
+            otp = _generate_otp()
+            expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
+
+            temp_token = jwt.encode({
+                'user_id': user['user_id'],
+                'purpose': '2fa',
+                'exp': expires_at,
+            }, SECRET_KEY, algorithm='HS256')
+
+            _otp_store[temp_token] = {
+                "otp": otp,
+                "user_id": user['user_id'],
+                "expires_at": expires_at,
+            }
+
+            send_otp_email(user.get('email', ''), otp)
+
+            return {
+                "two_factor_required": True,
+                "temp_token": temp_token,
+            }
+
+        token = jwt.encode({
+            'user_id': user['user_id'],
+            'email': user['email'],
+            'rol': user.get('rol', 'VECINO'),
+            'exp': datetime.now(timezone.utc) + timedelta(hours=24),
+        }, SECRET_KEY, algorithm='HS256')
+
+        return {
+            "token": token,
+            "user": {
+                "user_id": user['user_id'],
+                "email": user['email'],
+                "rol": user.get('rol', 'VECINO'),
+                "nombre": user.get('nombre', ''),
+            },
+        }
     except HTTPException:
         raise
     except Exception as e:
         print(f"[auth] Login error: {e}")
-        raise HTTPException(status_code=500, detail="Login error")
+        raise HTTPException(status_code=500, detail="Error al iniciar sesión")
+
+
+@router.post("/auth/2fa/verify")
+def verify_2fa(req: TwoFactorVerifyRequest):
+    _clean_expired_otp()
+    try:
+        temp_payload = jwt.decode(req.temp_token, SECRET_KEY, algorithms=['HS256'])
+        if temp_payload.get('purpose') != '2fa':
+            raise HTTPException(status_code=400, detail="Token inválido")
+        user_id = temp_payload['user_id']
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Código expirado, inicie sesión nuevamente")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    stored = _otp_store.pop(req.temp_token, None)
+    if stored and stored["otp"] == req.code:
+        repo = get_user_repository()
+        user = repo.find_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        token = jwt.encode({
+            'user_id': user['user_id'],
+            'email': user['email'],
+            'rol': user.get('rol', 'VECINO'),
+            'exp': datetime.now(timezone.utc) + timedelta(hours=24),
+        }, SECRET_KEY, algorithm='HS256')
+
+        return {
+            "token": token,
+            "user": {
+                "user_id": user['user_id'],
+                "email": user['email'],
+                "rol": user.get('rol', 'VECINO'),
+                "nombre": user.get('nombre', ''),
+            },
+        }
+
+    # Verify backup code
+    twofa = _get_2fa_config(user_id)
+    if twofa and twofa['backup_codes']:
+        codes = twofa['backup_codes']
+        if req.code in codes:
+            codes.remove(req.code)
+            _save_2fa_config(user_id, True, codes)
+
+            repo = get_user_repository()
+            user = repo.find_by_id(user_id)
+            if not user:
+                raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+            token = jwt.encode({
+                'user_id': user['user_id'],
+                'email': user['email'],
+                'rol': user.get('rol', 'VECINO'),
+                'exp': datetime.now(timezone.utc) + timedelta(hours=24),
+            }, SECRET_KEY, algorithm='HS256')
+
+            return {
+                "token": token,
+                "user": {
+                    "user_id": user['user_id'],
+                    "email": user['email'],
+                    "rol": user.get('rol', 'VECINO'),
+                    "nombre": user.get('nombre', ''),
+                },
+            }
+
+    raise HTTPException(status_code=401, detail="Código inválido")
+
+
+@router.post("/admin/2fa/setup")
+def setup_2fa(payload: dict = Depends(require_admin)):
+    user_id = payload['user_id']
+    _init_2fa_table()
+
+    existing = _get_2fa_config(user_id)
+    if existing and existing['enabled']:
+        raise HTTPException(status_code=400, detail="2FA ya está activado")
+
+    backup_codes = _generate_backup_codes()
+    _save_2fa_config(user_id, True, backup_codes)
+
+    return {
+        "status": "enabled",
+        "backup_codes": backup_codes,
+    }
+
+
+@router.post("/admin/2fa/disable")
+def disable_2fa(payload: dict = Depends(require_admin)):
+    user_id = payload['user_id']
+    _init_2fa_table()
+    _save_2fa_config(user_id, False)
+    return {"status": "disabled"}
+
+
+@router.get("/admin/2fa/status")
+def get_2fa_status(payload: dict = Depends(require_admin)):
+    _init_2fa_table()
+    twofa = _get_2fa_config(payload['user_id'])
+    if twofa:
+        remaining = len(twofa.get('backup_codes', []))
+        return {
+            "enabled": twofa['enabled'],
+            "remaining_backup_codes": remaining,
+        }
+    return {"enabled": False, "remaining_backup_codes": 0}
 
 
 @router.post("/register", responses={
@@ -64,4 +328,4 @@ def register(req: RegisterRequest):
         raise
     except Exception as e:
         print(f"[auth] Register error: {e}")
-        raise HTTPException(status_code=500, detail="Register error")
+        raise HTTPException(status_code=500, detail="Error al registrarse")

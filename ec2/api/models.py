@@ -47,3 +47,8 @@ class ExternalReportRequest(BaseModel):
     fh_inicio: Optional[str] = None
     fh_extinci: Optional[str] = None
     temporada: Optional[str] = None
+
+
+class TwoFactorVerifyRequest(BaseModel):
+    temp_token: str
+    code: str

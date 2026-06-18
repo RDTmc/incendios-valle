@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Flame } from 'lucide-react'
+import { Flame, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../App'
 import { useToast } from '../util/toast'
+import { API } from '../api'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card } from '../components/ui/Card'
@@ -13,7 +14,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const [twoFactorStep, setTwoFactorStep] = useState(false)
+  const [tempToken, setTempToken] = useState('')
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+  const { login, setAuthFrom2FA } = useAuth()
   const navigate = useNavigate()
   const { addToast } = useToast()
 
@@ -32,8 +37,15 @@ export default function Login() {
 
     setLoading(true)
     try {
-      await login(email, password)
-      addToast('Inicio de sesión exitoso', 'success')
+      const res = await API.login(email, password)
+      if (res.two_factor_required) {
+        setTempToken(res.temp_token)
+        setTwoFactorStep(true)
+        addToast('Revisa tu correo para el código de verificación', 'info')
+      } else {
+        setAuthFrom2FA(res.token, res.user)
+        addToast('Inicio de sesión exitoso', 'success')
+      }
     } catch (error: any) {
       const msg = error.message || 'Error de autenticación'
       setError(msg)
@@ -41,6 +53,105 @@ export default function Login() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value && !/^\d$/.test(value)) return
+    const newOtp = [...otpCode]
+    newOtp[index] = value
+    setOtpCode(newOtp)
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleOtpSubmit = async () => {
+    const code = otpCode.join('')
+    if (code.length !== 6) {
+      setError('Ingresa el código completo de 6 dígitos')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await API.login2FA(tempToken, code)
+      setAuthFrom2FA(res.token, res.user)
+      addToast('Inicio de sesión exitoso', 'success')
+    } catch (error: any) {
+      const msg = error.message || 'Código inválido'
+      setError(msg)
+      addToast(msg, 'error')
+      setOtpCode(['', '', '', '', '', ''])
+      otpRefs.current[0]?.focus()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBackToLogin = () => {
+    setTwoFactorStep(false)
+    setOtpCode(['', '', '', '', '', ''])
+    setError('')
+  }
+
+  if (twoFactorStep) {
+    return (
+      <div className="h-screen overflow-hidden bg-gray-100 flex items-center justify-center p-4">
+        <Card padding="lg" className="bg-white w-full max-w-md">
+          <div className="text-center mb-6">
+            <ShieldCheck className="w-12 h-12 text-fire-500 mx-auto mb-2" />
+            <h1 className="text-xl font-bold text-gray-800">Verificación en dos pasos</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Ingresa el código de 6 dígitos enviado a tu correo
+            </p>
+          </div>
+
+          <div className="flex justify-center gap-2 mb-6">
+            {otpCode.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { otpRefs.current[i] = el }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-fire-500 focus:ring-2 focus:ring-fire-500 outline-none bg-gray-900 text-white"
+                autoFocus={i === 0}
+              />
+            ))}
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm text-center mb-4">{error}</p>
+          )}
+
+          <Button
+            onClick={handleOtpSubmit}
+            loading={loading}
+            size="lg"
+            className="w-full mb-3"
+          >
+            {loading ? 'Verificando...' : 'Verificar código'}
+          </Button>
+
+          <button
+            onClick={handleBackToLogin}
+            className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al inicio de sesión
+          </button>
+        </Card>
+      </div>
+    )
   }
 
   return (
