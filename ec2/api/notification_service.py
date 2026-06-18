@@ -25,11 +25,35 @@ Su registro como {rol} ha sido exitoso. A partir de ahora podrá:
 - Consultar el mapa de focos activos en la aplicación
 - Acceder al historial de sus reportes
 
+Para ingresar a la plataforma, acceda al siguiente enlace:
+https://incendios-valle.pages.dev/login
+
 Ante cualquier emergencia, reporte de inmediato a través de la aplicación.
 
 Atentamente,
 Dirección de Gestión del Riesgo
 Municipalidad de Valle del Sol"""
+
+WELCOME_HTML = """<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #c0392b;">¡Bienvenido/a {nombre}!</h2>
+  <p>Su registro como <strong>{rol}</strong> ha sido exitoso. A partir de ahora podrá:</p>
+  <ul>
+    <li>Reportar incendios forestales y urbanos en tiempo real</li>
+    <li>Recibir alertas de emergencia en su correo</li>
+    <li>Consultar el mapa de focos activos en la aplicación</li>
+    <li>Acceder al historial de sus reportes</li>
+  </ul>
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="https://incendios-valle.pages.dev/login" style="background-color: #c0392b; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-size: 16px;">
+      Ingresar a la plataforma
+    </a>
+  </p>
+  <p style="font-size: 14px; color: #666;">Ante cualquier emergencia, reporte de inmediato a través de la aplicación.</p>
+  <p style="font-size: 14px; color: #666;">Atentamente,<br>Dirección de Gestión del Riesgo<br>Municipalidad de Valle del Sol</p>
+</body>
+</html>"""
 
 
 def _send_email_via_mailtrap(to_email: str, subject: str, text: str, html: str = "") -> bool:
@@ -68,7 +92,8 @@ def _send_welcome_email(to_email: str, nombre: str, rol: str):
     name = nombre or to_email.split("@")[0]
     subject = "Bienvenido/a al Sistema de Alerta Temprana de Incendios"
     text = WELCOME_TEMPLATE.format(nombre=name, rol=rol)
-    return _send_email_via_mailtrap(to_email, subject, text)
+    html = WELCOME_HTML.format(nombre=name, rol=rol)
+    return _send_email_via_mailtrap(to_email, subject, text, html)
 
 
 def _create_grafana_annotation(text: str, tags: list[str]):
