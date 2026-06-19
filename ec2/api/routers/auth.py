@@ -300,52 +300,21 @@ def login(req: LoginRequest):
 
 @router.post("/auth/2fa/verify")
 def verify_2fa(req: TwoFactorVerifyRequest):
-    _clean_expired_otp()
-    _init_otp_table()
     try:
-        temp_payload = jwt.decode(req.temp_token, SECRET_KEY, algorithms=['HS256'])
-        if temp_payload.get('purpose') != '2fa':
-            raise HTTPException(status_code=400, detail="Token inválido")
-        user_id = temp_payload['user_id']
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Código expirado, inicie sesión nuevamente")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token inválido")
+        _clean_expired_otp()
+        _init_otp_table()
+        try:
+            temp_payload = jwt.decode(req.temp_token, SECRET_KEY, algorithms=['HS256'])
+            if temp_payload.get('purpose') != '2fa':
+                raise HTTPException(status_code=400, detail="Token inválido")
+            user_id = temp_payload['user_id']
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Código expirado, inicie sesión nuevamente")
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Token inválido")
 
-    stored = _pop_otp(req.temp_token)
-    if stored and stored["otp"] == req.code:
-        repo = get_user_repository()
-        user = repo.find_by_id(user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-        token = jwt.encode({
-            'user_id': user['user_id'],
-            'email': user['email'],
-            'rol': user.get('rol', 'VECINO'),
-            'exp': datetime.now(timezone.utc) + timedelta(hours=24),
-        }, SECRET_KEY, algorithm='HS256')
-
-        return {
-            "token": token,
-            "user": {
-                "user_id": user['user_id'],
-                "email": user['email'],
-                "rol": user.get('rol', 'VECINO'),
-                "nombre": user.get('nombre', ''),
-            },
-        }
-
-    # Verify backup code
-    twofa = _get_2fa_config(user_id)
-    print(f"[2fa] verify backup code check: twofa={twofa}, code={req.code}")
-    if twofa and twofa['backup_codes']:
-        codes = twofa['backup_codes']
-        print(f"[2fa] backup codes in DB: {codes}")
-        if req.code in codes:
-            codes.remove(req.code)
-            _save_2fa_config(user_id, True, codes)
-
+        stored = _pop_otp(req.temp_token)
+        if stored and stored["otp"] == req.code:
             repo = get_user_repository()
             user = repo.find_by_id(user_id)
             if not user:
@@ -368,7 +337,44 @@ def verify_2fa(req: TwoFactorVerifyRequest):
                 },
             }
 
-    raise HTTPException(status_code=401, detail="Código inválido")
+        # Verify backup code
+        twofa = _get_2fa_config(user_id)
+        print(f"[2fa] verify backup code check: twofa={twofa}, code={req.code}")
+        if twofa and twofa['backup_codes']:
+            codes = twofa['backup_codes']
+            print(f"[2fa] backup codes in DB: {codes}")
+            if req.code in codes:
+                codes.remove(req.code)
+                _save_2fa_config(user_id, True, codes)
+
+                repo = get_user_repository()
+                user = repo.find_by_id(user_id)
+                if not user:
+                    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+                token = jwt.encode({
+                    'user_id': user['user_id'],
+                    'email': user['email'],
+                    'rol': user.get('rol', 'VECINO'),
+                    'exp': datetime.now(timezone.utc) + timedelta(hours=24),
+                }, SECRET_KEY, algorithm='HS256')
+
+                return {
+                    "token": token,
+                    "user": {
+                        "user_id": user['user_id'],
+                        "email": user['email'],
+                        "rol": user.get('rol', 'VECINO'),
+                        "nombre": user.get('nombre', ''),
+                    },
+                }
+
+        raise HTTPException(status_code=401, detail="Código inválido")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[2fa] verify_2fa unexpected error: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {type(e).__name__}")
 
 
 @router.post("/admin/2fa/setup")
