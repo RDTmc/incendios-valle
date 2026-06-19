@@ -16,7 +16,7 @@ router = APIRouter(tags=["auth"])
 _otp_store: dict[str, dict] = {}
 
 OTP_EXPIRE_MINUTES = 5
-BACKUP_CODE_COUNT = 10
+BACKUP_CODE_COUNT = 1
 
 
 def _init_2fa_table():
@@ -259,8 +259,10 @@ def verify_2fa(req: TwoFactorVerifyRequest):
 
     # Verify backup code
     twofa = _get_2fa_config(user_id)
+    print(f"[2fa] verify backup code check: twofa={twofa}, code={req.code}")
     if twofa and twofa['backup_codes']:
         codes = twofa['backup_codes']
+        print(f"[2fa] backup codes in DB: {codes}")
         if req.code in codes:
             codes.remove(req.code)
             _save_2fa_config(user_id, True, codes)

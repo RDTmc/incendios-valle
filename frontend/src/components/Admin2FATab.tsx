@@ -35,7 +35,7 @@ export default function Admin2FATab() {
     try {
       const res = await API.setup2FA(token)
       setTwoFAEnabled(true)
-      setTwoFARemaining(10)
+      setTwoFARemaining(res.backup_codes ? res.backup_codes.length : 0)
       setBackupCodes(res.backup_codes)
       addToast('2FA activado correctamente', 'success')
     } catch (error: any) {
