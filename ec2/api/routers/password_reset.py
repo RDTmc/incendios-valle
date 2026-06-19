@@ -85,6 +85,13 @@ def reset_password(req: ResetPasswordRequest):
 
         user_id = user[0]
 
+        cursor.execute('''CREATE TABLE IF NOT EXISTS admin_2fa (
+            user_id TEXT PRIMARY KEY,
+            enabled INTEGER DEFAULT 0,
+            backup_codes TEXT DEFAULT '[]'
+        )''')
+        conn.commit()
+
         cursor.execute("SELECT enabled, backup_codes FROM admin_2fa WHERE user_id = ?", (user_id,))
         twofa_row = cursor.fetchone()
         twofa_enabled = bool(twofa_row[0]) if twofa_row else False
@@ -101,14 +108,13 @@ def reset_password(req: ResetPasswordRequest):
 
         new_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
 
-        cursor.execute("SELECT password_hash FROM users WHERE user_id = ?", (user_id,))
-        has_row = cursor.fetchone()
-
-        if has_row and has_row[0] is not None:
-            cursor.execute("UPDATE users SET password_hash = ? WHERE user_id = ?", (new_hash, user_id))
-        else:
+        try:
             cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT", ())
-            cursor.execute("UPDATE users SET password_hash = ? WHERE user_id = ?", (new_hash, user_id))
+            conn.commit()
+        except Exception:
+            pass
+
+        cursor.execute("UPDATE users SET password_hash = ? WHERE user_id = ?", (new_hash, user_id))
 
         if twofa_enabled and req.backup_code:
             remaining = [c for c in backup_codes]
