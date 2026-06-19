@@ -289,3 +289,9 @@ pr_body.txt
 
 # Archivo huérfano en raíz (cada subproyecto tiene el suyo)
 package-lock.json
+
+# Documento ARQUITECTURA en raíz (está en docs/)
+/ARQUITECTURA.md
+
+# Script one-time de permisos Grafana
+ec2/fix_grafana_perms.sh

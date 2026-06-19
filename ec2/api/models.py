@@ -52,3 +52,14 @@ class ExternalReportRequest(BaseModel):
 class TwoFactorVerifyRequest(BaseModel):
     temp_token: str
     code: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    otp: str
+    password: str
+    backup_code: Optional[str] = None

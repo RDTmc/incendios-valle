@@ -10,6 +10,7 @@ import Confirmacion from './pages/Confirmacion'
 import MapaFocos from './pages/MapaFocos'
 import Historial from './pages/Historial'
 import AdminPage from './pages/AdminPage'
+import ForgotPassword from './pages/ForgotPassword'
 import RedireccionQr from './pages/RedireccionQr'
 import AfichePreview from './pages/AfichePreview'
 
@@ -144,6 +145,9 @@ function App() {
           
           {/* Registro */}
           <Route path="/registro" element={<Registro />} />
+          
+          {/* Recuperar contraseña */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           
           {/* Ruta QR: redirección inteligente según SO */}
           <Route path="/qr" element={<RedireccionQr />} />

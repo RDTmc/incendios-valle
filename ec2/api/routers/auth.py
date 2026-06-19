@@ -114,19 +114,50 @@ def _clean_expired_otp():
 })
 def login(req: LoginRequest):
     try:
+        import bcrypt
+        user = None
+        from_db = "dynamodb"
+
         repo = get_user_repository()
         user = repo.find_by_email(req.email)
-        if not user:
-            raise HTTPException(status_code=401, detail="Credenciales inválidas")
-
-        from repositories.user_repository import UserRepository
-        temp_repo = UserRepository.__new__(UserRepository)
-        temp_repo.table = repo.table
-        # authenticate via the stored hash
-        import bcrypt
-        stored_hash = user.get('password_hash', '')
-        if not bcrypt.checkpw(req.password.encode(), stored_hash.encode()):
-            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        if user:
+            stored_hash = user.get('password_hash', '')
+            if not bcrypt.checkpw(req.password.encode(), stored_hash.encode()):
+                try:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT password_hash FROM users WHERE email = ?", (req.email,))
+                    row = cursor.fetchone()
+                    conn.close()
+                    if row and row[0]:
+                        if bcrypt.checkpw(req.password.encode(), row[0].encode()):
+                            from_db = "sqlite"
+                        else:
+                            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+                    else:
+                        raise HTTPException(status_code=401, detail="Credenciales inválidas")
+                except HTTPException:
+                    raise
+                except Exception:
+                    raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        else:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id, email, nombre, rol, created_at, password_hash FROM users WHERE email = ?", (req.email,))
+            row = cursor.fetchone()
+            conn.close()
+            if not row:
+                raise HTTPException(status_code=401, detail="Credenciales inválidas")
+            if not row[5] or not bcrypt.checkpw(req.password.encode(), row[5].encode()):
+                raise HTTPException(status_code=401, detail="Credenciales inválidas")
+            user = {
+                "user_id": row[0],
+                "email": row[1],
+                "nombre": row[2] or "",
+                "rol": row[3],
+                "created_at": row[4] or "",
+            }
+            from_db = "sqlite"
 
         _init_2fa_table()
         twofa = _get_2fa_config(user['user_id'])

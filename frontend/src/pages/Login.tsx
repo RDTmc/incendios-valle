@@ -233,6 +233,9 @@ export default function Login() {
                 )}
               </button>
             </div>
+            <Link to="/forgot-password" className="text-xs text-gray-500 hover:text-gray-700 underline mt-1 inline-block">
+              ¿Olvidaste tu contraseña?
+            </Link>
           </div>
 
           {error && (

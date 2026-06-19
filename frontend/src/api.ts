@@ -270,5 +270,33 @@ export const API = {
       throw new Error(err.error || err.detail || 'Error al obtener estado 2FA')
     }
     return res.json()
+  },
+
+  forgotPassword: async (email: string) => {
+    const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || 'Error al solicitar recuperación')
+    }
+    return res.json()
+  },
+
+  resetPassword: async (email: string, otp: string, password: string, backupCode?: string) => {
+    const body: Record<string, string> = { email, otp, password }
+    if (backupCode) body.backup_code = backupCode
+    const res = await fetch(`${API_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    if (!res.ok) {
+      const err = await safeJson(res)
+      throw new Error(err.error || err.detail || 'Error al restablecer contraseña')
+    }
+    return res.json()
   }
 }

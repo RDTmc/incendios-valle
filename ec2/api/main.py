@@ -25,6 +25,7 @@ from routers.reports import router as reports_router
 from routers.public import router as public_router
 from routers.alerts import router as alerts_router
 from routers.admin import router as admin_router
+from routers.password_reset import router as password_reset_router
 from dependencies import verify_token, verify_token_optional, sync_to_sqlite
 from models import SyncRequest, ExternalReportRequest
 
@@ -55,6 +56,7 @@ app.include_router(reports_router)
 app.include_router(public_router)
 app.include_router(alerts_router)
 app.include_router(admin_router)
+app.include_router(password_reset_router)
 
 
 def get_dynamodb_resource():
@@ -105,6 +107,10 @@ def init_db():
             created_at TEXT
         )
     ''')
+    try:
+        cursor.execute('''ALTER TABLE users ADD COLUMN password_hash TEXT''')
+    except Exception:
+        pass
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS reports (
             report_id TEXT PRIMARY KEY,

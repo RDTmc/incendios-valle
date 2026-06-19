@@ -31,7 +31,7 @@ def db_connection():
     conn = sqlite3.connect(DB_PATH, timeout=5)
     conn.execute("PRAGMA journal_mode=DELETE")
     cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, email TEXT UNIQUE, nombre TEXT, rol TEXT, created_at TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, email TEXT UNIQUE, nombre TEXT, rol TEXT, created_at TEXT, password_hash TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS reports (report_id TEXT PRIMARY KEY, user_id TEXT, tipo TEXT, latitud TEXT, longitud TEXT, geohash TEXT, descripcion TEXT, foto_url TEXT DEFAULT '', estado TEXT, created_at TEXT, updated_at TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS external_reports (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT DEFAULT 'CIREN', nombre TEXT, region TEXT, comuna TEXT, provincia TEXT, superficie REAL, causa TEXT, latitud REAL, longitud REAL, fh_inicio TEXT, fh_extinci TEXT, temporada TEXT, fetched_at TEXT DEFAULT (datetime('now')), UNIQUE(source, nombre, fh_inicio, latitud, longitud))")
     cursor.execute("CREATE TABLE IF NOT EXISTS incident_resources (id INTEGER PRIMARY KEY AUTOINCREMENT, report_id TEXT NOT NULL, tipo_recurso TEXT NOT NULL, cantidad INTEGER DEFAULT 1, unidad TEXT DEFAULT '', estado TEXT DEFAULT 'ASIGNADO', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), FOREIGN KEY (report_id) REFERENCES reports(report_id))")
