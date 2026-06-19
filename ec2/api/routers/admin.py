@@ -49,21 +49,18 @@ def log_audit(action: str, admin_id: str, target_id: str, details: str = ""):
 
 @router.get("/users")
 def admin_list_users(payload: dict = Depends(require_admin), search: Optional[str] = None):
-    repo = get_user_repository()
-    users = repo.find_all()
-    safe = []
-    for u in users:
-        safe.append({
-            "user_id": u.get("user_id"),
-            "email": u.get("email"),
-            "nombre": u.get("nombre", ""),
-            "rol": u.get("rol", "VECINO"),
-            "created_at": u.get("created_at", ""),
-        })
-    if search:
-        search_lower = search.lower()
-        safe = [u for u in safe if search_lower in u["email"].lower() or search_lower in u["nombre"].lower()]
-    return {"users": safe, "total": len(safe)}
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, email, nombre, rol, created_at FROM users ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        safe = [{"user_id": r[0], "email": r[1], "nombre": r[2] or "", "rol": r[3], "created_at": r[4] or ""} for r in rows]
+        if search:
+            search_lower = search.lower()
+            safe = [u for u in safe if search_lower in u["email"].lower() or search_lower in u["nombre"].lower()]
+        return {"users": safe, "total": len(safe)}
+    finally:
+        conn.close()
 
 
 @router.post("/users")
@@ -72,7 +69,10 @@ def admin_create_user(req: AdminCreateUserRequest, payload: dict = Depends(requi
     existing = repo.find_by_email(req.email)
     if existing:
         raise HTTPException(status_code=409, detail="El email ya está registrado")
-    user = repo.create(email=req.email, password=req.password, nombre=req.nombre, rol=req.rol)
+    try:
+        user = repo.create(email=req.email, password=req.password, nombre=req.nombre, rol=req.rol)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al crear usuario: No se pudo escribir en DynamoDB ({e})")
     log_audit("create_user", payload["user_id"], user["user_id"], f"Creó usuario {req.email} con rol {req.rol}")
 
     notify_new_user(
@@ -91,18 +91,47 @@ def admin_create_user(req: AdminCreateUserRequest, payload: dict = Depends(requi
 
 @router.put("/users/{user_id}")
 def admin_update_user(user_id: str, req: AdminUpdateUserRequest, payload: dict = Depends(require_admin)):
-    repo = get_user_repository()
-    repo.update(user_id, email=req.email, nombre=req.nombre, rol=req.rol)
-    log_audit("update_user", payload["user_id"], user_id, f"Actualizó usuario {user_id}")
-    return {"status": "updated"}
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        updates = []
+        params = []
+        if req.email is not None:
+            updates.append("email = ?")
+            params.append(req.email)
+        if req.nombre is not None:
+            updates.append("nombre = ?")
+            params.append(req.nombre)
+        if req.rol is not None:
+            updates.append("rol = ?")
+            params.append(req.rol)
+        if updates:
+            params.append(user_id)
+            cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE user_id = ?", params)
+            conn.commit()
+        log_audit("update_user", payload["user_id"], user_id, f"Actualizó usuario {user_id}")
+        return {"status": "updated"}
+    finally:
+        conn.close()
 
 
 @router.delete("/users/{user_id}")
 def admin_delete_user(user_id: str, payload: dict = Depends(require_admin)):
-    repo = get_user_repository()
-    repo.delete(user_id)
-    log_audit("delete_user", payload["user_id"], user_id, f"Eliminó usuario {user_id}")
-    return {"status": "deleted"}
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+        conn.commit()
+        log_audit("delete_user", payload["user_id"], user_id, f"Eliminó usuario {user_id}")
+        return {"status": "deleted"}
+    finally:
+        conn.close()
 
 
 @router.get("/audit-log")

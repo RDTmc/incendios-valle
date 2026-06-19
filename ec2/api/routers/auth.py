@@ -154,10 +154,22 @@ def login(req: LoginRequest):
                 "temp_token": temp_token,
             }
 
+        role = user.get('rol', 'VECINO')
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT rol FROM users WHERE user_id = ?", (user['user_id'],))
+            row = cursor.fetchone()
+            if row:
+                role = row[0]
+            conn.close()
+        except Exception:
+            pass
+
         token = jwt.encode({
             'user_id': user['user_id'],
             'email': user['email'],
-            'rol': user.get('rol', 'VECINO'),
+            'rol': role,
             'exp': datetime.now(timezone.utc) + timedelta(hours=24),
         }, SECRET_KEY, algorithm='HS256')
 
@@ -166,7 +178,7 @@ def login(req: LoginRequest):
             "user": {
                 "user_id": user['user_id'],
                 "email": user['email'],
-                "rol": user.get('rol', 'VECINO'),
+                "rol": role,
                 "nombre": user.get('nombre', ''),
             },
         }
