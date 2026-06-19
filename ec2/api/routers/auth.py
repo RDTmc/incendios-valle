@@ -12,11 +12,92 @@ from datetime import datetime, timezone, timedelta
 
 router = APIRouter(tags=["auth"])
 
-# In-memory OTP store: temp_token -> {"otp": str, "user_id": str, "expires_at": datetime}
-_otp_store: dict[str, dict] = {}
-
 OTP_EXPIRE_MINUTES = 5
 BACKUP_CODE_COUNT = 1
+
+
+def _init_otp_table():
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.execute("PRAGMA journal_mode=WAL")
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS otp_store (
+                temp_token TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                otp TEXT NOT NULL,
+                expires_at TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        print(f"[otp] table init error: {e}")
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _clean_expired_otp():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        now = datetime.now(timezone.utc).isoformat()
+        cursor.execute("DELETE FROM otp_store WHERE expires_at < ?", (now,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[otp] clean error: {e}")
+
+
+def _save_otp(temp_token: str, user_id: str, otp: str, expires_at: datetime):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO otp_store (temp_token, user_id, otp, expires_at)
+            VALUES (?, ?, ?, ?)
+        """, (temp_token, user_id, otp, expires_at.isoformat()))
+        conn.commit()
+    except Exception as e:
+        print(f"[otp] save error: {e}")
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _pop_otp(temp_token: str) -> dict | None:
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, otp, expires_at FROM otp_store WHERE temp_token = ?", (temp_token,))
+        row = cursor.fetchone()
+        if row:
+            cursor.execute("DELETE FROM otp_store WHERE temp_token = ?", (temp_token,))
+            conn.commit()
+            return {
+                "user_id": row[0],
+                "otp": row[1],
+                "expires_at": datetime.fromisoformat(row[2]),
+            }
+        return None
+    except Exception as e:
+        print(f"[otp] pop error: {e}")
+        return None
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def _init_2fa_table():
@@ -160,6 +241,7 @@ def login(req: LoginRequest):
             from_db = "sqlite"
 
         _init_2fa_table()
+        _init_otp_table()
         twofa = _get_2fa_config(user['user_id'])
 
         if twofa and twofa['enabled']:
@@ -172,11 +254,7 @@ def login(req: LoginRequest):
                 'exp': expires_at,
             }, SECRET_KEY, algorithm='HS256')
 
-            _otp_store[temp_token] = {
-                "otp": otp,
-                "user_id": user['user_id'],
-                "expires_at": expires_at,
-            }
+            _save_otp(temp_token, user['user_id'], otp, expires_at)
 
             send_otp_email(user.get('email', ''), otp)
 
@@ -223,6 +301,7 @@ def login(req: LoginRequest):
 @router.post("/auth/2fa/verify")
 def verify_2fa(req: TwoFactorVerifyRequest):
     _clean_expired_otp()
+    _init_otp_table()
     try:
         temp_payload = jwt.decode(req.temp_token, SECRET_KEY, algorithms=['HS256'])
         if temp_payload.get('purpose') != '2fa':
@@ -233,7 +312,7 @@ def verify_2fa(req: TwoFactorVerifyRequest):
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
-    stored = _otp_store.pop(req.temp_token, None)
+    stored = _pop_otp(req.temp_token)
     if stored and stored["otp"] == req.code:
         repo = get_user_repository()
         user = repo.find_by_id(user_id)
