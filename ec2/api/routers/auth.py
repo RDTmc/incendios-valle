@@ -183,13 +183,6 @@ def _generate_otp() -> str:
     return f"{random.randint(0, 999999):06d}"
 
 
-def _clean_expired_otp():
-    now = datetime.now(timezone.utc)
-    expired = [k for k, v in _otp_store.items() if v.get("expires_at", now) < now]
-    for k in expired:
-        _otp_store.pop(k, None)
-
-
 @router.post("/login", responses={
     500: {"description": "Login error"},
 })
