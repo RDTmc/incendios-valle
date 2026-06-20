@@ -152,6 +152,18 @@ def login(req: LoginRequest):
         _init_2fa_table()
         twofa = _get_2fa_config(user['user_id'])
 
+        # Sync DynamoDB role to SQLite (critical: SQLite role is authoritative when 2FA is active)
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            dyn_role = user.get('rol', '')
+            if dyn_role:
+                cursor.execute("UPDATE users SET rol = ? WHERE user_id = ? AND rol != ?", (dyn_role, user['user_id'], dyn_role))
+                conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
         if twofa and twofa['enabled']:
             otp = _generate_otp()
             expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
@@ -225,10 +237,22 @@ def verify_2fa(req: TwoFactorVerifyRequest):
             if not user:
                 raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
+            role = user.get('rol', 'VECINO')
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT rol FROM users WHERE user_id = ?", (user['user_id'],))
+                row = cursor.fetchone()
+                if row:
+                    role = row[0]
+                conn.close()
+            except Exception:
+                pass
+
             token = jwt.encode({
                 'user_id': user['user_id'],
                 'email': user['email'],
-                'rol': user.get('rol', 'VECINO'),
+                'rol': role,
                 'exp': datetime.now(timezone.utc) + timedelta(hours=24),
             }, SECRET_KEY, algorithm='HS256')
 
@@ -237,7 +261,7 @@ def verify_2fa(req: TwoFactorVerifyRequest):
                 "user": {
                     "user_id": user['user_id'],
                     "email": user['email'],
-                    "rol": user.get('rol', 'VECINO'),
+                    "rol": role,
                     "nombre": user.get('nombre', ''),
                 },
             }
@@ -257,10 +281,22 @@ def verify_2fa(req: TwoFactorVerifyRequest):
                 if not user:
                     raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
+                role = user.get('rol', 'VECINO')
+                try:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT rol FROM users WHERE user_id = ?", (user['user_id'],))
+                    row = cursor.fetchone()
+                    if row:
+                        role = row[0]
+                    conn.close()
+                except Exception:
+                    pass
+
                 token = jwt.encode({
                     'user_id': user['user_id'],
                     'email': user['email'],
-                    'rol': user.get('rol', 'VECINO'),
+                    'rol': role,
                     'exp': datetime.now(timezone.utc) + timedelta(hours=24),
                 }, SECRET_KEY, algorithm='HS256')
 
@@ -269,7 +305,7 @@ def verify_2fa(req: TwoFactorVerifyRequest):
                     "user": {
                         "user_id": user['user_id'],
                         "email": user['email'],
-                        "rol": user.get('rol', 'VECINO'),
+                        "rol": role,
                         "nombre": user.get('nombre', ''),
                     },
                 }
