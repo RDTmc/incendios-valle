@@ -152,18 +152,6 @@ def login(req: LoginRequest):
         _init_2fa_table()
         twofa = _get_2fa_config(user['user_id'])
 
-        # Sync DynamoDB role to SQLite (critical: SQLite role is authoritative when 2FA is active)
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            dyn_role = user.get('rol', '')
-            if dyn_role:
-                cursor.execute("UPDATE users SET rol = ? WHERE user_id = ? AND rol != ?", (dyn_role, user['user_id'], dyn_role))
-                conn.commit()
-            conn.close()
-        except Exception:
-            pass
-
         if twofa and twofa['enabled']:
             otp = _generate_otp()
             expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
