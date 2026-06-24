@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 class TestSeed:
     @patch('seed.boto3.resource')
+    @pytest.mark.fast
     def test_seed_creates_admin_user(self, mock_boto_resource):
         mock_users_table = MagicMock()
         mock_reports_table = MagicMock()
@@ -37,6 +38,7 @@ class TestSeed:
         assert vecino_call[1]['Item']['rol'] == 'VECINO'
 
     @patch('seed.boto3.resource')
+    @pytest.mark.fast
     def test_seed_creates_test_reports(self, mock_boto_resource):
         mock_users_table = MagicMock()
         mock_reports_table = MagicMock()
@@ -61,6 +63,7 @@ class TestSeed:
         assert 'PENDIENTE' in estados
 
     @patch('seed.boto3.resource')
+    @pytest.mark.fast
     def test_seed_handles_dynamodb_error(self, mock_boto_resource):
         mock_users_table = MagicMock()
         mock_users_table.put_item.side_effect = Exception("DynamoDB error")
@@ -80,6 +83,7 @@ class TestSeed:
 
 class TestSeedBcrypt:
     @patch('seed_bcrypt.boto3.resource')
+    @pytest.mark.fast
     def test_seed_bcrypt_creates_admin_with_fixed_id(self, mock_boto_resource):
         mock_users_table = MagicMock()
         mock_reports_table = MagicMock()
@@ -101,12 +105,14 @@ class TestSeedBcrypt:
         assert admin_call[1]['Item']['rol'] == 'ADMIN'
 
     @patch('seed_bcrypt.boto3.resource')
+    @pytest.mark.fast
     def test_encode_geohash(self, mock_boto_resource):
         import seed_bcrypt
         gh = seed_bcrypt.encode_geohash(-33.45, -70.66)
         assert gh == '-33450--70660'
 
     @patch('seed_bcrypt.boto3.resource')
+    @pytest.mark.fast
     def test_seed_bcrypt_handles_error(self, mock_boto_resource):
         mock_users_table = MagicMock()
         mock_users_table.put_item.side_effect = Exception("DB error")

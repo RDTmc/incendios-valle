@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 class TestS3Service:
     @patch('s3_service.boto3.client')
+    @pytest.mark.fast
     def test_get_s3_client(self, mock_boto_client):
         from s3_service import get_s3_client
         result = get_s3_client()
@@ -11,6 +12,7 @@ class TestS3Service:
         assert result == mock_boto_client.return_value
 
     @patch('s3_service.boto3.client')
+    @pytest.mark.fast
     def test_upload_image_jpeg(self, mock_boto_client):
         mock_s3 = MagicMock()
         mock_s3.generate_presigned_url.return_value = "https://test-bucket.s3.amazonaws.com/reportes/test.jpg"
@@ -28,6 +30,7 @@ class TestS3Service:
         assert result == "https://test-bucket.s3.amazonaws.com/reportes/test.jpg"
 
     @patch('s3_service.boto3.client')
+    @pytest.mark.fast
     def test_upload_image_png(self, mock_boto_client):
         mock_s3 = MagicMock()
         mock_s3.generate_presigned_url.return_value = "https://test-bucket.s3.amazonaws.com/reportes/test.png"
@@ -43,6 +46,7 @@ class TestS3Service:
 
 class TestLambdaService:
     @patch('lambda_service.boto3.client')
+    @pytest.mark.fast
     def test_get_lambda_client(self, mock_boto_client):
         from lambda_service import get_lambda_client
         result = get_lambda_client()
@@ -50,6 +54,7 @@ class TestLambdaService:
         assert result == mock_boto_client.return_value
 
     @patch('lambda_service.boto3.client')
+    @pytest.mark.fast
     def test_upload_image_success(self, mock_boto_client):
         mock_lambda = MagicMock()
         mock_payload = MagicMock()
@@ -64,6 +69,7 @@ class TestLambdaService:
         assert result == "https://test.url/photo.jpg"
 
     @patch('lambda_service.boto3.client')
+    @pytest.mark.fast
     def test_upload_image_failure(self, mock_boto_client):
         mock_lambda = MagicMock()
         mock_payload = MagicMock()

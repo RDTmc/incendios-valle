@@ -6,12 +6,14 @@ from pathlib import Path
 
 
 class TestMainCore:
+    @pytest.mark.fast
     def test_encode_geohash(self):
         from main import encode_geohash
         geohash = encode_geohash(-33.45, -70.67)
         assert isinstance(geohash, str)
         assert "-" in geohash
 
+    @pytest.mark.fast
     def test_get_dashboard_stats_with_data(self, client, mock_dynamodb, db_connection):
         import jwt
         import datetime
@@ -33,6 +35,7 @@ class TestMainCore:
         assert "by_estado" in data
         assert "by_tipo" in data
 
+    @pytest.mark.fast
     def test_focos_activos_with_valid_data(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.return_value = {
@@ -50,6 +53,7 @@ class TestMainCore:
         assert data[0]["lng"] == -70.67
         assert data[0]["foto_url"] == "https://example.com/foto.jpg"
 
+    @pytest.mark.fast
     def test_focos_activos_no_data(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.return_value = {'Items': []}
@@ -57,6 +61,7 @@ class TestMainCore:
         assert response.status_code == 200
         assert response.json() == []
 
+    @pytest.mark.fast
     def test_backup_sqlite_to_s3(self):
         from main import backup_sqlite_to_s3
         with patch('subprocess.run') as mock_run:
@@ -64,6 +69,7 @@ class TestMainCore:
             backup_sqlite_to_s3()
             assert mock_run.call_count == 2
 
+    @pytest.mark.fast
     def test_trigger_success(self, client):
         with patch('main.fetch_ciren_data') as mock_fetch:
             mock_fetch.return_value = None
@@ -75,6 +81,7 @@ class TestMainCore:
             data = response.json()
             assert data["status"] == "triggered"
 
+    @pytest.mark.fast
     def test_restore_sqlite_from_s3_when_empty(self, client, db_connection):
         from main import restore_sqlite_from_s3
         cursor = db_connection.cursor()
@@ -87,6 +94,7 @@ class TestMainCore:
             restore_sqlite_from_s3()
             mock_run.assert_called_once()
 
+    @pytest.mark.fast
     def test_restore_sqlite_from_s3_when_has_data(self, client, db_connection):
         from main import restore_sqlite_from_s3
         cursor = db_connection.cursor()
@@ -96,6 +104,7 @@ class TestMainCore:
             restore_sqlite_from_s3()
             mock_run.assert_not_called()
 
+    @pytest.mark.fast
     def test_export_seed_empty(self, client, db_connection):
         from main import export_external_reports_seed
         cursor = db_connection.cursor()
@@ -105,6 +114,7 @@ class TestMainCore:
             export_external_reports_seed()
             mock_file.assert_not_called()
 
+    @pytest.mark.fast
     def test_load_seed_no_file(self):
         from main import load_seed_if_empty
         with patch('os.path.exists') as mock_exists:
@@ -112,6 +122,7 @@ class TestMainCore:
             load_seed_if_empty()
             mock_exists.assert_called_once()
 
+    @pytest.mark.fast
     def test_load_seed_file_with_data_already(self, client, db_connection):
         from main import load_seed_if_empty
         cursor = db_connection.cursor()
@@ -122,6 +133,7 @@ class TestMainCore:
             with patch('builtins.open', mock_open(read_data='[]')):
                 load_seed_if_empty()
 
+    @pytest.mark.fast
     def test_conaf_duplicate_returns_inserted(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Dup', -33.45, -70.67, '2026-01-01')")
@@ -239,6 +251,7 @@ class TestMainBackground:
 
 
 class TestMainEdgeCases:
+    @pytest.mark.fast
     def test_dashboard_stats_db_error(self):
         from main import app
         from fastapi.testclient import TestClient
@@ -253,6 +266,7 @@ class TestMainEdgeCases:
             response = tc.get("/dashboard/stats", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 500
 
+    @pytest.mark.fast
     def test_focos_activos_skips_bad_coords(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.return_value = {
@@ -271,37 +285,44 @@ class TestMainEdgeCases:
         assert len(data) == 1
         assert data[0]["id"] == "r3"
 
+    @pytest.mark.fast
     def test_focos_activos_db_error(self, client):
         with patch('main.get_report_repository', side_effect=Exception("DynamoDB down")):
             response = client.get("/focos-activos")
             assert response.status_code == 500
 
+    @pytest.mark.fast
     def test_backup_error_silent(self):
         from main import backup_sqlite_to_s3
         with patch('subprocess.run', side_effect=Exception("aws not found")):
             backup_sqlite_to_s3()
 
+    @pytest.mark.fast
     def test_receive_external_report_invalid_token(self, client):
         response = client.post("/v1/external-reports/conaf", json={
             "source": "CONAF", "nombre": "Test", "latitud": -33.45, "longitud": -70.67
         }, headers={"Authorization": "Bearer wrong-token"})
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_receive_external_report_no_auth_header(self, client):
         response = client.post("/v1/external-reports/conaf", json={
             "source": "CONAF", "nombre": "Test", "latitud": -33.45, "longitud": -70.67
         })
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_trigger_external_fetch_invalid_token(self, client):
         response = client.post("/v1/external-reports/trigger",
                                headers={"Authorization": "Bearer wrong-token"})
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_trigger_external_fetch_no_auth(self, client):
         response = client.post("/v1/external-reports/trigger")
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_upload_report_image_http_exception_passthrough(self, client, mock_lambda_service):
         from main import upload_report_image
         mock_file = MagicMock()
@@ -309,6 +330,7 @@ class TestMainEdgeCases:
         with pytest.raises(Exception):
             upload_report_image(file=mock_file)
 
+    @pytest.mark.fast
     def test_seed_resources_skips_when_data_exists(self, db_connection):
         from main import seed_resources
         cursor = db_connection.cursor()
@@ -318,6 +340,7 @@ class TestMainEdgeCases:
         cursor.execute("SELECT COUNT(*) FROM incident_resources")
         assert cursor.fetchone()[0] == 1
 
+    @pytest.mark.fast
     def test_export_seed_with_data(self, client, db_connection):
         from main import export_external_reports_seed
         cursor = db_connection.cursor()
@@ -330,6 +353,7 @@ class TestMainEdgeCases:
             written = ''.join(call.args[0] for call in handle.write.call_args_list)
             assert 'Fire1' in written
 
+    @pytest.mark.fast
     def test_export_seed_error_silent(self, client, db_connection):
         from main import export_external_reports_seed
         cursor = db_connection.cursor()
@@ -338,6 +362,7 @@ class TestMainEdgeCases:
         with patch('builtins.open', side_effect=PermissionError("Read-only")):
             export_external_reports_seed()
 
+    @pytest.mark.fast
     def test_load_seed_with_data(self, client, db_connection):
         from main import load_seed_if_empty
         seed_data = json.dumps([{
@@ -353,6 +378,7 @@ class TestMainEdgeCases:
         cursor.execute("SELECT nombre FROM external_reports")
         assert cursor.fetchone()[0] == "Seed Fire"
 
+    @pytest.mark.fast
     def test_load_seed_file_corrupt(self, client, db_connection):
         from main import load_seed_if_empty
         with patch('os.path.exists', return_value=True), \

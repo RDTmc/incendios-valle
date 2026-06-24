@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch
 
 class TestPasswordReset:
+    @pytest.mark.fast
     def test_forgot_password_with_existing_email_sends_otp(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -21,6 +22,7 @@ class TestPasswordReset:
         assert email_arg == "reset@test.cl"
         assert len(otp_arg) == 6
 
+    @pytest.mark.fast
     def test_forgot_password_nonexistent_email_returns_404(self, client):
         with patch('routers.password_reset.send_otp_email'):
             response = client.post("/auth/forgot-password", json={
@@ -30,6 +32,7 @@ class TestPasswordReset:
         assert response.status_code == 404
         assert "Email no registrado" in response.json()["detail"]
 
+    @pytest.mark.fast
     def test_reset_password_with_valid_otp_updates_password(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -60,6 +63,7 @@ class TestPasswordReset:
         assert row[0] is not None
         assert len(row[0]) > 20
 
+    @pytest.mark.fast
     def test_reset_password_with_invalid_otp_returns_400(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",

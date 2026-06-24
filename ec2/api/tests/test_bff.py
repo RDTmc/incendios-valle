@@ -3,6 +3,7 @@ import os
 
 
 class TestBFF:
+    @pytest.mark.fast
     def test_bff_dashboard(self, client):
         response = client.get("/bff/dashboard")
         assert response.status_code == 200
@@ -14,6 +15,7 @@ class TestBFF:
         assert data["stats"]["total_reportes"] >= 0
         assert data["hotspots"]["ciren_records"] >= 0
 
+    @pytest.mark.fast
     def test_bff_dashboard_with_data(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT INTO reports (report_id, user_id, tipo, estado, latitud, longitud, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -35,6 +37,7 @@ class TestBFF:
         assert data["weather"]["temperature"] == 25.0
         assert data["hotspots"]["ciren_records"] >= 0
 
+    @pytest.mark.fast
     def test_bff_dashboard_no_data(self, client):
         response = client.get("/bff/dashboard")
         assert response.status_code == 200
@@ -42,6 +45,7 @@ class TestBFF:
         assert data["stats"]["total_reportes"] == 0
         assert data["weather"] == {}
 
+    @pytest.mark.fast
     def test_bff_dashboard_focos(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.return_value = {
@@ -58,6 +62,7 @@ class TestBFF:
         assert response.status_code == 200
         assert len(response.json()["focos"]) == 1
 
+    @pytest.mark.fast
     def test_bff_dashboard_db_error(self, client):
         from unittest.mock import patch
         with patch('main.get_db_connection', side_effect=Exception("DB crash")):

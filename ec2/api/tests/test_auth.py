@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 VALID_HASH = "$2b$04$KmVxaFOSh3IJfk5eqiIQoOe6rhiFpEiFrGLNhK5Zbk5FGWiDmTPgG"
 
 class TestAuth:
+    @pytest.mark.fast
     def test_login_success(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
@@ -26,6 +27,7 @@ class TestAuth:
         assert data["user"]["email"] == "test@example.com"
         assert data["user"]["rol"] == "VECINO"
 
+    @pytest.mark.fast
     def test_login_invalid_credentials(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {'Items': []}
@@ -36,6 +38,7 @@ class TestAuth:
         assert response.status_code == 401
         assert "Credenciales inválidas" in response.json()["detail"]
 
+    @pytest.mark.fast
     def test_login_missing_fields(self, client):
         response = client.post("/login", json={"email": "test@example.com"})
         assert response.status_code == 422
@@ -43,6 +46,7 @@ class TestAuth:
         response = client.post("/login", json={"password": "testpass"})
         assert response.status_code == 422
 
+    @pytest.mark.fast
     def test_register_success(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {'Items': []}
@@ -59,6 +63,7 @@ class TestAuth:
         assert data["user"]["email"] == "newuser@example.com"
         assert data["user"]["nombre"] == "New User"
 
+    @pytest.mark.fast
     def test_register_duplicate_email(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
@@ -72,6 +77,7 @@ class TestAuth:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
+    @pytest.mark.fast
     def test_token_generation(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
@@ -92,6 +98,7 @@ class TestAuth:
         token = data["token"]
         assert len(token.split(".")) == 3
 
+    @pytest.mark.fast
     def test_verify_token_valid(self, client):
         import jwt
         import datetime
@@ -107,23 +114,27 @@ class TestAuth:
         })
         assert response.status_code == 200
 
+    @pytest.mark.fast
     def test_verify_token_invalid(self, client):
         response = client.get("/dashboard/stats", headers={
             "Authorization": "Bearer invalid.token.here"
         })
         assert response.status_code == 401
 
+    @pytest.mark.fast
     def test_verify_token_missing(self, client):
         response = client.get("/dashboard/stats")
         assert response.status_code == 401
         assert "Token requerido" in response.json()["detail"]
 
+    @pytest.mark.fast
     def test_login_db_error(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.side_effect = Exception("DynamoDB error")
         response = client.post("/login", json={"email": "test@test.cl", "password": "test123"})
         assert response.status_code == 500
 
+    @pytest.mark.fast
     def test_register_db_error(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.side_effect = Exception("DynamoDB error")
@@ -132,6 +143,7 @@ class TestAuth:
 
     # ── B1: Login + 2FA OTP en JWT ──────────────────────────────────────
 
+    @pytest.mark.fast
     def test_login_with_2fa_returns_temp_token(self, client, mock_dynamodb, db_connection):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
@@ -165,6 +177,7 @@ class TestAuth:
         assert email_arg == "admin2fa@test.cl"
         assert len(otp_arg) == 6
 
+    @pytest.mark.fast
     def test_verify_2fa_with_valid_otp_returns_jwt(self, client, mock_dynamodb, db_connection):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
@@ -213,6 +226,7 @@ class TestAuth:
         assert data["user"]["rol"] == "ADMIN"
         assert data["user"]["email"] == "admin2fa@test.cl"
 
+    @pytest.mark.fast
     def test_verify_2fa_with_invalid_otp_returns_401(self, client, mock_dynamodb, db_connection):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {

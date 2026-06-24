@@ -4,6 +4,7 @@ os.environ['JWT_SECRET'] = 'test-secret-key'
 os.environ['DB_PATH'] = '/tmp/test_incendios.db'
 
 class TestDependencies:
+    @pytest.mark.fast
     def test_sync_users_insert(self, client, db_connection):
         response = client.post("/sync", json={
             "table": "users",
@@ -13,6 +14,7 @@ class TestDependencies:
         assert response.status_code == 200
         assert response.json()["result"] == "user synced"
 
+    @pytest.mark.fast
     def test_sync_reports_insert(self, client, db_connection):
         response = client.post("/sync", json={
             "table": "reports",
@@ -22,6 +24,7 @@ class TestDependencies:
         assert response.status_code == 200
         assert response.json()["result"] == "report synced"
 
+    @pytest.mark.fast
     def test_sync_reports_modify(self, client, db_connection):
         response = client.post("/sync", json={
             "table": "reports",
@@ -31,6 +34,7 @@ class TestDependencies:
         assert response.status_code == 200
         assert response.json()["result"] == "report synced"
 
+    @pytest.mark.fast
     def test_sync_unknown_table(self, client, db_connection):
         response = client.post("/sync", json={
             "table": "unknown_table",
@@ -40,6 +44,7 @@ class TestDependencies:
         assert response.status_code == 200
         assert response.json()["result"] == "unknown table"
 
+    @pytest.mark.fast
     def test_sync_invalid_token_403(self, client):
         response = client.post("/sync", json={
             "table": "users",
@@ -48,6 +53,7 @@ class TestDependencies:
         }, headers={"x-sync-token": "wrong-token"})
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_sync_no_token_422(self, client):
         response = client.post("/sync", json={
             "table": "users", "operation": "INSERT", "data": {}

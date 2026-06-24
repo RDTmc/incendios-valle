@@ -1,6 +1,7 @@
 import pytest
 
 class TestPublicEndpoints:
+    @pytest.mark.fast
     def test_focos_activos(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.return_value = {
@@ -16,6 +17,7 @@ class TestPublicEndpoints:
         assert len(data) > 0
         assert data[0]["lat"] == -33.45
 
+    @pytest.mark.fast
     def test_focos_activos_geofence(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.return_value = {
@@ -29,6 +31,7 @@ class TestPublicEndpoints:
         data = response.json()
         assert len(data) == 0
 
+    @pytest.mark.fast
     def test_public_resources(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT INTO reports (report_id, tipo, estado, created_at) VALUES ('r1', 'FORESTAL', 'ACTIVO', datetime('now'))")
@@ -40,6 +43,7 @@ class TestPublicEndpoints:
         assert len(data) >= 1
         assert data[0]["recurso"] == "BOMBEROS"
 
+    @pytest.mark.fast
     def test_sync_endpoint_valid_token(self, client):
         response = client.post("/sync", json={
             "table": "users",
@@ -49,6 +53,7 @@ class TestPublicEndpoints:
         assert response.status_code == 200
         assert response.json()["status"] == "synced"
 
+    @pytest.mark.fast
     def test_sync_endpoint_invalid_token(self, client):
         response = client.post("/sync", json={
             "table": "users",
@@ -57,12 +62,14 @@ class TestPublicEndpoints:
         }, headers={"x-sync-token": "wrong-token"})
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_sync_endpoint_no_token(self, client):
         response = client.post("/sync", json={
             "table": "users", "operation": "INSERT", "data": {}
         })
         assert response.status_code == 422
 
+    @pytest.mark.fast
     def test_public_external_reports(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, region, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Test Fire', 'Metropolitana', -33.45, -70.67, '2026-01-01')")
@@ -72,6 +79,7 @@ class TestPublicEndpoints:
         data = response.json()
         assert isinstance(data, list)
 
+    @pytest.mark.fast
     def test_public_firms_hotspots(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO firms_hotspots (latitude, longitude, brightness, acq_date, acq_time, satellite) VALUES (-33.45, -70.67, 350.5, '2026-06-01', 1200, 'NPP')")
@@ -81,6 +89,7 @@ class TestPublicEndpoints:
         data = response.json()
         assert isinstance(data, list)
 
+    @pytest.mark.fast
     def test_public_cluster_stats(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r1', '-33.4500', '-70.6700', datetime('now'))")
@@ -92,6 +101,7 @@ class TestPublicEndpoints:
         data = response.json()
         assert data["clusters"] >= 1
 
+    @pytest.mark.fast
     def test_public_cluster_stats_bad_coords(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r-bad', 'not-a-number', 'also-bad', datetime('now'))")
@@ -102,6 +112,7 @@ class TestPublicEndpoints:
         data = response.json()
         assert isinstance(data["clusters"], int)
 
+    @pytest.mark.fast
     def test_public_stale_pendientes(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, created_at) VALUES ('r-stale', 'PENDIENTE', datetime('now', '-2 hours'))")
@@ -113,6 +124,7 @@ class TestPublicEndpoints:
         assert len(data) >= 1
         assert any(r["report_id"] == "r-stale" for r in data)
 
+    @pytest.mark.fast
     def test_public_external_reports_filter_source(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Fire 1', -33.45, -70.67, '2026-01-01')")
@@ -124,6 +136,7 @@ class TestPublicEndpoints:
         assert all(r["source"] == "CIREN" for r in data)
         assert len(data) == 1
 
+    @pytest.mark.fast
     def test_public_external_reports_sources(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud) VALUES ('CIREN', 'Fire 1', -33.45, -70.67)")
@@ -134,6 +147,7 @@ class TestPublicEndpoints:
         assert isinstance(data, list)
         assert any(s["source"] == "CIREN" for s in data)
 
+    @pytest.mark.fast
     def test_public_external_reports_sources_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -141,6 +155,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_weather_latest(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO weather_readings (lat, lon, region, temperature, humidity, wind_speed) VALUES (-33.05, -71.62, 'Valparaíso', 25.5, 60, 12.3)")
@@ -152,6 +167,7 @@ class TestPublicEndpoints:
         if data:
             assert "temperature" in data[0]
 
+    @pytest.mark.fast
     def test_public_weather_history(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO weather_readings (lat, lon, region, temperature, humidity, wind_speed) VALUES (-33.05, -71.62, 'Valparaíso', 25.5, 60, 12.3)")
@@ -163,11 +179,13 @@ class TestPublicEndpoints:
         if data:
             assert "temperature" in data[0]
 
+    @pytest.mark.fast
     def test_public_weather_history_default_limit(self, client, db_connection):
         response = client.get("/public/weather/history")
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
+    @pytest.mark.fast
     def test_public_dashboard_stats_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -175,6 +193,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_map_coordinates_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -182,6 +201,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_external_reports_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -189,6 +209,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_cluster_stats_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -196,6 +217,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"clusters": 0, "pares": [], "error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_stale_pendientes_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -203,6 +225,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_weather_latest_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -210,6 +233,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_weather_history_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -217,6 +241,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_firms_hotspots_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -224,6 +249,7 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_public_resources_db_error(self, client):
         from unittest.mock import patch
         with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
@@ -231,16 +257,19 @@ class TestPublicEndpoints:
             assert response.status_code == 200
             assert response.json() == {"error": "Internal server error"}
 
+    @pytest.mark.fast
     def test_v1_trigger_invalid_token(self, client):
         response = client.post("/v1/external-reports/trigger", headers={"Authorization": "Bearer wrong-token"})
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_v1_conaf_invalid_token(self, client):
         response = client.post("/v1/external-reports/conaf", json={
             "source": "CIREN", "nombre": "Test", "latitud": -33.45, "longitud": -70.67
         }, headers={"Authorization": "Bearer wrong-token"})
         assert response.status_code == 403
 
+    @pytest.mark.fast
     def test_v1_conaf_success(self, client, db_connection):
         response = client.post("/v1/external-reports/conaf", json={
             "source": "CIREN", "nombre": "Test Fire CONAF", "region": "Metropolitana",
@@ -250,6 +279,7 @@ class TestPublicEndpoints:
         data = response.json()
         assert data["status"] == "inserted"
 
+    @pytest.mark.fast
     def test_v1_conaf_duplicate(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Dup Fire', -33.45, -70.67, '2026-01-01')")

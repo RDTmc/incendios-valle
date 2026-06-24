@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 
 class TestReports:
+    @pytest.mark.fast
     def test_create_report_authenticated(self, client, mock_dynamodb, db_connection):
         _, mock_reports = mock_dynamodb
         mock_reports.put_item.return_value = {}
@@ -25,6 +26,7 @@ class TestReports:
         assert data["estado"] == "PENDIENTE"
         assert "report_id" in data
 
+    @pytest.mark.fast
     def test_create_report_anonymous(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.put_item.return_value = {}
@@ -39,6 +41,7 @@ class TestReports:
         data = response.json()
         assert data["estado"] == "PENDIENTE"
 
+    @pytest.mark.fast
     def test_create_report_anonymous_no_device_id(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         response = client.post("/reportar", json={
@@ -50,6 +53,7 @@ class TestReports:
         assert response.status_code == 400
         assert "device_id" in response.json()["detail"]
 
+    @pytest.mark.fast
     def test_list_reports_authenticated(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.return_value = {
@@ -75,6 +79,7 @@ class TestReports:
         assert len(data) > 0
         assert data[0]["report_id"] == "r1"
 
+    @pytest.mark.fast
     def test_get_report_by_id(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.get_item.return_value = {
@@ -93,6 +98,7 @@ class TestReports:
         assert response.status_code == 200
         assert response.json()["report_id"] == "r1"
 
+    @pytest.mark.fast
     def test_get_report_not_found(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.get_item.return_value = {}
@@ -107,6 +113,7 @@ class TestReports:
         })
         assert response.status_code == 404
 
+    @pytest.mark.fast
     def test_update_report_status(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.update_item.return_value = {}
@@ -125,6 +132,7 @@ class TestReports:
         assert response.status_code == 200
         assert response.json()["estado"] == "ACTIVO"
 
+    @pytest.mark.fast
     def test_public_dashboard_stats(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, tipo, created_at) VALUES ('r1', 'ACTIVO', 'FORESTAL', datetime('now'))")
@@ -141,6 +149,7 @@ class TestReports:
         assert data["estado_pendiente"] == 1
         assert data["estado_extinguido"] == 1
 
+    @pytest.mark.fast
     def test_public_map_coordinates(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, tipo, estado, created_at) VALUES ('r1', '-33.45', '-70.67', 'FORESTAL', 'ACTIVO', datetime('now'))")
@@ -157,6 +166,7 @@ class TestReports:
         assert 3 in intensidades
         assert 2 in intensidades
 
+    @pytest.mark.fast
     def test_dashboard_stats_authenticated(self, client, db_connection):
         import jwt, datetime
         from datetime import timezone
@@ -173,10 +183,12 @@ class TestReports:
         assert "by_estado" in data
         assert "by_tipo" in data
 
+    @pytest.mark.fast
     def test_dashboard_stats_unauthorized(self, client):
         response = client.get("/dashboard/stats")
         assert response.status_code == 401
 
+    @pytest.mark.fast
     def test_sync_reports_table(self, client, db_connection):
         cursor = db_connection.cursor()
         cursor.execute("SELECT COUNT(*) FROM reports")
@@ -194,6 +206,7 @@ class TestReports:
         after = cursor.fetchone()[0]
         assert after == before + 1
 
+    @pytest.mark.fast
     def test_sync_unknown_table(self, client):
         response = client.post("/sync", json={
             "table": "unknown",
@@ -203,6 +216,7 @@ class TestReports:
         assert response.status_code == 200
         assert response.json()["result"] == "unknown table"
 
+    @pytest.mark.fast
     def test_list_reports_by_user(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.query.return_value = {
@@ -225,6 +239,7 @@ class TestReports:
         assert len(data) > 0
         assert data[0]["report_id"] == "u1-r1"
 
+    @pytest.mark.fast
     def test_create_report_db_error(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.put_item.side_effect = Exception("DynamoDB error")
@@ -240,6 +255,7 @@ class TestReports:
         }, headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 500
 
+    @pytest.mark.fast
     def test_list_reports_db_error(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.scan.side_effect = Exception("DynamoDB error")
@@ -252,6 +268,7 @@ class TestReports:
         response = client.get("/reports", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 500
 
+    @pytest.mark.fast
     def test_get_report_db_error(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.get_item.side_effect = Exception("DynamoDB error")
@@ -266,6 +283,7 @@ class TestReports:
 
     # ── B6: Admin cambiar estado de reporte (vía PUT /admin/reports/{id}/status) ──
 
+    @pytest.mark.fast
     def test_admin_update_report_status_success(self, client, db_connection, mock_dynamodb):
         mock_users, mock_reports = mock_dynamodb
         cursor = db_connection.cursor()
@@ -293,6 +311,7 @@ class TestReports:
         row = cursor.fetchone()
         assert row[0] == "ACTIVO"
 
+    @pytest.mark.fast
     def test_admin_update_report_status_unauthorized(self, client):
         import jwt, datetime
         from datetime import timezone
@@ -308,6 +327,7 @@ class TestReports:
         assert response.status_code == 403
         assert "ADMIN" in response.json()["detail"]
 
+    @pytest.mark.fast
     def test_admin_update_report_status_not_found(self, client):
         import jwt, datetime
         from datetime import timezone
@@ -323,6 +343,7 @@ class TestReports:
         assert response.status_code == 404
         assert "Reporte no encontrado" in response.json()["detail"]
 
+    @pytest.mark.fast
     def test_update_report_db_error(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.update_item.side_effect = Exception("DynamoDB error")

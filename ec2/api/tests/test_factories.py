@@ -2,6 +2,7 @@ import pytest
 
 
 class TestReportFactory:
+    @pytest.mark.fast
     def test_create_forestal_report(self):
         from factories import ReportFactory, ForestalReport
         report = ReportFactory.create_report('FORESTAL')
@@ -10,6 +11,7 @@ class TestReportFactory:
         assert report.get_priority() == 1
         assert report.get_default_estado() == 'PENDIENTE'
 
+    @pytest.mark.fast
     def test_create_urbano_report(self):
         from factories import ReportFactory, UrbanoReport
         report = ReportFactory.create_report('URBANO')
@@ -18,12 +20,14 @@ class TestReportFactory:
         assert report.get_priority() == 2
         assert report.get_default_estado() == 'PENDIENTE'
 
+    @pytest.mark.fast
     def test_create_invalid_tipo(self):
         from factories import ReportFactory
         with pytest.raises(ValueError) as exc:
             ReportFactory.create_report('MARINO')
         assert 'no soportado' in str(exc.value)
 
+    @pytest.mark.fast
     def test_forestal_to_item(self):
         from factories import ReportFactory
         report = ReportFactory.create_report('FORESTAL')
@@ -35,6 +39,7 @@ class TestReportFactory:
         assert item['latitud'] == -33.45
         assert item['longitud'] == -70.67
 
+    @pytest.mark.fast
     def test_urbano_to_item(self):
         from factories import ReportFactory
         report = ReportFactory.create_report('URBANO')
