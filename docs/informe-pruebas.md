@@ -391,7 +391,111 @@ it("hides banner when back online", () => {
 
 ---
 
-## 7. Patrones de diseño
+## 7. Ejemplos de pruebas — Lambdas (5)
+
+### L1 — upload-proxy: subir JPEG a S3
+
+**Archivo:** `lambda/test-events/upload_proxy.json`
+
+**Evento (AWS Console Test):**
+```json
+{
+  "name": "UploadJPEG",
+  "event": {
+    "body": "/9j/4AAQSkZJRg...",
+    "content_type": "image/jpeg"
+  }
+}
+```
+
+**Respuesta esperada:** `200` con `{"foto_url": "reportes/<uuid>.jpg"}`
+
+---
+
+### L2 — ms-usuarios: login + registro
+
+**Archivo:** `lambda/test-events/usuarios.json`
+
+**Evento (login exitoso):**
+```json
+{
+  "name": "LoginSuccess",
+  "event": {
+    "httpMethod": "POST",
+    "path": "/login",
+    "body": "{\"email\":\"test@example.com\",\"password\":\"test123\"}"
+  }
+}
+```
+
+**Respuesta esperada:** `200` con JWT + datos del usuario, o `201` si el usuario no existe (auto-registro).
+
+---
+
+### L3 — ms-incidencias: listar reportes
+
+**Archivo:** `lambda/test-events/incidencias.json`
+
+**Evento (listar todos):**
+```json
+{
+  "name": "ListReports",
+  "event": {
+    "httpMethod": "GET",
+    "path": "/reports",
+    "queryStringParameters": {}
+  }
+}
+```
+
+**Respuesta esperada:** `200` con array de reportes desde DynamoDB.
+
+---
+
+### L4 — ms-notificaciones: enviar alerta SNS
+
+**Archivo:** `lambda/test-events/notificaciones.json`
+
+**Evento (alerta crítica):**
+```json
+{
+  "name": "SendAlertNotification",
+  "event": {
+    "httpMethod": "POST",
+    "body": "{\"message\":\"Incendio forestal detectado\",\"alert_type\":\"ALERTA\"}"
+  }
+}
+```
+
+**Respuesta esperada:** `200` con `{"status": "sent", ...}`. Mensaje vacío → `400`.
+
+---
+
+### L5 — sns-to-grafana: crear annotation en Grafana
+
+**Archivo:** `lambda/test-events/sns-to-grafana.json`
+
+**Evento (SNS → Grafana):**
+```json
+{
+  "name": "SnsToGrafanaAnnotation",
+  "event": {
+    "Records": [
+      {
+        "Sns": {
+          "Message": "{\"text\":\"Incendio activo\",\"tags\":[\"sistema\",\"incendio\"]}"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Respuesta esperada:** `200` si hay token Grafana configurado, `500` si el mensaje está malformado.
+
+---
+
+## 8. Patrones de diseño
 
 | Patrón | Tipo | Ubicación | Tests |
 |--------|------|-----------|:-----:|
@@ -401,7 +505,7 @@ it("hides banner when back online", () => {
 
 ---
 
-## 8. Cómo reproducir los reportes
+## 9. Cómo reproducir los reportes
 
 ```bash
 # Backend coverage HTML
@@ -412,6 +516,12 @@ cd ec2/api && python -m pytest --cov --cov-report=html
 cd frontend && npm run test:coverage
 # → frontend/coverage/index.html
 
-# Lambda tests
+# Lambda tests (unitarios locales)
 cd <raíz-proyecto> && python -m pytest lambda/ -v
+
+# Lambda tests (AWS Console — manual)
+# 1. Abrir cada función en AWS Lambda Console
+# 2. Test > Configure test event > Create new
+# 3. Pegar JSON de lambda/test-events/<funcion>.json
+# 4. Guardar y ejecutar
 ```
