@@ -67,52 +67,52 @@ Todos los componentes superan el **60% de cobertura mínimo** exigido por la rú
 
 ## 4. Ejemplos de pruebas — Backend (6)
 
-### B1 — Login + 2FA OTP en JWT
+### B1 — Login + 2FA (OTP server-side)
 
 **Archivo:** `ec2/api/tests/test_auth.py`
 
 **Código:**
 ```python
-def test_login_with_2fa_returns_temp_token(self, client, test_db):
-    admin = create_admin_with_2fa(test_db)
-    response = client.post("/login", json={
-        "email": admin["email"],
-        "password": "AdminPass123"
-    })
-    data = response.json()
-    assert data["two_factor_required"] is True
+def test_login_with_2fa_returns_temp_token(self, client, mock_dynamodb, db_connection):
+    # setup: usuario con 2FA habilitado en SQLite
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO users ...", ('2fa-user-id', ...))
+    cursor.execute("INSERT OR REPLACE INTO admin_2fa ...", ('2fa-user-id', 1, ...))
+
+    with patch('routers.auth.send_otp_email') as mock_email:
+        response = client.post("/login", json={"email": "admin2fa@test.cl", "password": "testpass123"})
+
+    assert response.json()["two_factor_required"] is True
     assert "temp_token" in data
+    mock_email.assert_called_once()
+    assert len(mock_email.call_args[0][1]) == 6  # OTP de 6 dígitos
 
-def test_verify_2fa_with_valid_otp_returns_jwt(self, client, test_db):
-    admin = create_admin_with_2fa(test_db)
-    login_resp = client.post("/login", json={
-        "email": admin["email"],
-        "password": "AdminPass123"
-    })
+def test_verify_2fa_with_valid_otp_returns_jwt(self, client, mock_dynamodb, db_connection):
+    # login con 2FA → OTP en _otp_store (server-side)
+    with patch('routers.auth._generate_otp', return_value='123456'):
+        with patch('routers.auth.send_otp_email'):
+            login_resp = client.post("/login", json={"email": "admin2fa@test.cl", "password": "testpass123"})
+
     temp_token = login_resp.json()["temp_token"]
-    otp = decode_otp_from_temp_token(temp_token)
-    response = client.post("/auth/2fa/verify", json={
-        "temp_token": temp_token,
-        "code": otp
-    })
+    response = client.post("/auth/2fa/verify", json={"temp_token": temp_token, "code": "123456"})
+
     assert response.status_code == 200
-    assert "token" in response.json()
+    assert data["user"]["rol"] == "ADMIN"
 
-def test_verify_2fa_with_invalid_otp_returns_401(self, client, test_db):
-    admin = create_admin_with_2fa(test_db)
-    login_resp = client.post("/login", json={
-        "email": admin["email"],
-        "password": "AdminPass123"
-    })
-    temp_token = login_resp.json()["temp_token"]
+def test_verify_2fa_with_invalid_otp_returns_401(self, client, mock_dynamodb, db_connection):
+    with patch('routers.auth.send_otp_email'):
+        login_resp = client.post("/login", json={"email": "admin2fa@test.cl", "password": "testpass123"})
+
     response = client.post("/auth/2fa/verify", json={
-        "temp_token": temp_token,
-        "code": "000000"
+        "temp_token": login_resp.json()["temp_token"], "code": "000000"
     })
     assert response.status_code == 401
+    assert "Código inválido" in response.json()["detail"]
 ```
 
-**Resultado:** ✅ 3/3 tests pasan
+**Nota:** El OTP se almacena en `_otp_store` (dict server-side), no viaja en el JWT `temp_token`. Validado por test `test_temp_token_does_not_contain_otp` + prueba de campo exitosa contra producción.
+
+**Resultado:** ✅ 4/4 tests pasan
 
 ---
 
@@ -221,23 +221,27 @@ def test_reset_password_with_valid_otp_updates_password(self, client):
 
 **Código:**
 ```python
-def test_admin_update_report_status_success(self, client, admin_token):
-    response = client.put(
-        "/admin/reports/test-report-1/status",
+def test_admin_update_report_status_success(self, client, db_connection, mock_dynamodb):
+    # setup: insertar reporte + generar JWT ADMIN manual
+    cursor.execute("INSERT OR REPLACE INTO reports ...", ('admin-report-1', 'admin-user', 'FORESTAL', ...))
+    token = jwt.encode({'user_id': 'admin-user', 'rol': 'ADMIN', ...}, 'test-secret-key')
+
+    response = client.put("/admin/reports/admin-report-1/status",
         json={"estado": "ACTIVO"},
-        headers={"Authorization": f"Bearer {admin_token}"}
-    )
+        headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
+    assert data["status"] == "updated"
 
 def test_admin_update_report_status_unauthorized(self, client):
-    response = client.put(
-        "/admin/reports/test-report-1/status",
-        json={"estado": "ACTIVO"}
-    )
+    token = jwt.encode({'user_id': 'vecino-user', 'rol': 'VECINO', ...}, 'test-secret-key')
+    response = client.put("/admin/reports/nonexistent/status",
+        json={"estado": "ACTIVO"},
+        headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403
+    assert "ADMIN" in response.json()["detail"]
 ```
 
-**Resultado:** ✅ 3/3 tests pasan
+**Resultado:** ✅ 4/4 tests pasan (success + unauthorized + not_found + db_error)
 
 ---
 
