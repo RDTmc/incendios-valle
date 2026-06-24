@@ -2,6 +2,8 @@
 
 ## 1. Resumen ejecutivo
 
+El presente informe detalla los resultados de las pruebas unitarias aplicadas a cada componente del sistema Incendios Valle del Sol. Se evaluaron 349 tests distribuidos en tres capas (backend, frontend y lambdas serverless), todos superando el umbral del 60% de cobertura exigido por la rúbrica. El documento describe las herramientas utilizadas, las métricas obtenidas, ejemplos representativos de cada prueba y los patrones de diseño implementados, con el objetivo de demostrar la calidad y confiabilidad del software desarrollado.
+
 | Componente | Tests | Cobertura | Estado |
 |-----------|:-----:|:---------:|:------:|
 | Backend (FastAPI) | 167 | 88% | ✅ |
@@ -18,6 +20,8 @@ Todos los componentes superan el **60% de cobertura mínimo** exigido por la rú
 ---
 
 ## 2. Métricas de cobertura
+
+Las coberturas fueron medidas con `pytest-cov` (backend) y `v8` vía Vitest (frontend), generando reportes HTML con desglose por módulo. A continuación se presentan los porcentajes obtenidos por cada módulo, destacando que los routers públicos, de alertas, BFF y reportes alcanzan el 100% de cobertura, mientras que los módulos administrativos presentan valores menores debido a la complejidad de sus flujos de autenticación y roles.
 
 ### Backend (FastAPI) — 88%
 
@@ -53,6 +57,8 @@ Todos los componentes superan el **60% de cobertura mínimo** exigido por la rú
 ---
 
 ## 3. Herramientas de testing
+
+El stack de testing se compone de herramientas especializadas por capa: pytest para el backend con mocking de servicios AWS mediante moto y unittest.mock; Vitest + Testing Library para el frontend con jsdom y MSW para simular llamadas API; y pytest para las lambdas serverless. Todas las configuraciones están versionadas en el repositorio, permitiendo reproducir los resultados en cualquier entorno.
 
 | Capa | Herramienta | Configuración |
 |------|------------|---------------|
@@ -559,3 +565,9 @@ cd <raíz-proyecto> && python -m pytest lambda/ -v
 # 3. Pegar JSON de lambda/test-events/<funcion>.json
 # 4. Guardar y ejecutar
 ```
+
+---
+
+## 10. Conclusión
+
+Los resultados obtenidos demuestran que el sistema Incendios Valle del Sol cuenta con una cobertura de pruebas sólida y homogénea en todas sus capas. El backend alcanza un 88% de cobertura con 167 tests, el frontend un 82% con 172 tests, y las lambdas un ~85% con 10 tests, totalizando 349 pruebas unitarias que pasan en su totalidad. Las métricas de SonarCloud respaldan estos resultados con calificación A en seguridad, confiabilidad, mantenibilidad y revisión de seguridad, además de 0 Code Smells. Se verificaron 17 ejemplos representativos que cubren autenticación con 2FA, circuit breaker, consumo de APIs externas, subida de archivos, gestión de reportes, mapas interactivos, recuperación de contraseña y comportamiento offline. Todo el stack de pruebas es reproducible desde el repositorio, garantizando la calidad del software entregado.
