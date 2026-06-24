@@ -1,0 +1,37 @@
+[
+  {
+    "name": "LoginSuccess",
+    "description": "Login con credenciales validas (requiere usuario existente en DynamoDB)",
+    "event": {
+      "httpMethod": "POST",
+      "path": "/login",
+      "body": "{\"email\":\"test@example.com\",\"password\":\"test123\"}"
+    }
+  },
+  {
+    "name": "RegisterNewUser",
+    "description": "Registrar un nuevo usuario VECINO",
+    "event": {
+      "httpMethod": "POST",
+      "path": "/register",
+      "body": "{\"email\":\"nuevo-vecino@test.cl\",\"password\":\"Pass123\",\"nombre\":\"Vecino Test\",\"rol\":\"VECINO\"}"
+    }
+  },
+  {
+    "name": "GetUserByID",
+    "description": "Obtener usuario por ID (reemplazar USER_ID)",
+    "event": {
+      "httpMethod": "GET",
+      "path": "/users/REEMPLAZAR_CON_USER_ID"
+    }
+  },
+  {
+    "name": "AuthEndpoint",
+    "description": "Login via endpoint /auth unificado",
+    "event": {
+      "httpMethod": "POST",
+      "path": "/auth",
+      "body": "{\"email\":\"admin@valledelsol.cl\",\"password\":\"admin123\"}"
+    }
+  }
+]
