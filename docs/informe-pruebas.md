@@ -69,6 +69,8 @@ Todos los componentes superan el **60% de cobertura mínimo** exigido por la rú
 
 ### B1 — Login + 2FA (OTP server-side)
 
+Valida el flujo de autenticación con verificación en dos pasos. Cuando un usuario tiene 2FA habilitado, el login devuelve un `temp_token` en lugar del JWT final; luego un segundo endpoint verifica el código OTP almacenado en servidor (`_otp_store`) para entregar el JWT definitivo. Incluye casos de código válido e inválido.
+
 **Archivo:** `ec2/api/tests/test_auth.py`
 
 **Código:**
@@ -118,6 +120,8 @@ def test_verify_2fa_with_invalid_otp_returns_401(self, client, mock_dynamodb, db
 
 ### B2 — Circuit Breaker: OPEN + fallback
 
+Evalúa el patrón Circuit Breaker implementado para APIs externas (FIRMS, OpenWeatherMap, CONAF). Verifica que tras N fallos consecutivos el circuito se abre y que cuando está abierto se ejecuta el fallback sin llamar al servicio real, protegiendo al sistema de cascadas de errores.
+
 **Archivo:** `ec2/api/tests/test_circuit_breaker.py`
 
 **Código:**
@@ -147,6 +151,8 @@ def test_fallback_called_when_open(self):
 
 ### B3 — BFF Dashboard (weather + FIRMS)
 
+Prueba el endpoint BFF que agrega datos de clima (OpenWeatherMap), focos satelitales (NASA FIRMS) y estadísticas de reportes en una sola respuesta. Verifica que el dashboard público entregue todos los campos requeridos para la vista táctica del equipo de emergencia.
+
 **Archivo:** `ec2/api/tests/test_bff.py`
 
 **Código:**
@@ -166,6 +172,8 @@ def test_bff_dashboard_with_data(self):
 ---
 
 ### B4 — Upload imagen vía Lambda → S3
+
+Verifica que el proxy de subida de imágenes reciba un JPEG o PNG en base64, lo decodifique, lo almacene en S3 con la ruta y extensión correctas, y devuelva la URL generada. Es la pieza que permite a los ciudadanos adjuntar fotos a sus reportes.
 
 **Archivo:** `lambda/upload_proxy/test_upload_proxy.py`
 
@@ -190,6 +198,8 @@ def test_upload_jpeg_success(self, mock_s3):
 ---
 
 ### B5 — Password reset con OTP email
+
+Cubre el flujo de recuperación de contraseña: solicitud de restablecimiento que envía un OTP de 6 dígitos al correo del usuario, y posterior验证 del código para actualizar la contraseña. Depende de la integración con Mailtrap SMTP para el envío del correo.
 
 **Archivo:** `ec2/api/tests/test_password_reset.py`
 
@@ -216,6 +226,8 @@ def test_reset_password_with_valid_otp_updates_password(self, client):
 ---
 
 ### B6 — Admin cambiar estado de reportes
+
+Valida que solo usuarios con rol ADMIN puedan cambiar el estado de un reporte (PENDIENTE → ACTIVO → CONTROLADO → EXTINGUIDO). Incluye caso de éxito, denegación por rol insuficiente, reporte inexistente (404) y error de base de datos.
 
 **Archivo:** `ec2/api/tests/test_reports.py`
 
@@ -249,6 +261,8 @@ def test_admin_update_report_status_unauthorized(self, client):
 
 ### F1 — Login + input OTP 2FA
 
+Simula el inicio de sesión de un usuario con 2FA activado. Verifica que la interfaz muestre el campo de código de verificación cuando el backend responde con `two_factor_required: true`, probando la transición entre el formulario de login y el paso de verificación OTP.
+
 **Archivo:** `frontend/src/__tests__/Login.test.tsx`
 
 **Código:**
@@ -272,6 +286,8 @@ it("should show OTP input when 2FA is required", async () => {
 
 ### F2 — Mapa con markers + estados coloreados
 
+Comprueba que el componente de mapa renderice correctamente los marcadores georreferenciados según los focos activos recibidos del backend. Cada marcador debe mostrar el color correspondiente al estado del reporte (PENDIENTE, ACTIVO, CONTROLADO, EXTINGUIDO).
+
 **Archivo:** `frontend/src/__tests__/MapboxStrategy.test.tsx`
 
 **Código:**
@@ -288,6 +304,8 @@ it("renders markers with correct colors per estado", () => {
 ---
 
 ### F3 — Reporte con foto + GPS + submit
+
+Valida el flujo completo de creación de un reporte ciudadano: captura de ubicación GPS, selección de tipo de incendio, descripción y foto. Verifica que al enviar se redirija a la pantalla de confirmación con los datos del reporte creado.
 
 **Archivo:** `frontend/src/__tests__/Reporte.test.tsx`
 
@@ -309,6 +327,8 @@ it("submits report successfully", async () => {
 
 ### F4 — AdminPage gestionar reportes
 
+Verifica que el panel de administración cargue la pestaña de reportes con los datos obtenidos del backend. La tabla debe mostrar tipo, estado, ubicación y permitir filtrar y cambiar estados, todo visible solo para usuarios con rol ADMIN.
+
 **Archivo:** `frontend/src/__tests__/AdminPage.test.tsx`
 
 **Código:**
@@ -328,6 +348,8 @@ it("should render reports tab with data", async () => {
 ---
 
 ### F5 — ForgotPassword 3 pasos
+
+Cubre el flujo de recuperación de contraseña desde la interfaz: paso 1 (ingresar email), paso 2 (código OTP + nueva contraseña), paso 3 (confirmación). Verifica que cada transición ocurra correctamente y que los componentes se rendericen según el estado del formulario.
 
 **Archivo:** `frontend/src/__tests__/ForgotPassword.test.tsx`
 
@@ -352,6 +374,8 @@ it("should transition to step 2 after email submission", async () => {
 ---
 
 ### F6 — OfflineBanner + reconexión
+
+Prueba el comportamiento offline de la PWA: cuando el navegador dispara el evento `offline` debe mostrarse un banner informativo, y al recuperar la conexión (`online`) el banner debe ocultarse automáticamente. Es parte de la estrategia de resistencia del Service Worker.
 
 **Archivo:** `frontend/src/__tests__/OfflineBanner.test.tsx`
 
@@ -395,6 +419,8 @@ it("hides banner when back online", () => {
 
 ### L1 — upload-proxy: subir JPEG a S3
 
+Prueba la función Lambda que recibe una imagen en base64 desde la PWA, la decodifica y la almacena en S3 con un nombre único. Es el punto de entrada para las fotografías adjuntas a los reportes ciudadanos, reemplazando la subida directa al backend para reducir carga en EC2.
+
 **Archivo:** `lambda/test-events/upload_proxy.json`
 
 **Evento (AWS Console Test):**
@@ -413,6 +439,8 @@ it("hides banner when back online", () => {
 ---
 
 ### L2 — ms-usuarios: login + registro
+
+Ejercita el microservicio de usuarios que unifica autenticación y registro en un solo endpoint. Si el usuario existe valida la contraseña con bcrypt y devuelve JWT; si no existe, lo crea automáticamente (auto-registro). Soporta los paths `/login`, `/register` y `/auth` vía API Gateway.
 
 **Archivo:** `lambda/test-events/usuarios.json`
 
@@ -434,6 +462,8 @@ it("hides banner when back online", () => {
 
 ### L3 — ms-incidencias: listar reportes
 
+Verifica que la Lambda de incidencias consulte DynamoDB y devuelva los reportes según los filtros aplicados (estado, usuario). Soporta listado completo, filtrado por estado, consulta individual por ID, creación de nuevos reportes y actualización de estado.
+
 **Archivo:** `lambda/test-events/incidencias.json`
 
 **Evento (listar todos):**
@@ -454,6 +484,8 @@ it("hides banner when back online", () => {
 
 ### L4 — ms-notificaciones: enviar alerta SNS
 
+Evalúa el microservicio que publica alertas en un tópico SNS de AWS. Recibe un mensaje con tipo de alerta (ALERTA, INFO, CRÍTICO), lo formatea y lo envía al tópico con atributos de mensaje. Incluye validación de mensaje vacío que debe retornar 400.
+
 **Archivo:** `lambda/test-events/notificaciones.json`
 
 **Evento (alerta crítica):**
@@ -472,6 +504,8 @@ it("hides banner when back online", () => {
 ---
 
 ### L5 — sns-to-grafana: crear annotation en Grafana
+
+Prueba la función suscrita al tópico SNS que crea annotations en Grafana. Cuando se publica una alerta, la Lambda parsea el mensaje SNS, construye una annotation con texto, tags y timestamp, y la envía a la API de Grafana. Mensajes malformados deben retornar 500.
 
 **Archivo:** `lambda/test-events/sns-to-grafana.json`
 
