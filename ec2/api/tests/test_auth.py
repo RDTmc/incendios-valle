@@ -178,6 +178,46 @@ class TestAuth:
         assert len(otp_arg) == 6
 
     @pytest.mark.fast
+    def test_temp_token_does_not_contain_otp(self, client, mock_dynamodb, db_connection):
+        import jwt
+        from routers.auth import _otp_store
+
+        mock_users, _ = mock_dynamodb
+        mock_users.query.return_value = {
+            'Items': [{
+                'user_id': '2fa-user-id',
+                'email': 'admin2fa@test.cl',
+                'password_hash': VALID_HASH,
+                'rol': 'ADMIN',
+                'nombre': 'Admin 2FA'
+            }]
+        }
+        cursor = db_connection.cursor()
+        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
+                       ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
+        cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
+                       ('2fa-user-id', 1, '[]', '2026-01-01T00:00:00'))
+        db_connection.commit()
+
+        with patch('routers.auth.send_otp_email'):
+            response = client.post("/login", json={
+                "email": "admin2fa@test.cl",
+                "password": "testpass123"
+            })
+
+        assert response.status_code == 200
+        temp_token = response.json()["temp_token"]
+
+        payload = jwt.decode(temp_token, "test-secret-key", algorithms=["HS256"], options={"verify_exp": False})
+        assert "otp" not in payload
+        assert payload["purpose"] == "2fa"
+        assert payload["user_id"] == "2fa-user-id"
+        assert "2fa-user-id" in _otp_store
+        assert len(_otp_store["2fa-user-id"]["otp"]) == 6
+
+        _otp_store.clear()
+
+    @pytest.mark.fast
     def test_verify_2fa_with_valid_otp_returns_jwt(self, client, mock_dynamodb, db_connection):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
