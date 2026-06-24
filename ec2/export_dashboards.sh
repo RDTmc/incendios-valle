@@ -11,7 +11,9 @@ OUTPUT_DIR="/app/data/grafana-exports"
 docker exec incendios-api python3 <<'PYEOF'
 import urllib.request, json, base64, os
 
-auth = "Basic " + base64.b64encode(b"admin:ValleSol2026!Secure").decode()
+import os
+pwd = os.environ.get("GRAFANA_ADMIN_PASSWORD", "")
+auth = "Basic " + base64.b64encode(f"admin:{pwd}".encode()).decode()
 out_dir = "/app/data/grafana-exports"
 os.makedirs(out_dir, exist_ok=True)
 

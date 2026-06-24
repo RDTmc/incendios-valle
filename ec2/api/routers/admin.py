@@ -72,7 +72,7 @@ def admin_create_user(req: AdminCreateUserRequest, payload: dict = Depends(requi
     try:
         user = repo.create(email=req.email, password=req.password, nombre=req.nombre, rol=req.rol)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al crear usuario: No se pudo escribir en DynamoDB ({e})")
+        raise HTTPException(status_code=500, detail="Error al crear usuario: No se pudo escribir en DynamoDB")
     log_audit("create_user", payload["user_id"], user["user_id"], f"Creó usuario {req.email} con rol {req.rol}")
 
     notify_new_user(
@@ -210,7 +210,7 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
         import traceback
         tb = traceback.format_exc()
         print(f"[admin] update_report_status error: {e}\n{tb}")
-        raise HTTPException(status_code=500, detail=f"Error al actualizar estado: {e}")
+        raise HTTPException(status_code=500, detail="Error al actualizar estado")
     finally:
         if conn is not None:
             try:

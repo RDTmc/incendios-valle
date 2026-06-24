@@ -50,6 +50,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+frontend/coverage/
 
 # Translations
 *.mo
@@ -285,3 +286,6 @@ package-lock.json
 
 # Script one-time de permisos Grafana
 ec2/fix_grafana_perms.sh
+
+# ZIP de entrega (generado localmente)
+/incendios-valle-entrega.zip

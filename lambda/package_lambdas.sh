@@ -82,7 +82,7 @@ aws lambda update-function-configuration \
 
 aws lambda update-function-configuration \
     --function-name "sns-to-grafana" \
-    --environment "Variables={GRAFANA_URL=https://dashboard.keogh.lat/dashboard,GRAFANA_TOKEN=glsa_xzECDdWZO6ixPttXFZI3oGVfXD0XPmJR_5019d7a0}" \
+    --environment "Variables={GRAFANA_URL=https://dashboard.keogh.lat/dashboard,GRAFANA_TOKEN=$(grep GRAFANA_TOKEN /home/ec2-user/.env | cut -d= -f2)}" \
     --region "$REGION" --no-cli-pager 2>/dev/null || true
 
 echo ""

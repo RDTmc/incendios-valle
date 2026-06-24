@@ -192,22 +192,19 @@ class TestAuth:
                        ('2fa-user-id', 1, '[]', '2026-01-01T00:00:00'))
         db_connection.commit()
 
-        with patch('routers.auth.send_otp_email'):
-            login_resp = client.post("/login", json={
-                "email": "admin2fa@test.cl",
-                "password": "testpass123"
-            })
+        with patch('routers.auth._generate_otp', return_value='123456'):
+            with patch('routers.auth.send_otp_email'):
+                login_resp = client.post("/login", json={
+                    "email": "admin2fa@test.cl",
+                    "password": "testpass123"
+                })
 
         assert login_resp.status_code == 200
         temp_token = login_resp.json()["temp_token"]
 
-        import jwt
-        payload = jwt.decode(temp_token, options={"verify_signature": False})
-        otp = payload["otp"]
-
         response = client.post("/auth/2fa/verify", json={
             "temp_token": temp_token,
-            "code": otp
+            "code": "123456"
         })
 
         assert response.status_code == 200

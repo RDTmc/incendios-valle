@@ -15,6 +15,15 @@ router = APIRouter(tags=["auth"])
 OTP_EXPIRE_MINUTES = 5
 BACKUP_CODE_COUNT = 1
 
+_otp_store: dict[str, dict] = {}
+
+
+def _clean_expired_otp():
+    now = datetime.now(timezone.utc)
+    expired = [k for k, v in _otp_store.items() if v.get("expires_at", now) < now]
+    for k in expired:
+        _otp_store.pop(k, None)
+
 
 def _init_2fa_table():
     conn = None
@@ -156,10 +165,15 @@ def login(req: LoginRequest):
             otp = _generate_otp()
             expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
 
+            _clean_expired_otp()
+            _otp_store[user['user_id']] = {
+                "otp": otp,
+                "expires_at": expires_at,
+            }
+
             temp_token = jwt.encode({
                 'user_id': user['user_id'],
                 'purpose': '2fa',
-                'otp': otp,
                 'exp': expires_at,
             }, SECRET_KEY, algorithm='HS256')
 
@@ -210,16 +224,21 @@ def verify_2fa(req: TwoFactorVerifyRequest):
     try:
         try:
             temp_payload = jwt.decode(req.temp_token, SECRET_KEY, algorithms=['HS256'])
-            if temp_payload.get('purpose') != '2fa':
-                raise HTTPException(status_code=400, detail="Token inválido")
-            user_id = temp_payload['user_id']
-            expected_otp = temp_payload.get('otp', '')
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Código expirado, inicie sesión nuevamente")
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=401, detail="Token inválido")
+        if temp_payload.get('purpose') != '2fa':
+            raise HTTPException(status_code=400, detail="Token inválido")
+        user_id = temp_payload['user_id']
 
-        if req.code == expected_otp:
+        _clean_expired_otp()
+        otp_entry = _otp_store.get(user_id)
+        if not otp_entry:
+            raise HTTPException(status_code=401, detail="Código expirado, inicie sesión nuevamente")
+
+        if req.code == otp_entry["otp"]:
+            _otp_store.pop(user_id, None)
             repo = get_user_repository()
             user = repo.find_by_id(user_id)
             if not user:

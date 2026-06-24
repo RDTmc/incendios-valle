@@ -46,7 +46,7 @@ def bootstrap_admin(req: BootstrapRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         if conn is not None:
             try:
