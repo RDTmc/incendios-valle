@@ -1,0 +1,20 @@
+REPOSITORIOS — Incendios Valle del Sol
+========================================
+
+Todos los componentes están en un único repositorio monorepo:
+
+Repositorio principal (contiene frontend, backend API, Lambdas y documentación):
+  https://github.com/RDTmc/incendios-valle
+
+Estructura dentro del repositorio:
+
+  Directorio            | Componente              | Tecnología
+  ----------------------|-------------------------|-----------------------
+  frontend/             | PWA (frontend)          | React + TypeScript + Vite
+  ec2/api/              | API REST (BFF backend)  | Python + FastAPI
+  lambda/upload_proxy/  | Microservicio imágenes  | Python + S3
+  lambda/usuarios/      | Microservicio usuarios  | Python + DynamoDB
+  lambda/ms-incidencias/| Microservicio reportes  | Python + DynamoDB
+  lambda/ms-notificaciones/| Microservicio alerts | Python + SNS
+  lambda/sns-to-grafana/| Microservicio anotaciones| Python + Grafana API
+  docs/                 | Documentación general   | Markdown + OpenAPI JSON

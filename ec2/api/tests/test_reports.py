@@ -264,6 +264,65 @@ class TestReports:
         response = client.get("/reports/r1", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 500
 
+    # ── B6: Admin cambiar estado de reporte (vía PUT /admin/reports/{id}/status) ──
+
+    def test_admin_update_report_status_success(self, client, db_connection, mock_dynamodb):
+        mock_users, mock_reports = mock_dynamodb
+        cursor = db_connection.cursor()
+        cursor.execute("INSERT OR REPLACE INTO reports (report_id, user_id, tipo, latitud, longitud, estado, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                       ('admin-report-1', 'admin-user', 'FORESTAL', '-33.45', '-70.67', 'PENDIENTE', '2026-01-01T00:00:00'))
+        db_connection.commit()
+
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+
+        response = client.put("/admin/reports/admin-report-1/status", json={
+            "estado": "ACTIVO"
+        }, headers={"Authorization": f"Bearer {token}"})
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "updated"
+        assert data["estado"] == "ACTIVO"
+
+        cursor.execute("SELECT estado FROM reports WHERE report_id = 'admin-report-1'")
+        row = cursor.fetchone()
+        assert row[0] == "ACTIVO"
+
+    def test_admin_update_report_status_unauthorized(self, client):
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'vecino-user', 'email': 'vecino@test.com', 'rol': 'VECINO',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+
+        response = client.put("/admin/reports/nonexistent/status", json={
+            "estado": "ACTIVO"
+        }, headers={"Authorization": f"Bearer {token}"})
+
+        assert response.status_code == 403
+        assert "ADMIN" in response.json()["detail"]
+
+    def test_admin_update_report_status_not_found(self, client):
+        import jwt, datetime
+        from datetime import timezone
+        token = jwt.encode({
+            'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+            'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+        }, 'test-secret-key', algorithm='HS256')
+
+        response = client.put("/admin/reports/nonexistent-id/status", json={
+            "estado": "ACTIVO"
+        }, headers={"Authorization": f"Bearer {token}"})
+
+        assert response.status_code == 404
+        assert "Reporte no encontrado" in response.json()["detail"]
+
     def test_update_report_db_error(self, client, mock_dynamodb):
         _, mock_reports = mock_dynamodb
         mock_reports.update_item.side_effect = Exception("DynamoDB error")

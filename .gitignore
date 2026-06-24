@@ -228,16 +228,6 @@ __marimo__/
 
 # Arnés LLM (local, no se commitca)
 /AGENTS.md
-/docs/GOAL.md
-/docs/ARQUITECTURA.md
-/docs/ESTADO.md
-/docs/TAREAS.md
-/docs/REGLAS.md
-/docs/GUION_DEMO.md
-/docs/MANUAL_AFICHE_MUNICIPAL.md
-/docs/API_GATEWAY_GUIDE.md
-/docs/ARQUITECTURA_FINAL.md
-/docs/ROADMAP_10_DAYS.md
 
 # Debug scripts (one-time, no afectan runtime)
 ec2/api/debug/

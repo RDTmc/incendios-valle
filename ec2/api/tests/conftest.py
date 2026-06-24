@@ -40,6 +40,7 @@ def db_connection():
     cursor.execute("CREATE TABLE IF NOT EXISTS alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, alert_type TEXT NOT NULL DEFAULT 'INFO', message TEXT NOT NULL, report_id TEXT DEFAULT '', latitud REAL DEFAULT 0, longitud REAL DEFAULT 0, source TEXT DEFAULT 'system', read INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
     cursor.execute("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, admin_id TEXT NOT NULL, target_id TEXT, details TEXT DEFAULT '', created_at TEXT NOT NULL)")
     cursor.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, recipient_email TEXT NOT NULL, recipient_name TEXT DEFAULT '', message TEXT NOT NULL, status TEXT DEFAULT 'sent', sns_message_id TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')))")
+    cursor.execute("CREATE TABLE IF NOT EXISTS admin_2fa (user_id TEXT PRIMARY KEY, enabled INTEGER DEFAULT 0, backup_codes TEXT, created_at TEXT)")
     conn.commit()
     yield conn
     conn.close()

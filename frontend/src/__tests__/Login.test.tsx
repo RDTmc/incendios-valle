@@ -6,6 +6,7 @@ import { ToastProvider } from '../util/toast'
 
 const mockSetAuthFrom2FA = vi.fn()
 const mockAPILogin = vi.fn()
+const mockAPILogin2FA = vi.fn()
 
 vi.mock('../App', () => ({
   useAuth: () => ({
@@ -18,7 +19,10 @@ vi.mock('../App', () => ({
 }))
 
 vi.mock('../api', () => ({
-  API: { login: mockAPILogin }
+  API: {
+    login: mockAPILogin,
+    login2FA: mockAPILogin2FA
+  }
 }))
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -96,6 +100,61 @@ describe('Login Page', () => {
     await waitFor(() => {
       expect(mockAPILogin).toHaveBeenCalledWith('user@example.com', 'password123')
       expect(mockSetAuthFrom2FA).toHaveBeenCalledWith('test-token', { id: 1, name: 'Test', email: 'user@example.com' })
+    })
+  })
+
+  // ── F1: Login + input OTP 2FA ────────────────────────────────────────
+
+  it('should show OTP input when 2FA is required', async () => {
+    const Login = (await import('../pages/Login')).default
+    mockAPILogin.mockResolvedValue({
+      two_factor_required: true,
+      temp_token: 'temp-token-123'
+    })
+    renderWithProviders(<Login />)
+
+    await userEvent.type(screen.getByPlaceholderText('correo@ejemplo.com'), 'admin@test.cl')
+    await userEvent.type(screen.getByPlaceholderText('••••••••'), 'adminpass')
+    fireEvent.click(screen.getByText('Iniciar Sesión'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Verificación en dos pasos')).toBeDefined()
+      expect(screen.getByText('Verificar código')).toBeDefined()
+    })
+  })
+
+  it('should submit OTP and call login2FA', async () => {
+    const Login = (await import('../pages/Login')).default
+    mockAPILogin.mockResolvedValue({
+      two_factor_required: true,
+      temp_token: 'temp-token-123'
+    })
+    mockAPILogin2FA.mockResolvedValue({
+      token: 'final-jwt',
+      user: { email: 'admin@test.cl', rol: 'ADMIN' }
+    })
+    renderWithProviders(<Login />)
+
+    await userEvent.type(screen.getByPlaceholderText('correo@ejemplo.com'), 'admin@test.cl')
+    await userEvent.type(screen.getByPlaceholderText('••••••••'), 'adminpass')
+    fireEvent.click(screen.getByText('Iniciar Sesión'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Verificación en dos pasos')).toBeDefined()
+    })
+
+    const otpInputs = document.querySelectorAll('input[inputMode="numeric"]')
+    expect(otpInputs.length).toBe(6)
+
+    otpInputs.forEach((input, i) => {
+      fireEvent.change(input, { target: { value: String(i + 1) } })
+    })
+
+    fireEvent.click(screen.getByText('Verificar código'))
+
+    await waitFor(() => {
+      expect(mockAPILogin2FA).toHaveBeenCalledWith('temp-token-123', '123456')
+      expect(mockSetAuthFrom2FA).toHaveBeenCalledWith('final-jwt', { email: 'admin@test.cl', rol: 'ADMIN' })
     })
   })
 })

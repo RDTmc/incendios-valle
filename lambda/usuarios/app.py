@@ -46,7 +46,8 @@ def login(event):
         KeyConditionExpression='email = :email',
         ExpressionAttributeValues={':email': email}
     )
-    user = response.get('Items', [None])[0]
+    items = response.get('Items')
+    user = items[0] if items else None
 
     if not user or not bcrypt.checkpw(password.encode(), user.get('password_hash', '').encode()):
         return {'statusCode': 401, 'body': json.dumps({'error': 'Invalid credentials'})}
