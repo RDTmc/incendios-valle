@@ -11,8 +11,7 @@
                     ↕ HTTPS
               ┌─────────────────────────────────┐
               │       API GATEWAY (REST)        │
-              │  Rate limit: 1000 req/min       │
-              │  CloudWatch: logs + metrics     │
+               │  Rate limit: 1000 req/min       │
               ├─────────────────────────────────┤
               │                                 │
     ┌─────────┤  /auth/*    → Lambda Usuarios   │
@@ -63,8 +62,8 @@
 │           AWS DynamoDB (Fuente de Verdad)      │
 │  Table: users (PK: user_id, GSI: email-index) │
 │  Table: reports (PK: report_id, GSI: user-ind)│
-│          ↕ DynamoDB Streams                    │
-│  Lambda: sync → SQLite (caché Grafana)        │
+│          ↕ POST /sync (endpoint manual)       │
+│  API escribe en SQLite (caché Grafana)        │
 └──────────────────────────────────────────────┘
                     │
                     ▼
@@ -90,7 +89,7 @@
 | **Lambda ms-incidencias** | Serverless | Python 3.11 | DynamoDB | CRUD reportes ciudadanos |
 | **Lambda upload-proxy** | Serverless | Python 3.11 | S3 | Subida de imágenes con presigned URL |
 | **Lambda ms-notificaciones** | Serverless | Python 3.11 | SNS | Envío de alertas a la comunidad |
-| **Lambda sync** | Serverless | Python 3.11 | DynamoDB → SQLite | Réplica de datos para Grafana |
+| **Lambda sns-to-grafana** | Serverless | Python 3.11 | SNS → Grafana API | Anotaciones Grafana desde alertas SNS |
 
 ## Patrones de Diseño Implementados
 
@@ -122,34 +121,55 @@
 ### Registro de Reporte Ciudadano
 ```
 Usuario → PWA → API Gateway → Lambda Incidencias → DynamoDB
-                                                    ↓ Stream
-                                              Lambda sync → SQLite → Grafana
+                                                    ↓
+                                              API EC2 (POST /sync)
+                                              escribe en SQLite
+                                                    ↓
+                                              Grafana Dashboard
                                                     ↓ Evento
                                               Lambda Notificaciones → SNS
 ```
 
+### Login con 2FA
+```
+Usuario → PWA → FastAPI → verifica credenciales (DynamoDB + SQLite fallback)
+                         → si 2FA activo: envía OTP por email (Mailtrap SMTP)
+                         → usuario ingresa OTP → server-side verify → JWT
+```
+
+### Cambio de Estado de Reporte (Admin)
+```
+Admin → PWA → FastAPI → UPDATE SQLite (reportes)
+                       → no replica a DynamoDB (LabRole no permite escritura)
+                       → Grafana lee cambios desde SQLite
+```
+
 ### Detección Satelital (Background)
 ```
-EC2 (cada 30min) → NASA FIRMS API
-                 → OpenWeatherMap API
-EC2 (cada 1h)    → CIREN/CONAF API
-                 ↓
-               SQLite → Grafana Dashboard
+EC2 FastAPI (cada 30min) → NASA FIRMS API
+                         → OpenWeatherMap API
+EC2 FastAPI (cada 1h)    → CIREN/CONAF API
+                         ↓
+                       SQLite → Grafana Dashboard
+```
+
+### Backup y Restore
+```
+Backup:  API startup → aws s3 cp incendios.db s3://bucket/backups/
+Restore: Deploy CI/CD → aws s3 cp s3://bucket/backups/ → incendios.db
 ```
 
 ## API Gateway: Rutas
 
 | Ruta | Método | Target | Auth |
 |------|--------|--------|------|
-| `/auth/login` | POST | Lambda usuarios | None |
-| `/auth/register` | POST | Lambda usuarios | None |
-| `/auth/profile` | GET | Lambda usuarios | JWT |
+| `/auth` (login/register/2fa) | POST | Lambda usuarios (handle_auth unificado) | None |
 | `/reports` | GET, POST | Lambda incidencias | JWT (opcional) |
 | `/reports/{id}` | GET, PUT | Lambda incidencias | JWT |
-| `/api/*` | ANY | EC2 FastAPI (proxy) | None / JWT |
-| `/upload` | POST | Lambda upload-proxy | None |
-| `/alerts` | GET | Lambda notificaciones | JWT |
-| `/alerts/subscribe` | POST | Lambda notificaciones | None |
+| `/api/{proxy+}` | ANY | EC2 FastAPI (HTTP_PROXY) | None / JWT |
+| `/upload` | POST | Lambda upload-proxy (base64 → S3) | None |
+| `/alerts` | GET, POST | Lambda notificaciones | JWT |
+| `/grafana-sns` | POST | Lambda sns-to-grafana (anotaciones) | None (desde SNS) |
 
 ## Estrategia de Branching (GitHub Flow)
 
@@ -187,8 +207,8 @@ main (producción)
 | Serverless | AWS Lambda (Python) | 3.11 |
 | Mensajería | AWS SNS | — |
 | Imágenes | AWS S3 | — |
-| Infra | AWS CloudWatch | — |
-| Túneles | Cloudflare Tunnel | — |
+| Infra | Prometheus + node_exporter | — |
+| DNS | Cloudflare DNS-only (sin proxy) | — |
 | CI/CD | GitHub Actions | — |
 | Calidad | SonarCloud | SaaS |
 
@@ -202,7 +222,7 @@ main (producción)
 | S3 (5GB) | $0 | Free Tier |
 | API Gateway (1M req/mes) | $0 | Free Tier |
 | SNS (1M pub/mes) | $0 | Free Tier |
-| CloudWatch (5GB logs) | $0 | Free Tier |
+| Prometheus + node_exporter | $0 | Open Source / Docker |
 | SonarCloud | $0 | Free para repos públicos |
 | **Total** | **$0/mes** | Free Tier |
 
@@ -210,9 +230,9 @@ main (producción)
 
 | Restricción | Impacto | Mitigación |
 |-------------|---------|------------|
-| Lab resets cada 4h | API Gateway + Lambdas dejan de funcionar | Cloudflare Tunnel para URLs estables. Pipeline CI/CD recrea en minutos |
+| Lab resets cada 4h | API Gateway + Lambdas dejan de funcionar | API Gateway con DNS-only (sin proxy Cloudflare). Pipeline CI/CD recrea en minutos |
 | LabRole no permite `iam:GetPolicy` | No podemos leer política exacta | Validación práctica: todos los servicios necesarios funcionan |
-| SES bloqueado | No podemos enviar emails | Solo usamos SNS (notificaciones push) |
+| SES bloqueado | No podemos usar Amazon SES | Usamos Mailtrap SMTP (OTP 2FA + password reset). SNS para notificaciones push |
 | Elastic IP cambia en reset | URLs de integración cambian | Usar API Gateway como fachada estática. El backend proxy apunta a API Gateway, no a IP directa |
 
 ## Documentos Relacionados
@@ -223,5 +243,5 @@ main (producción)
 
 ---
 
-*Documento actualizado: 6 Junio 2026*
-*Arquitectura Final v2.0 - Incendios Valle del Sol*
+*Documento actualizado: 24 Junio 2026*
+*Arquitectura Final v2.1 - Incendios Valle del Sol*
