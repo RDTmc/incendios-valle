@@ -41,11 +41,21 @@ class TestUsuarios:
 
     def test_login_invalid_credentials(self):
         with patch.object(app, 'users_table') as mock_table:
-            mock_table.query.return_value = {'Items': []}
+            # Usuario existe pero password incorrecto → 401
+            pw_hash = bcrypt.hashpw("realpass".encode(), bcrypt.gensalt()).decode()
+            mock_table.query.return_value = {
+                'Items': [{
+                    'user_id': 'u1',
+                    'email': 'test@test.cl',
+                    'password_hash': pw_hash,
+                    'rol': 'VECINO',
+                    'nombre': 'Test'
+                }]
+            }
             event = {
                 "httpMethod": "POST",
                 "path": "/login",
-                "body": json.dumps({"email": "bad@test.cl", "password": "wrong"})
+                "body": json.dumps({"email": "test@test.cl", "password": "wrong"})
             }
             result = app.lambda_handler(event, None)
             assert result["statusCode"] == 401

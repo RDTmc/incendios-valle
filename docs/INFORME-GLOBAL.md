@@ -672,9 +672,9 @@ El workflow principal (`deploy.yml`) se activa con push a `main` si los paths in
 | Componente | Método | Configuración |
 |-----------|--------|---------------|
 | Frontend (PWA) | **Cloudflare Pages** — auto-deploy desde GitHub en cada push a `main` | Dashboard Cloudflare Pages vinculado al repo |
-| Cloudflare Worker | **Manual** — Wrangler CLI o dashboard Cloudflare | `cloudflare-worker.js` |
+| Cloudflare Worker | **Manual** — Wrangler CLI o dashboard Cloudflare | `cloudflare/worker.js` |
 
-> La PWA se deploya automáticamente a `incendios-valle.pages.dev` mediante la integración nativa de Cloudflare Pages con GitHub (sin workflow adicional). El Worker (`cloudflare-worker.js`) implementa CORS estricto y rate limiting (10 req/min en `/api/login`) y se deploya manualmente.
+> La PWA se deploya automáticamente a `incendios-valle.pages.dev` mediante la integración nativa de Cloudflare Pages con GitHub (sin workflow adicional). El Worker (`cloudflare/worker.js`) implementa CORS estricto y rate limiting (10 req/min en `/api/login`) y se deploya manualmente.
 
 ### 8.2 Componentes y Cómo se Despliegan
 
@@ -682,7 +682,7 @@ El workflow principal (`deploy.yml`) se activa con push a `main` si los paths in
 |------------|--------|---------------|
 | API (FastAPI) | Docker build/push → pull + restart | `ec2/api/main.py` + Dockerfile |
 | Frontend (PWA) | Cloudflare Pages (auto-deploy desde GitHub) | `frontend/` |
-| Cloudflare Worker | **Manual** (NO automatizado) | `cloudflare-worker.js` |
+| Cloudflare Worker | **Manual** (NO automatizado) | `cloudflare/worker.js` |
 | Grafana dashboards | SCP provisioning → restart condicional | `ec2/grafana-provisioning/dashboards/*.json` |
 | nginx config | SCP vía docker-compose | `ec2/nginx/nginx.conf` |
 | Lambdas | **Manual** (NO automatizado en CI/CD) | `lambda/*/app.py` |
@@ -717,7 +717,7 @@ El workflow principal (`deploy.yml`) se activa con push a `main` si los paths in
 | **Swagger UI** | https://api.keogh.lat/api/docs |
 | **Dashboard Táctico (Grafana)** | https://dashboard.keogh.lat |
 | **Dashboard TI/DevOps (Grafana)** | https://dashboard.keogh.lat/d/devops-incendios |
-| **Repositorio GitHub** | https://github.com/anomalyco/incendios-valle |
+| **Repositorio GitHub** | https://github.com/RDTmc/incendios-valle |
 | **Especificación OpenAPI** | `docs/api-spec/openapi.json` (37 endpoints) |
 | **Ejemplos de peticiones** | `docs/api-spec/ejemplos.md` (13 ejemplos curl) |
 | **Guía de ejecución** | `docs/guia-ejecucion.md` |
@@ -741,7 +741,7 @@ Frontend PWA:     https://incendios-valle.pages.dev
 API Backend:      https://api.keogh.lat/api
 Swagger/OpenAPI:  https://api.keogh.lat/api/docs
 Dashboard:        https://dashboard.keogh.lat
-GitHub:           https://github.com/anomalyco/incendios-valle
+GitHub:           https://github.com/RDTmc/incendios-valle
 Docker Hub:       https://hub.docker.com/r/[user]/incendios-api
 ```
 
