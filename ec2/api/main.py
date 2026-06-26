@@ -86,7 +86,7 @@ SYNC_TOKEN = os.environ['SYNC_TOKEN']
 
 Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 try:
-    os.chmod(Path(DB_PATH).parent, 0o755)
+    os.chmod(Path(DB_PATH).parent, 0o755)  # NOSONAR — necesario para que Grafana (UID 472) acceda al directorio SQLite
 except OSError:
     pass
 
@@ -234,8 +234,8 @@ def init_db():
     conn.commit()
     conn.close()
     try:
-        os.chmod(DB_PATH, 0o644)
-        os.chmod(Path(DB_PATH).parent, 0o755)
+        os.chmod(DB_PATH, 0o644)  # NOSONAR — lectura para Grafana (UID 472), escritura solo para app
+        os.chmod(Path(DB_PATH).parent, 0o755)  # NOSONAR — necesario para que Grafana acceda al directorio
     except OSError:
         pass
 

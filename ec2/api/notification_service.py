@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:887513569063:incendios-alerts')
 DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
-GRAFANA_INTERNAL = os.environ.get('GRAFANA_INTERNAL', 'http://incendios-grafana:3000')
+GRAFANA_INTERNAL = os.environ.get('GRAFANA_INTERNAL', '')
 GRAFANA_TOKEN = os.environ.get('GRAFANA_TOKEN', '')
 MAILTRAP_TOKEN = os.environ.get('MAILTRAP_TOKEN', '')
 MAILTRAP_SENDER = os.environ.get('MAILTRAP_SENDER', 'hello@demomailtrap.co')

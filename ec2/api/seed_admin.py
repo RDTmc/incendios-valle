@@ -31,7 +31,7 @@ conn.close()
 
 conn = sqlite3.connect(DB_PATH, timeout=5)
 cursor = conn.cursor()
-seed_password = os.environ.get('SEED_ADMIN_PASSWORD', 'admin123')
+seed_password = os.environ.get('SEED_ADMIN_PASSWORD', secrets.token_urlsafe(12))
 password_hash = bcrypt.hashpw(seed_password.encode(), bcrypt.gensalt()).decode()
 admin_user_id = str(uuid.uuid4())
 timestamp = datetime.now(timezone.utc).isoformat()
