@@ -12,6 +12,7 @@ graph TB
         PWA["React + TypeScript + Tailwind<br/>incendios-valle.pages.dev"]
         CF_PAGES["Cloudflare Pages<br/>Auto-deploy desde GitHub"]
         SW[Service Worker<br/>Soporte offline]
+        ADMIN_DASH["Dashboard Admin (PWA)<br/>5 tabs: Usuarios, Auditoría,<br/>Notificaciones, Reportes, 2FA<br/>Ruta: /admin"]
     end
 
     subgraph "Edge"
@@ -69,8 +70,10 @@ graph TB
     %% Conexiones Frontend
     CIUDADANO --> PWA
     ADMIN --> PWA
+    ADMIN --> ADMIN_DASH
     VECINO --> PWA
     PWA --> SW
+    ADMIN_DASH --> CF_WORKER
     CF_PAGES -.->|push a main| PWA
 
     %% Flujo principal
@@ -130,7 +133,7 @@ graph TB
     classDef cicd fill:#f5f5f5,stroke:#616161
     classDef dashboard fill:#fff3e0,stroke:#ef6c00
 
-    class PWA,SW,CF_PAGES frontend
+    class PWA,SW,CF_PAGES,ADMIN_DASH frontend
     class CF_WORKER,DNS,AG edge
     class nginx,API,GRAFANA,PROM,NODE compute
     class G_DASH1,G_DASH2 dashboard
