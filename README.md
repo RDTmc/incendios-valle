@@ -167,8 +167,8 @@ python -m pytest lambda/ -v
 | PWA              | https://incendios-valle.pages.dev            |
 | API              | https://api.keogh.lat/api                    |
 | Swagger          | https://api.keogh.lat/api/docs               |
-| Dashboard táctico| https://dashboard.keogh.lat                  |
-| Dashboard DevOps | https://dashboard.keogh.lat/d/devops-incendios|
+| Dashboard táctico| https://dashboard.keogh.lat/dashboard/dashboards |
+| Dashboard DevOps | https://dashboard.keogh.lat/dashboard/dashboards)|
 | GitHub           | https://github.com/RDTmc/incendios-valle     |
 
 ---
