@@ -38,14 +38,14 @@ Plataforma PWA de gestión táctica de incendios forestales y urbanos para la Mu
 
 | Componente | Tests | Cobertura | Estado |
 |-----------|:-----:|:---------:|:------:|
-| Backend (FastAPI) | 167 | 88% | ✅ |
-| Frontend (React) | 172 | 82% | ✅ |
+| Backend (FastAPI) | 168 | 88% | ✅ |
+| Frontend (React) | 177 | 82% | ✅ |
 | Lambda upload-proxy | 2 | ~90% | ✅ |
 | Lambda ms-usuarios | 2 | ~85% | ✅ |
 | Lambda ms-incidencias | 2 | ~85% | ✅ |
 | Lambda ms-notificaciones | 2 | ~90% | ✅ |
 | Lambda sns-to-grafana | 2 | ~85% | ✅ |
-| **TOTAL** | **349** | **≥82%** | ✅ |
+| **TOTAL** | **355** | **≥82%** | ✅ |
 
 Todos los componentes superan el **60% de cobertura mínimo** exigido por la rúbrica.
 
@@ -97,7 +97,7 @@ Desarrollar una PWA que permita a ciudadanos reportar incendios y al equipo de e
 **Sobre calidad y automatización:**
 - Automatizar el despliegue mediante CI/CD con GitHub Actions, Docker y deploy automatizado a EC2 con healthchecks.
 - Alcanzar calificación A en las 4 dimensiones de SonarCloud (Security, Reliability, Maintainability, Security Review) con 0 Code Smells.
-- Implementar 349 tests unitarios (167 backend, 172 frontend, 10 lambdas) con cobertura mínima del 82% y 3 patrones de diseño verificables (BFF, Circuit Breaker, Factory Method).
+- Implementar 355 tests unitarios (168 backend, 177 frontend, 10 lambdas) con cobertura mínima del 82% y 3 patrones de diseño verificables (BFF, Circuit Breaker, Factory Method).
 - Incorporar 3 workflows adicionales (restart-grafana, audit, fix-permissions) para operaciones post-deploy.
 - Integrar datos satelitales NASA FIRMS, climáticos OpenWeatherMap y forestales CONAF/CIREN como fuentes externas en los dashboards.
 
@@ -246,7 +246,7 @@ _Referencias técnicas: React 18 [7], TypeScript [8], Vite [26], Tailwind CSS [2
 | PWA | Service Worker con soporte offline |
 | Testing | Vitest 1.6 + Testing Library + jsdom |
 | Despliegue | Cloudflare Pages (auto-deploy desde GitHub) |
-| **Tests** | **172 tests, 82% cobertura** |
+| **Tests** | **177 tests, 82% cobertura** |
 
 **Páginas ciudadanas (9 de las 10 páginas del frontend):**
 
@@ -389,7 +389,7 @@ Panel de administración dentro de la misma PWA, accesible solo para usuarios co
 | Auth | JWT HS256 con bcrypt, OTP 2FA en JWT, backup codes, bootstrap de emergencia |
 | Patrones | Repository (DynamoDB), Circuit Breaker, Factory Method, BFF |
 | Testing | pytest 8.3 + pytest-cov 7.1 + unittest.mock |
-| **Tests** | **167 tests, 88% cobertura** |
+| **Tests** | **168 tests, 88% cobertura** |
 
 **Endpoints del Backend (45 total: 37 en routers + 8 directos en main.py):**
 
@@ -492,14 +492,14 @@ _Referencias técnicas: pytest [17] para testing backend, Vitest [27] para testi
 
 | Componente | Tests | Cobertura | Estado |
 |-----------|:-----:|:---------:|:------:|
-| Backend (FastAPI) | 167 | 88% | ✅ |
-| Frontend (React) | 172 | 82% | ✅ |
+| Backend (FastAPI) | 168 | 88% | ✅ |
+| Frontend (React) | 177 | 82% | ✅ |
 | Lambda upload-proxy | 2 | ~90% | ✅ |
 | Lambda ms-usuarios | 2 | ~85% | ✅ |
 | Lambda ms-incidencias | 2 | ~85% | ✅ |
 | Lambda ms-notificaciones | 2 | ~90% | ✅ |
 | Lambda sns-to-grafana | 2 | ~85% | ✅ |
-| **TOTAL** | **349** | **≥82%** | ✅ |
+| **TOTAL** | **355** | **≥82%** | ✅ |
 
 ### 6.2 Herramientas
 

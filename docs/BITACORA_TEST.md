@@ -6,18 +6,18 @@ Llevar registro de todos los tests planificados, su estado y archivos asociados.
 
 ---
 
-## TOTAL: 349 tests + 12 requisitos rúbrica
+## TOTAL: 355 tests + 12 requisitos rúbrica
 
 | Componente | Existentes | Nuevos | Total |
 |-----------|:---------:|:------:|:-----:|
-| Backend (FastAPI) | 157 | 10 | 167 |
-| Frontend (React) | 165 | 7 | 172 |
+| Backend (FastAPI) | 158 | 10 | 168 |
+| Frontend (React) | 170 | 7 | 177 |
 | Lambda upload-proxy | 0 | 2 | 2 |
 | Lambda ms-usuarios | 0 | 2 | 2 |
 | Lambda ms-incidencias | 0 | 2 | 2 |
 | Lambda ms-notificaciones | 0 | 2 | 2 |
 | Lambda sns-to-grafana | 0 | 2 | 2 |
-| **TOTAL** | **322** | **27** | **349** |
+| **TOTAL** | **328** | **27** | **355** |
 | **Rúbrica (R1-R12)** | — | **12/12** | **✅ 100%** |
 
 ---
@@ -219,8 +219,8 @@ Mapeo de cada requisito de la rúbrica a su archivo/acción. Marcar al completar
 - Flujo: escritura → SQLite + sync → DynamoDB (cuando es posible)
 
 #### R3 — Informe de Pruebas Unitarias (PDF)
-- Coverage backend: 88% (167 tests)
-- Coverage frontend: 82% (172 tests)
+- Coverage backend: 88% (168 tests)
+- Coverage frontend: 82% (177 tests)
 - Coverage Lambda: 10 tests nuevos
 - Patrones: BFF, Circuit Breaker, Factory Method
 - 12 ejemplos detallados (6 backend + 6 frontend) con snippet + resultado
@@ -271,7 +271,7 @@ Mapeo de cada requisito de la rúbrica a su archivo/acción. Marcar al completar
 | Fecha | Cambio |
 |------|--------|
 | 20 jun 2026 | Creación inicial del archivo. Plan 6+6+10 tests. |
-| 20 jun 2026 | Implementados L1-L5 (10 tests Lambda). Total: 349 tests. |
+| 20 jun 2026 | Implementados L1-L5 (10 tests Lambda). Total: 355 tests. |
 | 20 jun 2026 | Agregada Fase Final Rúbrica (R1-R12). Checklist entrega. |
 | 20 jun 2026 | R6 openapi.json, R7 ejemplos API, R4+R5 READMEs, R8 coverage HTML, R10 guía ejecución. |
 | 20 jun 2026 | R2 persistencia, R3 informe pruebas, R9 repositorios.txt, R11 ZIP entrega, R1 diagrama Mermaid, R12 defensa oral. **Todos los 12 requisitos rúbrica completados.** |

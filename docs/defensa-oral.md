@@ -7,7 +7,7 @@
 | 0-2 | **Problema + solución** | 1-2 | Incendios forestales/urbanos, necesidad de PWA para reportes ciudadanos + dashboard táctico para emergencias |
 | 2-5 | **Arquitectura** | 3-5 | BFF + 5 microservicios Lambda, frontend React, API Gateway + Cloudflare, DynamoDB + SQLite + S3 |
 | 5-7 | **Persistencia** | 6-7 | Dual DynamoDB/SQLite, por qué dos fuentes (LabRole), backup S3, sync |
-| 7-10 | **Pruebas unitarias** | 8-10 | 349 tests, cobertura 88% backend / 82% frontend, 3 patrones, 12 ejemplos |
+| 7-10 | **Pruebas unitarias** | 8-10 | 355 tests, cobertura 88% backend / 82% frontend, 3 patrones, 12 ejemplos |
 | 10-12 | **CI/CD + Deploy** | 11 | Pipeline GitHub Actions, Docker build/push, deploy automático a EC2 |
 | 12-15 | **Demo + preguntas** | 12 | Mostrar PWA en vivo, login, reporte, admin panel, dashboard Grafana |
 
@@ -34,13 +34,13 @@
 - React 18 + TypeScript + Vite + Tailwind CSS
 - PWA con service worker, offline support
 - Mapbox GL JS para mapa interactivo
-- 17 páginas/componentes, 172 tests
+- 10 páginas + 7 componentes, 177 tests
 
 ### Slide 5 — Componentes Backend
 - BFF (Backend for Frontend) en FastAPI
 - 8 routers: auth, reports, public, admin, alerts, bff, password_reset, bootstrap
 - 5 Lambdas serverless (Python)
-- 167 tests backend, 10 tests Lambda
+- 168 tests backend, 10 tests Lambda
 
 ### Slide 6 — Persistencia de Datos
 - **DynamoDB**: usuarios, reportes (persistencia primaria para Lambdas)
@@ -56,9 +56,9 @@
 - Login con fallback: intenta DynamoDB, si falla prueba SQLite
 
 ### Slide 8 — Pruebas Unitarias
-- **349 tests totales**, todos verdes
-- Backend: 167 tests, 88% cobertura (pytest + pytest-cov)
-- Frontend: 172 tests, 82% cobertura (vitest + testing library)
+- **355 tests totales**, todos verdes
+- Backend: 168 tests, 88% cobertura (pytest + pytest-cov)
+- Frontend: 177 tests, 82% cobertura (vitest + testing library)
 - Lambdas: 10 tests
 - Herramientas: pytest 8.3, Vitest 1.6, unittest.mock, jsdom
 
@@ -116,7 +116,7 @@
 
 ### Sobre pruebas
 7. **¿Cómo lograron 88% de cobertura backend?**
-   - Tests unitarios con mocks de DynamoDB, S3, SNS, APIs externas. pytest-cov para medir. 167 tests cubriendo routers, repositorios, servicios, factories, circuit breaker.
+   - Tests unitarios con mocks de DynamoDB, S3, SNS, APIs externas. pytest-cov para medir. 168 tests cubriendo routers, repositorios, servicios, factories, circuit breaker.
 
 8. **¿Qué patrones de diseño aplicaron y por qué?**
    - BFF (para frontend específico), Circuit Breaker (para resiliencia con APIs externas), Factory Method (para crear diferentes tipos de reporte).
@@ -153,5 +153,5 @@
 - **Demo en vivo**: tener la PWA abierta de antemano, preparar un reporte de prueba
 - **Capturas de test coverage**: mostrarlas al hablar de pruebas
 - **Responder con ejemplos concretos**: "En el test B1 verificamos que..."
-- **Mencionar métricas**: 349 tests, 88% backend, 82% frontend, 3 patrones
+- **Mencionar métricas**: 355 tests, 88% backend, 82% frontend, 3 patrones
 - **No improvisar**: revisar el banco de preguntas antes de la presentación

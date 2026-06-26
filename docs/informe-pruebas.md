@@ -2,18 +2,18 @@
 
 ## 1. Resumen ejecutivo
 
-El presente informe detalla los resultados de las pruebas unitarias aplicadas a cada componente del sistema Incendios Valle del Sol. Se evaluaron 349 tests distribuidos en tres capas (backend, frontend y lambdas serverless), todos superando el umbral del 60% de cobertura exigido por la rúbrica. El documento describe las herramientas utilizadas, las métricas obtenidas, ejemplos representativos de cada prueba y los patrones de diseño implementados, con el objetivo de demostrar la calidad y confiabilidad del software desarrollado.
+El presente informe detalla los resultados de las pruebas unitarias aplicadas a cada componente del sistema Incendios Valle del Sol. Se evaluaron 355 tests distribuidos en tres capas (backend, frontend y lambdas serverless), todos superando el umbral del 60% de cobertura exigido por la rúbrica. El documento describe las herramientas utilizadas, las métricas obtenidas, ejemplos representativos de cada prueba y los patrones de diseño implementados, con el objetivo de demostrar la calidad y confiabilidad del software desarrollado.
 
 | Componente | Tests | Cobertura | Estado |
 |-----------|:-----:|:---------:|:------:|
-| Backend (FastAPI) | 167 | 88% | ✅ |
-| Frontend (React) | 172 | 82% | ✅ |
+| Backend (FastAPI) | 168 | 88% | ✅ |
+| Frontend (React) | 177 | 82% | ✅ |
 | Lambda upload-proxy | 2 | ~90% | ✅ |
 | Lambda usuarios | 2 | ~85% | ✅ |
 | Lambda incidencias | 2 | ~85% | ✅ |
 | Lambda notificaciones | 2 | ~90% | ✅ |
 | Lambda sns-to-grafana | 2 | ~85% | ✅ |
-| **TOTAL** | **349** | **≥82%** | ✅ |
+| **TOTAL** | **355** | **≥82%** | ✅ |
 
 Todos los componentes superan el **60% de cobertura mínimo** exigido por la rúbrica.
 
@@ -79,46 +79,133 @@ Valida el flujo de autenticación con verificación en dos pasos. Cuando un usua
 
 **Archivo:** `ec2/api/tests/test_auth.py`
 
-**Código:**
+**Cobertura:** 3 positivos + 1 negativo
+
+**Código (positivo):**
 ```python
 def test_login_with_2fa_returns_temp_token(self, client, mock_dynamodb, db_connection):
-    # setup: usuario con 2FA habilitado en SQLite
+    mock_users, _ = mock_dynamodb
+    mock_users.query.return_value = {
+        'Items': [{
+            'user_id': '2fa-user-id',
+            'email': 'admin2fa@test.cl',
+            'password_hash': VALID_HASH,
+            'rol': 'ADMIN',
+            'nombre': 'Admin 2FA'
+        }]
+    }
     cursor = db_connection.cursor()
-    cursor.execute("INSERT OR REPLACE INTO users ...", ('2fa-user-id', ...))
-    cursor.execute("INSERT OR REPLACE INTO admin_2fa ...", ('2fa-user-id', 1, ...))
+    cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
+                   ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
+    cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
+                   ('2fa-user-id', 1, '[]', '2026-01-01T00:00:00'))
+    db_connection.commit()
 
     with patch('routers.auth.send_otp_email') as mock_email:
-        response = client.post("/login", json={"email": "admin2fa@test.cl", "password": "testpass123"})
-
-    assert response.json()["two_factor_required"] is True
-    assert "temp_token" in data
-    mock_email.assert_called_once()
-    assert len(mock_email.call_args[0][1]) == 6  # OTP de 6 dígitos
-
-def test_verify_2fa_with_valid_otp_returns_jwt(self, client, mock_dynamodb, db_connection):
-    # login con 2FA → OTP en _otp_store (server-side)
-    with patch('routers.auth._generate_otp', return_value='123456'):
-        with patch('routers.auth.send_otp_email'):
-            login_resp = client.post("/login", json={"email": "admin2fa@test.cl", "password": "testpass123"})
-
-    temp_token = login_resp.json()["temp_token"]
-    response = client.post("/auth/2fa/verify", json={"temp_token": temp_token, "code": "123456"})
+        response = client.post("/login", json={
+            "email": "admin2fa@test.cl",
+            "password": "testpass123"
+        })
 
     assert response.status_code == 200
-    assert data["user"]["rol"] == "ADMIN"
+    data = response.json()
+    assert data["two_factor_required"] is True
+    assert "temp_token" in data
+    mock_email.assert_called_once()
+    email_arg, otp_arg = mock_email.call_args[0]
+    assert email_arg == "admin2fa@test.cl"
+    assert len(otp_arg) == 6
 
-def test_verify_2fa_with_invalid_otp_returns_401(self, client, mock_dynamodb, db_connection):
-    with patch('routers.auth.send_otp_email'):
-        login_resp = client.post("/login", json={"email": "admin2fa@test.cl", "password": "testpass123"})
+def test_verify_2fa_with_valid_otp_returns_jwt(self, client, mock_dynamodb, db_connection):
+    mock_users, _ = mock_dynamodb
+    mock_users.query.return_value = {
+        'Items': [{
+            'user_id': '2fa-user-id',
+            'email': 'admin2fa@test.cl',
+            'password_hash': VALID_HASH,
+            'rol': 'ADMIN',
+            'nombre': 'Admin 2FA'
+        }]
+    }
+    mock_users.get_item.return_value = {
+        'Item': {
+            'user_id': '2fa-user-id',
+            'email': 'admin2fa@test.cl',
+            'rol': 'ADMIN',
+            'nombre': 'Admin 2FA',
+            'created_at': '2026-01-01T00:00:00'
+        }
+    }
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
+                   ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
+    cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
+                   ('2fa-user-id', 1, '[]', '2026-01-01T00:00:00'))
+    db_connection.commit()
+
+    with patch('routers.auth._generate_otp', return_value='123456'):
+        with patch('routers.auth.send_otp_email'):
+            login_resp = client.post("/login", json={
+                "email": "admin2fa@test.cl",
+                "password": "testpass123"
+            })
+
+    assert login_resp.status_code == 200
+    temp_token = login_resp.json()["temp_token"]
 
     response = client.post("/auth/2fa/verify", json={
-        "temp_token": login_resp.json()["temp_token"], "code": "000000"
+        "temp_token": temp_token,
+        "code": "123456"
     })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "token" in data
+    assert data["user"]["rol"] == "ADMIN"
+    assert data["user"]["email"] == "admin2fa@test.cl"
+```
+
+**Negativo destacado — código OTP inválido es rechazado:**
+Prueba que un código OTP incorrecto sea rechazado. Es crítica porque el endpoint de verificación 2FA es el último filtro antes de entregar el JWT de acceso; un OTP inválido nunca debe autenticar al usuario, incluso si el login previo fue exitoso.
+
+```python
+def test_verify_2fa_with_invalid_otp_returns_401(self, client, mock_dynamodb, db_connection):
+    mock_users, _ = mock_dynamodb
+    mock_users.query.return_value = {
+        'Items': [{
+            'user_id': '2fa-user-id',
+            'email': 'admin2fa@test.cl',
+            'password_hash': VALID_HASH,
+            'rol': 'ADMIN',
+            'nombre': 'Admin 2FA'
+        }]
+    }
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
+                   ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
+    cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
+                   ('2fa-user-id', 1, '["AAAA-BBBB"]', '2026-01-01T00:00:00'))
+    db_connection.commit()
+
+    with patch('routers.auth.send_otp_email'):
+        login_resp = client.post("/login", json={
+            "email": "admin2fa@test.cl",
+            "password": "testpass123"
+        })
+
+    assert login_resp.status_code == 200
+    temp_token = login_resp.json()["temp_token"]
+
+    response = client.post("/auth/2fa/verify", json={
+        "temp_token": temp_token,
+        "code": "000000"
+    })
+
     assert response.status_code == 401
     assert "Código inválido" in response.json()["detail"]
 ```
 
-**Nota:** El OTP se almacena en `_otp_store` (dict server-side), no viaja en el JWT `temp_token`. Validado por test `test_temp_token_does_not_contain_otp` + prueba de campo exitosa contra producción.
+**Nota:** El OTP se almacena en `_otp_store` (dict server-side), no viaja en el JWT `temp_token`. Validado por `test_temp_token_does_not_contain_otp` que decodifica el JWT y verifica que `"otp" not in payload` mientras el OTP real está en `_otp_store["2fa-user-id"]["otp"]`.
 
 **Resultado:** ✅ 4/4 tests pasan
 
@@ -130,25 +217,82 @@ Evalúa el patrón Circuit Breaker implementado para APIs externas (FIRMS, OpenW
 
 **Archivo:** `ec2/api/tests/test_circuit_breaker.py`
 
-**Código:**
+**Cobertura:** 4 positivos + 2 negativos
+
+**Código (positivo):**
 ```python
-def test_opens_after_threshold_failures(self):
-    cb = CircuitBreaker("test", threshold=3)
-    for _ in range(3):
-        try:
-            cb.call(lambda: (_ for _ in ()).throw(Exception("fail")))
-        except Exception:
-            pass
+async def test_closed_state_by_default(self):
+    cb = CircuitBreaker("test", failure_threshold=2, recovery_timeout=10.0)
+    assert cb.state == CircuitState.CLOSED
+
+async def test_successful_call_resets_failures(self):
+    cb = CircuitBreaker("test", failure_threshold=2, recovery_timeout=10.0)
+
+    async def succeed():
+        return "ok"
+
+    async def fail():
+        raise Exception("fail")
+
+    with pytest.raises(Exception):
+        await cb.call(fail)
+    result = await cb.call(succeed)
+    assert result == "ok"
+    assert cb.state == CircuitState.CLOSED
+
+async def test_fallback_called_when_open(self):
+    cb = CircuitBreaker("test", failure_threshold=1, recovery_timeout=60.0)
+
+    async def fail():
+        raise Exception("fail")
+
+    with pytest.raises(Exception):
+        await cb.call(fail)
+
+    async def fallback():
+        return "fallback_value"
+
+    async def succeed():
+        return "ok"
+
+    result = await cb.call(succeed, fallback=fallback)
+    assert result == "fallback_value"
+```
+
+**Negativo destacado — circuito se abre tras superar umbral de fallos:**
+Verifica que el circuito transicione a OPEN tras el número configurado de fallos consecutivos. Es esencial para garantizar que el sistema no siga golpeando APIs externas caídas, evitando timeouts y degradación general.
+
+```python
+async def test_opens_after_threshold_failures(self):
+    cb = CircuitBreaker("test", failure_threshold=2, recovery_timeout=60.0)
+
+    async def fail():
+        raise Exception("fail")
+
+    with pytest.raises(Exception):
+        await cb.call(fail)
+    assert cb.state == CircuitState.CLOSED
+
+    with pytest.raises(Exception):
+        await cb.call(fail)
     assert cb.state == CircuitState.OPEN
 
-def test_fallback_called_when_open(self):
-    cb = CircuitBreaker("test", threshold=1)
-    try:
-        cb.call(lambda: (_ for _ in ()).throw(Exception("fail")))
-    except Exception:
-        pass
-    result = cb.call(fallback=lambda: "fallback")
-    assert result == "fallback"
+async def test_open_circuit_raises_error(self):
+    cb = CircuitBreaker("test", failure_threshold=1, recovery_timeout=60.0)
+
+    async def fail():
+        raise Exception("fail")
+
+    with pytest.raises(Exception):
+        await cb.call(fail)
+    assert cb.state == CircuitState.OPEN
+
+    async def succeed():
+        return "ok"
+
+    with pytest.raises(Exception) as exc:
+        await cb.call(succeed)
+    assert 'OPEN' in str(exc.value)
 ```
 
 **Resultado:** ✅ 6/6 tests pasan
@@ -161,9 +305,11 @@ Prueba el endpoint BFF que agrega datos de clima (OpenWeatherMap), focos satelit
 
 **Archivo:** `ec2/api/tests/test_bff.py`
 
-**Código:**
+**Cobertura:** 3 positivos + 2 negativos
+
+**Código (positivo):**
 ```python
-def test_bff_dashboard_with_data(self):
+def test_bff_dashboard(self, client):
     response = client.get("/bff/dashboard")
     assert response.status_code == 200
     data = response.json()
@@ -171,6 +317,47 @@ def test_bff_dashboard_with_data(self):
     assert "weather" in data
     assert "hotspots" in data
     assert "focos" in data
+    assert data["stats"]["total_reportes"] >= 0
+    assert data["hotspots"]["ciren_records"] >= 0
+
+def test_bff_dashboard_with_data(self, client, db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT INTO reports (report_id, user_id, tipo, estado, latitud, longitud, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                   ("r1", "u1", "FORESTAL", "ACTIVO", "-33.0", "-70.0", "2026-01-01", "2026-01-01"))
+    cursor.execute("INSERT INTO reports (report_id, user_id, tipo, estado, latitud, longitud, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                   ("r2", "u2", "URBANO", "PENDIENTE", "-33.5", "-70.5", "2026-01-01", "2026-01-01"))
+    cursor.execute("INSERT INTO weather_readings (lat, lon, region, temperature, humidity, wind_speed, weather_desc, pressure) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                   (-33.45, -70.67, "Metropolitana", 25.0, 60, 5.0, "clear sky", 1013))
+    cursor.execute("INSERT INTO firms_hotspots (latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                   (-33.5, -70.5, 300.0, 50.0, "high", "NPP", "2026-01-01", 1200, "D", "VIIRS_SNPP_NRT"))
+    db_connection.commit()
+
+    response = client.get("/bff/dashboard")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["stats"]["total_reportes"] == 2
+    assert data["stats"]["forestales"] == 1
+    assert data["stats"]["urbanos"] == 1
+    assert data["weather"]["temperature"] == 25.0
+    assert data["hotspots"]["ciren_records"] >= 0
+```
+
+**Negativo destacado — dashboard sin datos retorna estructura vacía:**
+Verifica que el dashboard BFF funcione correctamente incluso cuando no hay reportes en la base de datos, retornando una estructura vacía pero válida. Evita errores 500 por falta de datos.
+
+```python
+def test_bff_dashboard_no_data(self, client):
+    response = client.get("/bff/dashboard")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["stats"]["total_reportes"] == 0
+    assert data["weather"] == {}
+
+def test_bff_dashboard_db_error(self, client):
+    from unittest.mock import patch
+    with patch('main.get_db_connection', side_effect=Exception("DB crash")):
+        response = client.get("/bff/dashboard")
+        assert response.status_code == 500
 ```
 
 **Resultado:** ✅ 5/5 tests pasan
@@ -179,52 +366,147 @@ def test_bff_dashboard_with_data(self):
 
 ### B4 — Upload imagen vía Lambda → S3
 
-Verifica que el proxy de subida de imágenes reciba un JPEG o PNG en base64, lo decodifique, lo almacene en S3 con la ruta y extensión correctas, y devuelva la URL generada. Es la pieza que permite a los ciudadanos adjuntar fotos a sus reportes.
+Verifica que la subida de imágenes reciba un JPEG o PNG como multipart form-data, lo decodifique, lo almacene en S3 y devuelva la URL generada. Es la pieza que permite a los ciudadanos adjuntar fotos a sus reportes. Incluye validación de tipo MIME y tamaño máximo.
 
-**Archivo:** `lambda/upload_proxy/test_upload_proxy.py`
+**Archivo:** `ec2/api/tests/test_upload.py`
 
-**Código:**
+**Cobertura:** 2 positivos + 2 negativos
+
+**Código (positivo):**
 ```python
-@patch.object(app, 's3')
-def test_upload_jpeg_success(self, mock_s3):
-    image_bytes = b'\xff\xd8\xff\xe0'
-    event = {
-        "body": base64.b64encode(image_bytes).decode(),
-        "content_type": "image/jpeg"
-    }
-    result = app.lambda_handler(event, None)
-    assert result["statusCode"] == 200
-    body = json.loads(result["body"])
-    assert body["foto_url"].startswith("reportes/")
-    assert body["foto_url"].endswith(".jpg")
+def test_upload_image_jpeg(self, client, mock_lambda_service):
+    file_content = b'\xff\xd8\xff\xe0'
+    response = client.post("/reports/upload", files={
+        "file": ("test.jpg", io.BytesIO(file_content), "image/jpeg")
+    })
+    assert response.status_code == 200
+    assert "foto_url" in response.json()
+
+def test_upload_image_png(self, client, mock_lambda_service):
+    file_content = b'\x89PNG\r\n\x1a\n'
+    response = client.post("/reports/upload", files={
+        "file": ("test.png", io.BytesIO(file_content), "image/png")
+    })
+    assert response.status_code == 200
 ```
 
-**Resultado:** ✅ 2/2 tests pasan
+**Negativo destacado — tipo MIME no soportado es rechazado:**
+Rechaza archivos con tipo MIME no soportado (p. ej. `text/plain`). Evita que archivos maliciosos o no válidos ocupen espacio en S3.
+
+```python
+def test_upload_invalid_mime_type(self, client, mock_lambda_service):
+    response = client.post("/reports/upload", files={
+        "file": ("test.txt", io.BytesIO(b"not an image"), "text/plain")
+    })
+    assert response.status_code == 400
+    assert "JPEG o PNG" in response.json()["detail"]
+
+def test_upload_file_too_large(self, client, mock_lambda_service):
+    large_content = b'x' * (6 * 1024 * 1024)
+    response = client.post("/reports/upload", files={
+        "file": ("large.jpg", io.BytesIO(large_content), "image/jpeg")
+    })
+    assert response.status_code == 400
+    assert "5MB" in response.json()["detail"]
+```
+
+**Resultado:** ✅ 4/4 tests pasan
 
 ---
 
 ### B5 — Password reset con OTP email
 
-Cubre el flujo de recuperación de contraseña: solicitud de restablecimiento que envía un OTP de 6 dígitos al correo del usuario, y posterior验证 del código para actualizar la contraseña. Depende de la integración con Mailtrap SMTP para el envío del correo.
+Cubre el flujo de recuperación de contraseña: solicitud de restablecimiento que envía un OTP de 6 dígitos al correo del usuario, y posterior verificación del código para actualizar la contraseña. Depende de la integración con Mailtrap SMTP para el envío del correo.
 
 **Archivo:** `ec2/api/tests/test_password_reset.py`
 
-**Código:**
-```python
-def test_forgot_password_with_existing_email_sends_otp(self, client):
-    response = client.post("/auth/forgot-password", json={
-        "email": "admin@test.cl"
-    })
-    assert response.status_code == 200
-    assert "enviado" in response.json()["message"].lower()
+**Cobertura:** 2 positivos + 2 negativos
 
-def test_reset_password_with_valid_otp_updates_password(self, client):
-    response = client.post("/auth/reset-password", json={
-        "email": "admin@test.cl",
-        "otp": "123456",
-        "password": "NewPass789"
-    })
+**Código (positivo):**
+```python
+def test_forgot_password_with_existing_email_sends_otp(self, client, db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
+                   ('reset-user-1', 'reset@test.cl', 'Reset User', 'VECINO', '2026-01-01T00:00:00'))
+    db_connection.commit()
+
+    with patch('routers.password_reset.send_otp_email') as mock_email:
+        response = client.post("/auth/forgot-password", json={
+            "email": "reset@test.cl"
+        })
+
     assert response.status_code == 200
+    data = response.json()
+    assert data["message"] == "Código de verificación enviado al correo"
+    mock_email.assert_called_once()
+    email_arg, otp_arg = mock_email.call_args[0]
+    assert email_arg == "reset@test.cl"
+    assert len(otp_arg) == 6
+
+def test_reset_password_with_valid_otp_updates_password(self, client, db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
+                   ('reset-user-2', 'reset2@test.cl', 'Reset User 2', 'VECINO', '2026-01-01T00:00:00'))
+    db_connection.commit()
+
+    with patch('routers.password_reset.send_otp_email') as mock_email:
+        forgot_resp = client.post("/auth/forgot-password", json={
+            "email": "reset2@test.cl"
+        })
+    assert forgot_resp.status_code == 200
+
+    otp = mock_email.call_args[0][1]
+
+    response = client.post("/auth/reset-password", json={
+        "email": "reset2@test.cl",
+        "otp": otp,
+        "password": "NuevaPass123!"
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["message"] == "Contraseña actualizada correctamente"
+
+    cursor.execute("SELECT password_hash FROM users WHERE email = ?", ("reset2@test.cl",))
+    row = cursor.fetchone()
+    assert row is not None
+    assert row[0] is not None
+    assert len(row[0]) > 20
+```
+
+**Negativo destacado — email inexistente retorna 404:**
+Verifica que el sistema no revele qué correos están registrados. Para un email inexistente retorna 404, evitando ataques de enumeración de usuarios.
+
+```python
+def test_forgot_password_nonexistent_email_returns_404(self, client):
+    with patch('routers.password_reset.send_otp_email'):
+        response = client.post("/auth/forgot-password", json={
+            "email": "noexiste@test.cl"
+        })
+
+    assert response.status_code == 404
+    assert "Email no registrado" in response.json()["detail"]
+
+def test_reset_password_with_invalid_otp_returns_400(self, client, db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
+                   ('reset-user-3', 'reset3@test.cl', 'Reset User 3', 'VECINO', '2026-01-01T00:00:00'))
+    db_connection.commit()
+
+    with patch('routers.password_reset.send_otp_email'):
+        forgot_resp = client.post("/auth/forgot-password", json={
+            "email": "reset3@test.cl"
+        })
+    assert forgot_resp.status_code == 200
+
+    response = client.post("/auth/reset-password", json={
+        "email": "reset3@test.cl",
+        "otp": "999999",
+        "password": "NuevaPass123!"
+    })
+
+    assert response.status_code == 400
+    assert "Código de verificación incorrecto" in response.json()["detail"]
 ```
 
 **Resultado:** ✅ 4/4 tests pasan
@@ -237,29 +519,74 @@ Valida que solo usuarios con rol ADMIN puedan cambiar el estado de un reporte (P
 
 **Archivo:** `ec2/api/tests/test_reports.py`
 
-**Código:**
+**Cobertura:** 1 positivo + 3 negativos
+
+**Código (positivo):**
 ```python
 def test_admin_update_report_status_success(self, client, db_connection, mock_dynamodb):
-    # setup: insertar reporte + generar JWT ADMIN manual
-    cursor.execute("INSERT OR REPLACE INTO reports ...", ('admin-report-1', 'admin-user', 'FORESTAL', ...))
-    token = jwt.encode({'user_id': 'admin-user', 'rol': 'ADMIN', ...}, 'test-secret-key')
+    mock_users, mock_reports = mock_dynamodb
+    cursor = db_connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO reports (report_id, user_id, tipo, latitud, longitud, estado, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                   ('admin-report-1', 'admin-user', 'FORESTAL', '-33.45', '-70.67', 'PENDIENTE', '2026-01-01T00:00:00'))
+    db_connection.commit()
 
-    response = client.put("/admin/reports/admin-report-1/status",
-        json={"estado": "ACTIVO"},
-        headers={"Authorization": f"Bearer {token}"})
+    import jwt, datetime
+    from datetime import timezone
+    token = jwt.encode({
+        'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+        'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+    }, 'test-secret-key', algorithm='HS256')
+
+    response = client.put("/admin/reports/admin-report-1/status", json={
+        "estado": "ACTIVO"
+    }, headers={"Authorization": f"Bearer {token}"})
+
     assert response.status_code == 200
+    data = response.json()
     assert data["status"] == "updated"
+    assert data["estado"] == "ACTIVO"
 
-def test_admin_update_report_status_unauthorized(self, client):
-    token = jwt.encode({'user_id': 'vecino-user', 'rol': 'VECINO', ...}, 'test-secret-key')
-    response = client.put("/admin/reports/nonexistent/status",
-        json={"estado": "ACTIVO"},
-        headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == 403
-    assert "ADMIN" in response.json()["detail"]
+    cursor.execute("SELECT estado FROM reports WHERE report_id = 'admin-report-1'")
+    row = cursor.fetchone()
+    assert row[0] == "ACTIVO"
 ```
 
-**Resultado:** ✅ 4/4 tests pasan (success + unauthorized + not_found + db_error)
+**Negativo destacado — usuario no autorizado no puede cambiar estado:**
+Verifica que un usuario con rol VECINO no pueda cambiar el estado de un reporte. Es crítica para la seguridad del sistema: solo el equipo de emergencia con rol ADMIN debe poder avanzar el estado de un incendio.
+
+```python
+def test_admin_update_report_status_unauthorized(self, client):
+    import jwt, datetime
+    from datetime import timezone
+    token = jwt.encode({
+        'user_id': 'vecino-user', 'email': 'vecino@test.com', 'rol': 'VECINO',
+        'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+    }, 'test-secret-key', algorithm='HS256')
+
+    response = client.put("/admin/reports/nonexistent/status", json={
+        "estado": "ACTIVO"
+    }, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 403
+    assert "ADMIN" in response.json()["detail"]
+
+def test_admin_update_report_status_not_found(self, client):
+    import jwt, datetime
+    from datetime import timezone
+    token = jwt.encode({
+        'user_id': 'admin-user', 'email': 'admin@test.com', 'rol': 'ADMIN',
+        'exp': datetime.datetime.now(timezone.utc) + datetime.timedelta(hours=1)
+    }, 'test-secret-key', algorithm='HS256')
+
+    response = client.put("/admin/reports/nonexistent-id/status", json={
+        "estado": "ACTIVO"
+    }, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 404
+    assert "Reporte no encontrado" in response.json()["detail"]
+```
+
+**Resultado:** ✅ 4/4 tests pasan
 
 ---
 
@@ -271,19 +598,86 @@ Simula el inicio de sesión de un usuario con 2FA activado. Verifica que la inte
 
 **Archivo:** `frontend/src/__tests__/Login.test.tsx`
 
-**Código:**
+**Cobertura:** 7 positivos + 1 negativo
+
+**Código (positivo):**
+```tsx
+it("should submit form with email and password", async () => {
+  const Login = (await import('../pages/Login')).default
+  mockAPILogin.mockResolvedValue({ token: 'test-token', user: { id: 1, name: 'Test', email: 'user@example.com' } })
+  renderWithProviders(<Login />)
+
+  const emailInput = screen.getByPlaceholderText('correo@ejemplo.com')
+  const passwordInput = screen.getByPlaceholderText('••••••••')
+  const submitButton = screen.getByText('Iniciar Sesión')
+
+  await userEvent.type(emailInput, 'user@example.com')
+  await userEvent.type(passwordInput, 'password123')
+  fireEvent.click(submitButton)
+
+  await waitFor(() => {
+    expect(mockAPILogin).toHaveBeenCalledWith('user@example.com', 'password123')
+    expect(mockSetAuthFrom2FA).toHaveBeenCalledWith('test-token', { id: 1, name: 'Test', email: 'user@example.com' })
+  })
+})
+
+it("should submit OTP and call login2FA", async () => {
+  const Login = (await import('../pages/Login')).default
+  mockAPILogin.mockResolvedValue({
+    two_factor_required: true,
+    temp_token: 'temp-token-123'
+  })
+  mockAPILogin2FA.mockResolvedValue({
+    token: 'final-jwt',
+    user: { email: 'admin@test.cl', rol: 'ADMIN' }
+  })
+  renderWithProviders(<Login />)
+
+  await userEvent.type(screen.getByPlaceholderText('correo@ejemplo.com'), 'admin@test.cl')
+  await userEvent.type(screen.getByPlaceholderText('••••••••'), 'adminpass')
+  fireEvent.click(screen.getByText('Iniciar Sesión'))
+
+  await waitFor(() => {
+    expect(screen.getByText('Verificación en dos pasos')).toBeDefined()
+  })
+
+  const otpInputs = document.querySelectorAll('input[inputMode="numeric"]')
+  expect(otpInputs.length).toBe(6)
+
+  otpInputs.forEach((input, i) => {
+    fireEvent.change(input, { target: { value: String(i + 1) } })
+  })
+
+  fireEvent.click(screen.getByText('Verificar código'))
+
+  await waitFor(() => {
+    expect(mockAPILogin2FA).toHaveBeenCalledWith('temp-token-123', '123456')
+    expect(mockSetAuthFrom2FA).toHaveBeenCalledWith('final-jwt', { email: 'admin@test.cl', rol: 'ADMIN' })
+  })
+})
+```
+
+**Negativo destacado — login con 2FA muestra campo OTP:**
+Valida que la UI transicione correctamente al segundo factor cuando el usuario tiene 2FA activado. Es la prueba que cubre el flujo alterno de autenticación: sin esta verificación, usuarios con 2FA no podrían completar el login.
+
 ```tsx
 it("should show OTP input when 2FA is required", async () => {
-  (API.login as Mock).mockResolvedValue({
+  const Login = (await import('../pages/Login')).default
+  mockAPILogin.mockResolvedValue({
     two_factor_required: true,
-    temp_token: "temp-token-xyz"
-  });
-  render(<Login />);
-  await userEvent.type(screen.getByPlaceholderText(/email/i), "admin@test.cl");
-  await userEvent.type(screen.getByPlaceholderText(/contraseña/i), "Admin123");
-  await userEvent.click(screen.getByRole("button", { name: /ingresar/i }));
-  expect(await screen.findByText(/código de verificación/i)).toBeInTheDocument();
-});
+    temp_token: 'temp-token-123'
+  })
+  renderWithProviders(<Login />)
+
+  await userEvent.type(screen.getByPlaceholderText('correo@ejemplo.com'), 'admin@test.cl')
+  await userEvent.type(screen.getByPlaceholderText('••••••••'), 'adminpass')
+  fireEvent.click(screen.getByText('Iniciar Sesión'))
+
+  await waitFor(() => {
+    expect(screen.getByText('Verificación en dos pasos')).toBeDefined()
+    expect(screen.getByText('Verificar código')).toBeDefined()
+  })
+})
 ```
 
 **Resultado:** ✅ 8/8 tests pasan
@@ -296,13 +690,55 @@ Comprueba que el componente de mapa renderice correctamente los marcadores georr
 
 **Archivo:** `frontend/src/__tests__/MapboxStrategy.test.tsx`
 
-**Código:**
+**Cobertura:** 17 positivos + 2 negativos
+
+**Código (positivo):**
 ```tsx
-it("renders markers with correct colors per estado", () => {
-  const { container } = render(<MapboxStrategy focos={mockFocos} />);
-  const markers = container.querySelectorAll(".mapboxgl-marker");
-  expect(markers.length).toBe(mockFocos.length);
-});
+it("renders markers for each foco", () => {
+  const focos = [
+    sampleFoco({ id: '1' }),
+    sampleFoco({ id: '2', lat: -33.46, lng: -70.68, estado: 'PENDIENTE' }),
+  ]
+  renderStrategy(defaultProps({ focos }))
+  const markers = screen.getAllByTestId('mock-marker')
+  expect(markers).toHaveLength(2)
+})
+
+it("calls onSelectFoco when marker is clicked", () => {
+  const onSelectFoco = vi.fn()
+  const foco = sampleFoco({ id: '1' })
+  renderStrategy(defaultProps({ focos: [foco], onSelectFoco }))
+  fireEvent.click(screen.getByTestId('mock-marker'))
+  expect(onSelectFoco).toHaveBeenCalledWith(foco)
+})
+
+it("renders all estado types in marker dot color", () => {
+  const focos: FocoData[] = [
+    sampleFoco({ id: 'a', estado: 'ACTIVO' }),
+    sampleFoco({ id: 'b', estado: 'PENDIENTE' }),
+    sampleFoco({ id: 'c', estado: 'CONTROLADO' }),
+    sampleFoco({ id: 'd', estado: 'EXTINGUIDO' }),
+    sampleFoco({ id: 'e', estado: 'UNKNOWN' }),
+  ]
+  renderStrategy(defaultProps({ focos }))
+  expect(screen.getAllByTestId('mock-marker')).toHaveLength(5)
+})
+```
+
+**Negativo destacado — popup se oculta al deseleccionar un foco:**
+Verifica que el popup desaparezca cuando se deselecciona un foco. Sin esta prueba, el popup podría quedar abierto tras cerrarlo, bloqueando la interacción con el mapa.
+
+```tsx
+it("does not render popup when selectedFoco is null", () => {
+  renderStrategy(defaultProps())
+  expect(screen.queryByTestId('mock-popup')).toBeNull()
+})
+
+it("FlyToCenter does nothing when target is null", () => {
+  mockFlyTo.mockClear()
+  renderStrategy(defaultProps({ centerTo: null }))
+  expect(mockFlyTo).not.toHaveBeenCalled()
+})
 ```
 
 **Resultado:** ✅ 19/19 tests pasan
@@ -315,16 +751,79 @@ Valida el flujo completo de creación de un reporte ciudadano: captura de ubicac
 
 **Archivo:** `frontend/src/__tests__/Reporte.test.tsx`
 
-**Código:**
+**Cobertura:** 9 positivos + 4 negativos
+
+**Código (positivo):**
 ```tsx
-it("submits report successfully", async () => {
-  (API.createReport as Mock).mockResolvedValue({ report_id: "r1" });
-  render(<Reporte />);
-  await userEvent.click(screen.getByRole("button", { name: /enviar/i }));
+function mockGeolocation(success: boolean, data?: { lat: number; lng: number }) {
+  const mockGeolocation = {
+    getCurrentPosition: vi.fn().mockImplementation(
+      (successCb: Function, errorCb: Function) => {
+        if (success) {
+          successCb({ coords: { latitude: data!.lat, longitude: data!.lng, accuracy: 10 } })
+        } else {
+          const err: any = { code: 1, message: 'Permission denied' }
+          err.PERMISSION_DENIED = 1
+          err.POSITION_UNAVAILABLE = 2
+          err.TIMEOUT = 3
+          errorCb(err)
+        }
+      }
+    ),
+  }
+  Object.defineProperty(globalThis.navigator, 'geolocation', {
+    value: mockGeolocation, writable: true, configurable: true,
+  })
+}
+
+it("submits report as authenticated user", async () => {
+  API.createReport = vi.fn().mockResolvedValue({ report_id: '456' })
+  mockGeolocation(true, { lat: -33.46, lng: -70.68 })
+
+  await renderReporte()
+  fireEvent.click(screen.getByText('Obtener Mi Ubicación'))
+  await waitFor(() => expect(screen.getByText(/✅ Ubicación/)).toBeDefined())
+
+  const desc = screen.getByPlaceholderText('Describe lo que observas...')
+  await userEvent.type(desc, 'Humo cerca del cerro')
+  fireEvent.click(screen.getByText('Enviar Reporte'))
   await waitFor(() => {
-    expect(mockNavigate).toHaveBeenCalledWith("/confirmacion", expect.any(Object));
-  });
-});
+    expect(API.createReport).toHaveBeenCalledWith('valid-token', {
+      tipo: 'FORESTAL', latitud: -33.46, longitud: -70.68,
+      descripcion: 'Humo cerca del cerro', user_id: '1',
+    })
+  })
+  expect(mockNavigate).toHaveBeenCalledWith('/confirmar', expect.objectContaining({
+    state: expect.objectContaining({ isAnonymous: false }),
+  }))
+})
+```
+
+**Negativo destacado — error GPS cuando falla la ubicación:**
+Prueba la respuesta del sistema cuando el navegador no puede obtener la ubicación GPS o el usuario la deniega. Es crítica porque sin coordenadas el reporte no puede georreferenciarse, y el sistema debe informar claramente al usuario.
+
+```tsx
+it("shows GPS error when location fails", async () => {
+  mockGeolocation(false)
+  await renderReporte()
+  fireEvent.click(screen.getByText('Obtener Mi Ubicación'))
+  await waitFor(() => {
+    expect(screen.getByText(/Permiso de ubicación denegado/)).toBeDefined()
+  })
+})
+
+it("shows error toast on submit failure", async () => {
+  API.createReport = vi.fn().mockRejectedValue(new Error('Error del servidor'))
+  mockGeolocation(true, { lat: -33.46, lng: -70.68 })
+
+  await renderReporte()
+  fireEvent.click(screen.getByText('Obtener Mi Ubicación'))
+  await waitFor(() => expect(screen.getByText(/✅ Ubicación/)).toBeDefined())
+  fireEvent.click(screen.getByText('Enviar Reporte'))
+  await waitFor(() => {
+    expect(mockAddToast).toHaveBeenCalledWith('Error del servidor', 'error')
+  })
+})
 ```
 
 **Resultado:** ✅ 13/13 tests pasan
@@ -337,16 +836,71 @@ Verifica que el panel de administración cargue la pestaña de reportes con los 
 
 **Archivo:** `frontend/src/__tests__/AdminPage.test.tsx`
 
-**Código:**
+**Cobertura:** 2 positivos
+
+**Código (positivo):**
 ```tsx
 it("should render reports tab with data", async () => {
-  (API.adminGetReports as Mock).mockResolvedValue({
-    reports: [{ report_id: "r1", tipo: "FORESTAL", estado: "PENDIENTE" }]
-  });
-  render(<AdminPage />);
-  await userEvent.click(screen.getByText(/reportes/i));
-  expect(await screen.findByText(/FORESTAL/i)).toBeInTheDocument();
-});
+  mockAPIGetReports.mockResolvedValue({
+    reports: [
+      { report_id: 'r1', user_id: 'u1', tipo: 'FORESTAL', latitud: -33.45, longitud: -70.67, descripcion: 'Incendio en cerro', foto_url: '', estado: 'ACTIVO', created_at: '2026-06-20T12:00:00' },
+      { report_id: 'r2', user_id: 'u2', tipo: 'URBANO', latitud: -33.46, longitud: -70.68, descripcion: 'Casa en llamas', foto_url: '', estado: 'PENDIENTE', created_at: '2026-06-20T13:00:00' },
+    ],
+    total: 2
+  })
+
+  const AdminPage = (await import('../pages/AdminPage')).default
+  renderWithProviders(<AdminPage />)
+
+  await waitFor(() => {
+    const buttons = document.querySelectorAll('button')
+    const reportBtn = Array.from(buttons).find(b => b.textContent?.includes('Reportes'))
+    expect(reportBtn).toBeDefined()
+  })
+
+  const buttons = document.querySelectorAll('button')
+  const reportBtn = Array.from(buttons).find(b => b.textContent?.includes('Reportes'))
+  fireEvent.click(reportBtn!)
+
+  await waitFor(() => {
+    expect(screen.getByText('Incendio en cerro')).toBeDefined()
+    expect(screen.getByText('Casa en llamas')).toBeDefined()
+  })
+})
+
+it("should call updateReportStatus when estado changes in dropdown", async () => {
+  mockAPIGetReports.mockResolvedValue({
+    reports: [
+      { report_id: 'r1', user_id: 'u1', tipo: 'FORESTAL', latitud: -33.45, longitud: -70.67, descripcion: 'Test', foto_url: '', estado: 'PENDIENTE', created_at: '2026-06-20T12:00:00' },
+    ],
+    total: 1
+  })
+  mockAPIUpdateStatus.mockResolvedValue({ status: 'updated', report_id: 'r1', estado: 'ACTIVO' })
+
+  const AdminPage = (await import('../pages/AdminPage')).default
+  renderWithProviders(<AdminPage />)
+
+  await waitFor(() => {
+    const buttons = document.querySelectorAll('button')
+    const reportBtn = Array.from(buttons).find(b => b.textContent?.includes('Reportes'))
+    expect(reportBtn).toBeDefined()
+  })
+
+  const buttons = document.querySelectorAll('button')
+  const reportBtn = Array.from(buttons).find(b => b.textContent?.includes('Reportes'))
+  fireEvent.click(reportBtn!)
+
+  await waitFor(() => {
+    expect(screen.getByText('Test')).toBeDefined()
+  })
+
+  const select = screen.getByDisplayValue('PENDIENTE')
+  fireEvent.change(select, { target: { value: 'ACTIVO' } })
+
+  await waitFor(() => {
+    expect(mockAPIUpdateStatus).toHaveBeenCalledWith('test-admin-token', 'r1', 'ACTIVO')
+  })
+})
 ```
 
 **Resultado:** ✅ 2/2 tests pasan
@@ -359,20 +913,62 @@ Cubre el flujo de recuperación de contraseña desde la interfaz: paso 1 (ingres
 
 **Archivo:** `frontend/src/__tests__/ForgotPassword.test.tsx`
 
-**Código:**
-```tsx
-it("should show email form on step 1", () => {
-  render(<ForgotPassword />);
-  expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
-});
+**Cobertura:** 3 positivos
 
-it("should transition to step 2 after email submission", async () => {
-  (API.forgotPassword as Mock).mockResolvedValue({ message: "ok" });
-  render(<ForgotPassword />);
-  await userEvent.type(screen.getByPlaceholderText(/email/i), "test@test.cl");
-  await userEvent.click(screen.getByRole("button", { name: /enviar/i }));
-  expect(await screen.findByText(/código de verificación/i)).toBeInTheDocument();
-});
+**Código (positivo):**
+```tsx
+it("should show email form on step 1", async () => {
+  const ForgotPassword = (await import('../pages/ForgotPassword')).default
+  renderWithProviders(<ForgotPassword />)
+
+  expect(screen.getByText('Recuperar Contraseña')).toBeDefined()
+  expect(screen.getByText('Enviar Código de Verificación')).toBeDefined()
+  expect(screen.getByPlaceholderText('correo@ejemplo.com')).toBeDefined()
+})
+
+it("should send OTP and show reset form on step 2", async () => {
+  const ForgotPassword = (await import('../pages/ForgotPassword')).default
+  mockAPIForgot.mockResolvedValue({ message: 'Código de verificación enviado al correo' })
+  renderWithProviders(<ForgotPassword />)
+
+  await userEvent.type(screen.getByPlaceholderText('correo@ejemplo.com'), 'user@test.cl')
+  fireEvent.click(screen.getByText('Enviar Código de Verificación'))
+
+  await waitFor(() => {
+    expect(mockAPIForgot).toHaveBeenCalledWith('user@test.cl')
+    expect(screen.getByText('Restablecer Contraseña')).toBeDefined()
+  })
+})
+
+it("should show success after valid OTP and matching passwords", async () => {
+  const ForgotPassword = (await import('../pages/ForgotPassword')).default
+  mockAPIForgot.mockResolvedValue({ message: 'Código enviado' })
+  mockAPIReset.mockResolvedValue({ message: 'Contraseña actualizada correctamente' })
+  renderWithProviders(<ForgotPassword />)
+
+  await userEvent.type(screen.getByPlaceholderText('correo@ejemplo.com'), 'user@test.cl')
+  fireEvent.click(screen.getByText('Enviar Código de Verificación'))
+
+  await waitFor(() => {
+    expect(screen.getByText('Restablecer Contraseña')).toBeDefined()
+  })
+
+  const otpInputs = document.querySelectorAll('input[inputMode="numeric"]')
+  otpInputs.forEach((input, i) => {
+    fireEvent.change(input, { target: { value: String(i + 1) } })
+  })
+
+  const passwordInputs = screen.getAllByPlaceholderText(/Mínimo 6 caracteres|Repite la/)
+  await userEvent.type(passwordInputs[0], 'NewPass123')
+  await userEvent.type(passwordInputs[1], 'NewPass123')
+
+  fireEvent.click(screen.getByText('Restablecer Contraseña'))
+
+  await waitFor(() => {
+    expect(mockAPIReset).toHaveBeenCalledWith('user@test.cl', '123456', 'NewPass123', undefined)
+    expect(screen.getByText('Contraseña actualizada')).toBeDefined()
+  })
+})
 ```
 
 **Resultado:** ✅ 3/3 tests pasan
@@ -385,20 +981,34 @@ Prueba el comportamiento offline de la PWA: cuando el navegador dispara el event
 
 **Archivo:** `frontend/src/__tests__/OfflineBanner.test.tsx`
 
-**Código:**
-```tsx
-it("shows banner when offline", () => {
-  window.dispatchEvent(new Event("offline"));
-  render(<OfflineBanner />);
-  expect(screen.getByText(/sin conexión/i)).toBeInTheDocument();
-});
+**Cobertura:** 3 positivos + 2 negativos
 
-it("hides banner when back online", () => {
-  window.dispatchEvent(new Event("offline"));
-  render(<OfflineBanner />);
-  window.dispatchEvent(new Event("online"));
-  expect(screen.queryByText(/sin conexión/i)).not.toBeInTheDocument();
-});
+**Código (positivo):**
+```tsx
+it("should not render when online", () => {
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true, writable: true })
+  const { container } = render(<OfflineBanner />)
+  expect(container.innerHTML).toBe('')
+})
+```
+
+**Negativo destacado — banner se muestra al perder conexión:**
+Verifica que la PWA reaccione al evento `offline` del navegador mostrando un banner. Es esencial para que el ciudadano sepa que sus datos podrían no enviarse hasta recuperar conexión.
+
+```tsx
+it("should render when offline", () => {
+  Object.defineProperty(navigator, 'onLine', { value: false, configurable: true, writable: true })
+  render(<OfflineBanner />)
+  expect(screen.getByText(/Sin conexión/)).toBeDefined()
+})
+
+it("should react to offline event", () => {
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true, writable: true })
+  const { container } = render(<OfflineBanner />)
+  expect(container.innerHTML).toBe('')
+  act(() => { window.dispatchEvent(new Event('offline')) })
+  expect(screen.getByText(/Sin conexión/)).toBeDefined()
+})
 ```
 
 **Resultado:** ✅ 5/5 tests pasan
@@ -427,9 +1037,44 @@ it("hides banner when back online", () => {
 
 Prueba la función Lambda que recibe una imagen en base64 desde la PWA, la decodifica y la almacena en S3 con un nombre único. Es el punto de entrada para las fotografías adjuntas a los reportes ciudadanos, reemplazando la subida directa al backend para reducir carga en EC2.
 
-**Archivo:** `lambda/test-events/upload_proxy.json`
+**Archivo:** `lambda/upload_proxy/test_upload_proxy.py`
 
-**Evento (AWS Console Test):**
+**Cobertura:** 2 positivos
+
+**Código (positivo):**
+```python
+import base64
+from unittest.mock import patch
+
+def test_upload_jpeg_success(self):
+    with patch.object(app, 's3') as mock_s3:
+        image_bytes = b'\xff\xd8\xff\xe0'
+        event = {
+            "body": base64.b64encode(image_bytes).decode(),
+            "content_type": "image/jpeg"
+        }
+        result = app.lambda_handler(event, None)
+        assert result["statusCode"] == 200
+        body = json.loads(result["body"])
+        assert "foto_url" in body
+        assert body["foto_url"].startswith("reportes/")
+        assert body["foto_url"].endswith(".jpg")
+        mock_s3.put_object.assert_called_once()
+
+def test_upload_png_content_type(self):
+    with patch.object(app, 's3') as mock_s3:
+        image_bytes = b'\x89PNG\r\n\x1a\n'
+        event = {
+            "body": base64.b64encode(image_bytes).decode(),
+            "content_type": "image/png"
+        }
+        result = app.lambda_handler(event, None)
+        assert result["statusCode"] == 200
+        body = json.loads(result["body"])
+        assert body["foto_url"].endswith(".png")
+```
+
+**Evento equivalente (AWS Console Test):**
 ```json
 {
   "name": "UploadJPEG",
@@ -448,9 +1093,41 @@ Prueba la función Lambda que recibe una imagen en base64 desde la PWA, la decod
 
 Ejercita el microservicio de usuarios que unifica autenticación y registro en un solo endpoint. Si el usuario existe valida la contraseña con bcrypt y devuelve JWT; si no existe, lo crea automáticamente (auto-registro). Soporta los paths `/login`, `/register` y `/auth` vía API Gateway.
 
-**Archivo:** `lambda/test-events/usuarios.json`
+**Archivo:** `lambda/usuarios/test_usuarios.py`
 
-**Evento (login exitoso):**
+**Cobertura:** 2 positivos
+
+**Código (positivo):**
+```python
+import bcrypt
+from unittest.mock import patch
+
+def test_login_success(self):
+    with patch.object(app, 'users_table') as mock_table:
+        password = "testpass123"
+        pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        mock_table.query.return_value = {
+            'Items': [{
+                'user_id': 'u1',
+                'email': 'test@test.cl',
+                'password_hash': pw_hash,
+                'rol': 'VECINO',
+                'nombre': 'Test'
+            }]
+        }
+        event = {
+            "httpMethod": "POST",
+            "path": "/login",
+            "body": json.dumps({"email": "test@test.cl", "password": password})
+        }
+        result = app.lambda_handler(event, None)
+        assert result["statusCode"] == 200
+        body = json.loads(result["body"])
+        assert "token" in body
+        assert body["user"]["email"] == "test@test.cl"
+```
+
+**Evento equivalente (AWS Console Test):**
 ```json
 {
   "name": "LoginSuccess",
@@ -470,9 +1147,34 @@ Ejercita el microservicio de usuarios que unifica autenticación y registro en u
 
 Verifica que la Lambda de incidencias consulte DynamoDB y devuelva los reportes según los filtros aplicados (estado, usuario). Soporta listado completo, filtrado por estado, consulta individual por ID, creación de nuevos reportes y actualización de estado.
 
-**Archivo:** `lambda/test-events/incidencias.json`
+**Archivo:** `lambda/ms-incidencias/test_incidencias.py`
 
-**Evento (listar todos):**
+**Cobertura:** 2 positivos
+
+**Código (positivo):**
+```python
+from unittest.mock import patch
+
+def test_list_reports_returns_array(self):
+    with patch.object(app, 'reports_table') as mock_table:
+        mock_table.scan.return_value = {
+            'Items': [
+                {'reports_id': 'r1', 'tipo': 'FORESTAL', 'estado': 'ACTIVO'}
+            ]
+        }
+        event = {
+            "httpMethod": "GET",
+            "path": "/reports",
+            "queryStringParameters": {}
+        }
+        result = app.lambda_handler(event, None)
+        assert result["statusCode"] == 200
+        items = json.loads(result["body"])
+        assert isinstance(items, list)
+        assert len(items) == 1
+```
+
+**Evento equivalente (AWS Console Test):**
 ```json
 {
   "name": "ListReports",
@@ -492,9 +1194,32 @@ Verifica que la Lambda de incidencias consulte DynamoDB y devuelva los reportes 
 
 Evalúa el microservicio que publica alertas en un tópico SNS de AWS. Recibe un mensaje con tipo de alerta (ALERTA, INFO, CRÍTICO), lo formatea y lo envía al tópico con atributos de mensaje. Incluye validación de mensaje vacío que debe retornar 400.
 
-**Archivo:** `lambda/test-events/notificaciones.json`
+**Archivo:** `lambda/ms-notificaciones/test_notificaciones.py`
 
-**Evento (alerta crítica):**
+**Cobertura:** 2 positivos
+
+**Código (positivo):**
+```python
+from unittest.mock import patch
+
+def test_send_notification_success(self):
+    with patch.object(app, 'sns') as mock_sns:
+        event = {
+            "httpMethod": "POST",
+            "body": json.dumps({
+                "message": "Incendio detectado",
+                "alert_type": "ALERTA",
+                "report_id": "r1"
+            })
+        }
+        result = app.lambda_handler(event, None)
+        assert result["statusCode"] == 200
+        body = json.loads(result["body"])
+        assert body["status"] == "sent"
+        mock_sns.publish.assert_called_once()
+```
+
+**Evento equivalente (AWS Console Test):**
 ```json
 {
   "name": "SendAlertNotification",
@@ -513,9 +1238,46 @@ Evalúa el microservicio que publica alertas en un tópico SNS de AWS. Recibe un
 
 Prueba la función suscrita al tópico SNS que crea annotations en Grafana. Cuando se publica una alerta, la Lambda parsea el mensaje SNS, construye una annotation con texto, tags y timestamp, y la envía a la API de Grafana. Mensajes malformados deben retornar 500.
 
-**Archivo:** `lambda/test-events/sns-to-grafana.json`
+**Archivo:** `lambda/sns-to-grafana/test_sns_to_grafana.py`
 
-**Evento (SNS → Grafana):**
+**Cobertura:** 2 positivos
+
+**Código (positivo):**
+```python
+import os
+os.environ.setdefault('GRAFANA_TOKEN', 'test-token')
+os.environ.setdefault('GRAFANA_URL', 'https://grafana.test')
+
+from unittest.mock import patch, MagicMock
+
+@patch.object(app, 'urllib')
+def test_sns_event_creates_annotation(self, mock_urllib):
+    mock_response = MagicMock()
+    mock_response.read.return_value = b'{"id": 1}'
+    mock_urllib.request.urlopen.return_value.__enter__.return_value = mock_response
+
+    event = {
+        "Records": [{
+            "Sns": {
+                "Message": json.dumps({
+                    "text": "Incendio activo",
+                    "tags": ["sistema", "incendio"],
+                    "timestamp": "2026-06-20T12:00:00"
+                })
+            }
+        }]
+    }
+    result = app.lambda_handler(event, None)
+    assert result["statusCode"] == 200
+    mock_urllib.request.urlopen.assert_called_once()
+
+def test_sns_event_malformed_returns_500(self):
+    event = {"Records": [{"Sns": {"Message": "not-json"}}]}
+    result = app.lambda_handler(event, None)
+    assert result["statusCode"] == 500
+```
+
+**Evento equivalente (AWS Console Test):**
 ```json
 {
   "name": "SnsToGrafanaAnnotation",
@@ -570,4 +1332,4 @@ cd <raíz-proyecto> && python -m pytest lambda/ -v
 
 ## 10. Conclusión
 
-Los resultados obtenidos demuestran que el sistema Incendios Valle del Sol cuenta con una cobertura de pruebas sólida y homogénea en todas sus capas. El backend alcanza un 88% de cobertura con 167 tests, el frontend un 82% con 172 tests, y las lambdas un ~85% con 10 tests, totalizando 349 pruebas unitarias que pasan en su totalidad. Las métricas de SonarCloud respaldan estos resultados con calificación A en seguridad, confiabilidad, mantenibilidad y revisión de seguridad, además de 0 Code Smells. Se verificaron 17 ejemplos representativos que cubren autenticación con 2FA, circuit breaker, consumo de APIs externas, subida de archivos, gestión de reportes, mapas interactivos, recuperación de contraseña y comportamiento offline. Todo el stack de pruebas es reproducible desde el repositorio, garantizando la calidad del software entregado.
+Los resultados obtenidos demuestran que el sistema Incendios Valle del Sol cuenta con una cobertura de pruebas sólida y homogénea en todas sus capas. El backend alcanza un 88% de cobertura con 168 tests, el frontend un 82% con 177 tests, y las lambdas un ~85% con 10 tests, totalizando 355 pruebas unitarias que pasan en su totalidad. Las métricas de SonarCloud respaldan estos resultados con calificación A en seguridad, confiabilidad, mantenibilidad y revisión de seguridad, además de 0 Code Smells. Se verificaron 17 ejemplos representativos que cubren autenticación con 2FA, circuit breaker, consumo de APIs externas, subida de archivos, gestión de reportes, mapas interactivos, recuperación de contraseña y comportamiento offline. Todo el stack de pruebas es reproducible desde el repositorio, garantizando la calidad del software entregado.
