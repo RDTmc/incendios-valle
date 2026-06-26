@@ -1,4 +1,4 @@
-import os, json, bcrypt, uuid, jwt, sqlite3, time, tempfile
+import os, json, bcrypt, uuid, jwt, sqlite3, time, tempfile, secrets
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, patch
 from pathlib import Path
