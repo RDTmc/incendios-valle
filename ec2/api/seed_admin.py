@@ -1,4 +1,4 @@
-import os, json, bcrypt, uuid, jwt, sqlite3, time
+import os, json, bcrypt, uuid, jwt, sqlite3, time, tempfile
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -9,9 +9,9 @@ os.environ['AWS_S3_BUCKET'] = 'test-bucket'
 os.environ['FIRMS_API_KEY'] = ''
 os.environ['OWM_API_KEY'] = ''
 os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
-os.environ['DB_PATH'] = '/tmp/test_admin_prueba.db'
+os.environ['DB_PATH'] = tempfile.mkdtemp() + '/test_admin_prueba.db'
 
-DB_PATH = '/tmp/test_admin_prueba.db'
+DB_PATH = os.environ['DB_PATH']
 if os.path.exists(DB_PATH):
     os.remove(DB_PATH)
 
@@ -31,7 +31,8 @@ conn.close()
 
 conn = sqlite3.connect(DB_PATH, timeout=5)
 cursor = conn.cursor()
-password_hash = bcrypt.hashpw(b'admin123', bcrypt.gensalt()).decode()
+seed_password = os.environ.get('SEED_ADMIN_PASSWORD', 'admin123')
+password_hash = bcrypt.hashpw(seed_password.encode(), bcrypt.gensalt()).decode()
 admin_user_id = str(uuid.uuid4())
 timestamp = datetime.now(timezone.utc).isoformat()
 cursor.execute(
@@ -117,7 +118,7 @@ print(f"EMAIL=admin@prueba.cl")
 print(f"PASSWORD=admin123")
 print("SERVER_READY")
 
-uvicorn.run(main.app, host='0.0.0.0', port=8000, log_level='warning')
+uvicorn.run(main.app, host='127.0.0.1', port=8000, log_level='warning')
 
 for p in patches:
     p.stop()

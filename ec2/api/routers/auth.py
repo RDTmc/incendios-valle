@@ -1,7 +1,6 @@
 import os
 import json
 import secrets
-import random
 import sqlite3
 from fastapi import APIRouter, HTTPException, Depends
 from dependencies import get_user_repository, verify_token, require_admin, sync_to_sqlite, SECRET_KEY, get_db_connection, DB_PATH
@@ -105,7 +104,7 @@ def _generate_backup_codes() -> list[str]:
 
 
 def _generate_otp() -> str:
-    return f"{random.randint(0, 999999):06d}"
+    return f"{secrets.randbelow(1000000):06d}"
 
 
 @router.post("/login", responses={

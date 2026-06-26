@@ -86,7 +86,7 @@ SYNC_TOKEN = os.environ['SYNC_TOKEN']
 
 Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 try:
-    os.chmod(Path(DB_PATH).parent, 0o777)
+    os.chmod(Path(DB_PATH).parent, 0o755)
 except OSError:
     pass
 
@@ -234,8 +234,8 @@ def init_db():
     conn.commit()
     conn.close()
     try:
-        os.chmod(DB_PATH, 0o666)
-        os.chmod(Path(DB_PATH).parent, 0o777)
+        os.chmod(DB_PATH, 0o644)
+        os.chmod(Path(DB_PATH).parent, 0o755)
     except OSError:
         pass
 

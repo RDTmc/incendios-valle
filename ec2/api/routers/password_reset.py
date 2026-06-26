@@ -1,5 +1,4 @@
 import secrets
-import random
 import bcrypt
 import json
 import sqlite3
@@ -16,7 +15,7 @@ OTP_EXPIRE_MINUTES = 10
 
 
 def _generate_otp() -> str:
-    return f"{random.randint(0, 999999):06d}"
+    return f"{secrets.randbelow(1000000):06d}"
 
 
 def _clean_expired_otp():
