@@ -16,6 +16,11 @@ FIRMS_ACTUAL=$(grep "^FIRMS_API_KEY=" /home/ec2-user/.env 2>/dev/null | cut -d'=
 OWM_ACTUAL=$(grep "^OWM_API_KEY=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 S3_BUCKET=$(grep "^AWS_S3_BUCKET=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 S3_BUCKET=${S3_BUCKET:-incendios-valle-sol}
+PG_HOST_ACTUAL=$(grep "^PG_HOST=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+PG_PORT_ACTUAL=$(grep "^PG_PORT=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+PG_USER_ACTUAL=$(grep "^PG_USER=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+PG_PASSWORD_ACTUAL=$(grep "^PG_PASSWORD=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
+PG_DATABASE_ACTUAL=$(grep "^PG_DATABASE=" /home/ec2-user/.env 2>/dev/null | cut -d'=' -f2)
 
 echo -e "\nSanitizando y reescribiendo .env completo..."
 
@@ -30,6 +35,11 @@ MAILTRAP_SENDER_NAME=$MAILTRAP_SENDER_NAME_ACTUAL
 AWS_S3_BUCKET=$S3_BUCKET
 FIRMS_API_KEY=$FIRMS_ACTUAL
 OWM_API_KEY=$OWM_ACTUAL
+PG_HOST=${PG_HOST_ACTUAL}
+PG_PORT=${PG_PORT_ACTUAL:-5432}
+PG_USER=${PG_USER_ACTUAL}
+PG_PASSWORD=${PG_PASSWORD_ACTUAL}
+PG_DATABASE=${PG_DATABASE_ACTUAL}
 ENVEOF
 
 echo -e "\n--- Backup SQLite a S3 ---"

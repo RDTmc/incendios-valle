@@ -35,6 +35,11 @@ services:
       - MAILTRAP_TOKEN=${MAILTRAP_TOKEN}
       - MAILTRAP_SENDER=${MAILTRAP_SENDER:-hello@demomailtrap.co}
       - MAILTRAP_SENDER_NAME=${MAILTRAP_SENDER_NAME:-Incendios Valle del Sol}
+      - PG_HOST=${PG_HOST}
+      - PG_PORT=${PG_PORT:-5432}
+      - PG_USER=${PG_USER:-postgres}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DATABASE=${PG_DATABASE:-incendios}
     volumes:
       - /home/ec2-user/incendios-data/api:/app/data  # Carpeta aislada para la API
     restart: unless-stopped
@@ -53,7 +58,7 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: "dashboard.keogh.lat"
       GF_SERVER_ROOT_URL: "https://dashboard.keogh.lat/dashboard/"
-      GF_INSTALL_PLUGINS: "frser-sqlite-datasource"  # SQLite + Infinity JSON API
+      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource"
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
       - /home/ec2-user/incendios-data/api:/data:rw  # BD que escribe la API, Grafana lee

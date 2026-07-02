@@ -134,12 +134,17 @@ jobs:
         env:
           FIRMS_API_KEY: ${{ secrets.FIRMS_API_KEY }}
           OWM_API_KEY: ${{ secrets.OWM_API_KEY }}
+          PG_HOST: ${{ secrets.PG_HOST }}
+          PG_PORT: ${{ secrets.PG_PORT }}
+          PG_USER: ${{ secrets.PG_USER }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          PG_DATABASE: ${{ secrets.PG_DATABASE }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 120s
-          envs: FIRMS_API_KEY,OWM_API_KEY
+          envs: FIRMS_API_KEY,OWM_API_KEY,PG_HOST,PG_PORT,PG_USER,PG_PASSWORD,PG_DATABASE
           script: |
             cd /home/ec2-user
 
@@ -157,6 +162,16 @@ jobs:
                 && sed -i "s|^OWM_API_KEY=.*|OWM_API_KEY=$OWM_API_KEY|" /home/ec2-user/.env \
                 || echo "OWM_API_KEY=$OWM_API_KEY" >> /home/ec2-user/.env
             fi
+
+            echo "--- Inyectando RDS PostgreSQL secrets ---"
+            for var in PG_HOST PG_PORT PG_USER PG_PASSWORD PG_DATABASE; do
+              val=$(eval echo \$$var)
+              if [ -n "$val" ]; then
+                grep -q "^$var=" /home/ec2-user/.env 2>/dev/null \
+                  && sed -i "s|^$var=.*|$var=$val|" /home/ec2-user/.env \
+                  || echo "$var=$val" >> /home/ec2-user/.env
+              fi
+            done
 
             chmod +x ./refresh_api.sh
             chmod +x ./export_dashboards.sh || true
