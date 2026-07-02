@@ -793,7 +793,41 @@ El archivo `incendios-valle-entrega.zip` contiene 361 archivos (~81.5 MB) con to
 
 ---
 
-## 11. Referencias
+## 11. Migración SQLite → RDS PostgreSQL
+
+En julio 2026 se realizó la migración de SQLite (base de datos local embebida en el contenedor FastAPI) a RDS PostgreSQL 15 como parte de la evolución del proyecto hacia producción real.
+
+### Cambios realizados
+
+| Aspecto | Antes (SQLite) | Después (PostgreSQL) |
+|---------|---------------|---------------------|
+| Motor | SQLite 3 (stdlib Python) | RDS PostgreSQL 15 (db.t3.micro) |
+| Conexión | `sqlite3.connect()` directo | `psycopg2.pool.ThreadedConnectionPool` |
+| Esquema | Creado vía `CREATE TABLE IF NOT EXISTS` en `init_db()` | DDL PostgreSQL en `init_pg_schema()` |
+| Backup | `aws s3 cp incendios.db s3://...` | `pg_dump \| aws s3 cp - s3://...` |
+| Grafana datasource | `frser-sqlite-datasource` (lectura directa archivo) | `yesoreyeram-infinity-datasource` (API REST vía endpoints BFF) |
+
+### Estrategia (5 fases)
+
+| Fase | Duración | Descripción |
+|------|----------|-------------|
+| FASE 1 | 2 días | RDS, Security Group, schema DDL |
+| FASE 2 | 1 día | Reconciliación datos huérfanos (DynamoDB → SQLite) |
+| FASE 3 | 3 días | Dual-write + migración endpoints API |
+| FASE 4 | 3-4 días | Migración Grafana a Infinity + CI/CD Lambdas (opcional) |
+| FASE 5 | 2-3 días | Deprecar SQLite, tests, documentación |
+
+### Tablas migradas (10)
+
+`users`, `reports`, `external_reports`, `firms_hotspots`, `weather_readings`, `alerts`, `audit_log`, `notifications`, `admin_2fa`, `incident_resources`
+
+### Deuda técnica documentada
+
+Ver `docs/DEUDA_TECNICA.md` para mejoras futuras: VPC privada, NAT Gateway, ALB, HA, CI/CD completo de Lambdas, WAF, Secrets Manager.
+
+---
+
+## 12. Referencias
 
 [1] FastAPI. *FastAPI Documentation*. 2025. https://fastapi.tiangolo.com
 

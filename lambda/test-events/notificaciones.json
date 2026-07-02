@@ -1,26 +1,4 @@
-[
-  {
-    "name": "SendAlertNotification",
-    "description": "Enviar notificacion de alerta via SNS",
-    "event": {
-      "httpMethod": "POST",
-      "body": "{\"message\":\"Incendio forestal detectado en sector oriente\",\"alert_type\":\"ALERTA\",\"report_id\":\"r123\",\"latitud\":-33.45,\"longitud\":-70.66}"
-    }
-  },
-  {
-    "name": "SendInfoNotification",
-    "description": "Enviar notificacion informativa",
-    "event": {
-      "httpMethod": "POST",
-      "body": "{\"message\":\"Actualizacion: incendio controlado\",\"alert_type\":\"INFO\",\"report_id\":\"r123\"}"
-    }
-  },
-  {
-    "name": "EmptyMessageError",
-    "description": "Envio con mensaje vacio debe retornar 400",
-    "event": {
-      "httpMethod": "POST",
-      "body": "{\"message\":\"\",\"alert_type\":\"ALERTA\"}"
-    }
-  }
-]
+{
+  "httpMethod": "POST",
+  "body": "{\"message\":\"Incendio forestal detectado en sector oriente\",\"alert_type\":\"ALERTA\",\"report_id\":\"r123\",\"latitud\":-33.45,\"longitud\":-70.66}"
+}

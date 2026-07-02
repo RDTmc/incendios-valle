@@ -16,7 +16,8 @@ Cliente PWA ──► API Gateway (api.keogh.lat, DNS-only en Cloudflare)
 - **FastAPI** monolítico con 8 routers: auth, reports, public, alerts, bff, admin, password_reset, bootstrap
 - **Patrones**: Repository (DynamoDB), Factory Method (tipos de reporte), Circuit Breaker
 - **Auth**: JWT HS256 con bcrypt. Token centralizado en `dependencies.py`
-- **Base de datos local**: SQLite con WAL, backup/restore a S3
+- **Base de datos relacional**: RDS PostgreSQL 15 (reemplaza SQLite desde Jul 2026). Datos de lectura para endpoints públicos, admin, dashboard, y Grafana vía API REST (Infinity datasource)
+- **DynamoDB**: Almacén primario para usuarios y reportes (escritura desde API + Lambdas). PostgreSQL recibe réplica vía `sync_to_postgres()`
 - **Modelos**: Pydantic en `models.py` (LoginRequest, RegisterRequest, ReportRequest, SyncRequest, ExternalReportRequest)
 
 ## Frontend (`frontend/`)
@@ -43,7 +44,8 @@ Cliente PWA ──► API Gateway (api.keogh.lat, DNS-only en Cloudflare)
 ## EC2 (t3.micro)
 
 - 5 contenedores: Nginx (proxy reverso), API (FastAPI), Grafana 10.4.8, Prometheus, node-exporter
-- Docker Compose con volúmenes para SQLite + dashboards provisioning
+- Docker Compose con volúmenes para dashboards provisioning y datos persistentes
+- Conexión a RDS PostgreSQL 15 externo (db.t3.micro, mismo VPC)
 - No hot-patching permitido. Solo pipeline deploy.
 
 ## Decisiones clave

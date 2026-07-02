@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Incendios Valle del Sol — Links de Entrega</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #666; margin-bottom: 2rem; font-size: 0.9rem; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card h2 {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .link {
+      display: block;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #1a73e8;
+      font-size: 0.95rem;
+      transition: background 0.15s;
+      word-break: break-all;
+    }
+    .link:hover { background: #e8f0fe; }
+    .link .desc {
+      display: block;
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 0.15rem;
+    }
+    footer {
+      text-align: center;
+      color: #999;
+      font-size: 0.8rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Incendios Valle del Sol</h1>
+  <p class="subtitle">Sistema de gestión táctica de incendios forestales/urbanos — PWA + API REST + Microservicios</p>
+
+  <div class="card">
+    <h2>Frontend PWA</h2>
+    <a class="link" href="https://incendios-valle.pages.dev" target="_blank">
+      https://incendios-valle.pages.dev
+      <span class="desc">Progressive Web App — reportar incendios, mapa interactivo, historial</span>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Swagger / OpenAPI</h2>
+    <a class="link" href="https://api.keogh.lat/api/docs" target="_blank">
+      https://api.keogh.lat/api/docs
+      <span class="desc">Documentación interactiva de los 45+ endpoints REST</span>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Dashboard Grafana</h2>
+    <a class="link" href="https://dashboard.keogh.lat/dashboard/dashboards" target="_blank">
+      https://dashboard.keogh.lat/dashboard/dashboards
+      <span class="desc">Paneles de monitoreo en tiempo real</span>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Repositorio GitHub</h2>
+    <a class="link" href="https://github.com/RDTmc/incendios-valle" target="_blank">
+      https://github.com/RDTmc/incendios-valle
+      <span class="desc">Monorepo con frontend, backend API, Lambdas y documentación completa</span>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Docker Hub</h2>
+    <a class="link" href="https://hub.docker.com/repository/docker/rdtmc/incendios-api/" target="_blank">
+      https://hub.docker.com/repository/docker/rdtmc/incendios-api/
+      <span class="desc">Imagen Docker del backend FastAPI desplegada en producción</span>
+    </a>
+  </div>
+
+  <footer>
+    Proyecto Incendios Valle del Sol — Entrega académica
+  </footer>
+</body>
+</html>

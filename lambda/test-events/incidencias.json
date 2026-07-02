@@ -1,46 +1,5 @@
-[
-  {
-    "name": "ListReports",
-    "description": "Listar todos los reportes",
-    "event": {
-      "httpMethod": "GET",
-      "path": "/reports",
-      "queryStringParameters": {}
-    }
-  },
-  {
-    "name": "ListReportsByEstado",
-    "description": "Listar reportes filtrados por estado ACTIVO",
-    "event": {
-      "httpMethod": "GET",
-      "path": "/reports",
-      "queryStringParameters": {"estado": "ACTIVO"}
-    }
-  },
-  {
-    "name": "GetReportByID",
-    "description": "Obtener reporte por ID (reemplazar REPORT_ID)",
-    "event": {
-      "httpMethod": "GET",
-      "path": "/reports/REEMPLAZAR_CON_REPORT_ID"
-    }
-  },
-  {
-    "name": "CreateReport",
-    "description": "Crear un nuevo reporte de incendio",
-    "event": {
-      "httpMethod": "POST",
-      "path": "/reports",
-      "body": "{\"user_id\":\"user-test-123\",\"tipo\":\"FORESTAL\",\"latitud\":-33.45,\"longitud\":-70.66,\"descripcion\":\"Incendio forestal cerca de la ruta 68\"}"
-    }
-  },
-  {
-    "name": "UpdateReportStatus",
-    "description": "Actualizar estado de un reporte (reemplazar REPORT_ID)",
-    "event": {
-      "httpMethod": "PUT",
-      "path": "/reports/REEMPLAZAR_CON_REPORT_ID",
-      "body": "{\"estado\":\"ACTIVO\"}"
-    }
-  }
-]
+{
+  "httpMethod": "GET",
+  "path": "/reports",
+  "queryStringParameters": {}
+}

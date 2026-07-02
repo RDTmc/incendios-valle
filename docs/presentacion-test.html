@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Pruebas Unitarias — Incendios Valle del Sol</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--accent:#3b82f6;--accent2:#06b6d4;--green:#22c55e;--orange:#f59e0b;--red:#ef4444;--text:#e2e8f0;--text2:#94a3b8;--code-bg:#0f172a;--border:#334155}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh}
+.slide{display:none;height:100vh;padding:40px 60px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--bg3) transparent}
+.slide.active{display:flex;flex-direction:column}
+.slide::-webkit-scrollbar{width:6px}
+.slide::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+
+/* Navigation */
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:12px 60px;display:flex;justify-content:space-between;align-items:center;z-index:100}
+.nav-info{color:var(--text2);font-size:14px}
+.nav-buttons{display:flex;gap:8px}
+.nav-btn{background:var(--bg3);border:none;color:var(--text);padding:8px 20px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;transition:all .2s}
+.nav-btn:hover{background:var(--accent)}
+.nav-btn:disabled{opacity:.3;cursor:default}
+.nav-btn:disabled:hover{background:var(--bg3)}
+.progress-bar{position:fixed;top:0;left:0;right:0;height:3px;background:var(--bg3);z-index:100}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s;width:0%}
+
+/* Title slide */
+.slide-title{align-items:center;justify-content:center;text-align:center}
+.slide-title h1{font-size:48px;font-weight:800;line-height:1.2;margin-bottom:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.slide-title .subtitle{font-size:22px;color:var(--text2);margin-bottom:32px}
+.slide-title .meta{font-size:15px;color:var(--text2);line-height:1.8}
+.slide-title .meta strong{color:var(--text)}
+.slide-title .badge{display:inline-block;background:var(--green);color:#052e16;padding:4px 16px;border-radius:20px;font-weight:700;font-size:14px;margin-top:24px}
+
+/* Content slides */
+.slide h2{font-size:28px;font-weight:700;margin-bottom:8px;color:var(--accent)}
+.slide h3{font-size:18px;font-weight:600;margin:16px 0 8px;color:var(--accent2)}
+.slide .desc{color:var(--text2);font-size:15px;line-height:1.6;margin-bottom:16px}
+.slide .file{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent2);background:var(--bg2);padding:2px 10px;border-radius:4px;display:inline-block;margin-bottom:12px}
+.slide .result{font-size:14px;color:var(--green);font-weight:600;margin-top:8px}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin:12px 0 16px;font-size:14px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--bg2);color:var(--accent2);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+td{color:var(--text)}
+tr:hover td{background:var(--bg2)}
+
+/* Code */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:var(--text);margin:8px 0 12px}
+code{font-family:'JetBrains Mono',monospace}
+pre .kw{color:#c792ea}
+pre .fn{color:#82aaff}
+pre .str{color:#c3e88d}
+pre .cm{color:#546e7a;font-style:italic}
+pre .num{color:#f78c6c}
+pre .op{color:#89ddff}
+pre .dec{color:#f07178}
+pre .built{color:#ffcb6b}
+
+/* Cards grid */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:8px 0}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px}
+.card h4{font-size:15px;font-weight:600;margin-bottom:4px}
+.card p{font-size:13px;color:var(--text2)}
+.card .stat{font-size:32px;font-weight:800}
+.card .stat.green{color:var(--green)}
+.card .stat.orange{color:var(--orange)}
+.card .stat.accent{color:var(--accent)}
+
+.tag{padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.tag-green{background:#052e16;color:var(--green)}
+.tag-blue{background:#0c1929;color:var(--accent)}
+.tag-orange{background:#1c1300;color:var(--orange)}
+
+.pattern-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.pattern-item{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.pattern-item .name{font-weight:600;font-size:14px}
+.pattern-item .type{font-size:12px;color:var(--text2)}
+.pattern-item .tests{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent2)}
+
+@media(max-width:768px){
+  .slide{padding:24px 20px}
+  .slide-title h1{font-size:28px}
+  .nav{padding:10px 20px;flex-direction:column;gap:8px}
+  .grid-2,.grid-3,.pattern-list{grid-template-columns:1fr}
+  pre{font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<!-- SLIDE 1: TITLE -->
+<div class="slide slide-title active" data-index="0">
+  <div>
+    <div class="badge">📋 Rúbrica R3</div>
+    <h1>Informe de Pruebas Unitarias</h1>
+    <p class="subtitle">Sistema de Gestión Táctica de Incendios — Valle del Sol</p>
+    <div class="meta">
+      <strong>Curso:</strong> Desarrollo Fullstack III_002V<br>
+      <strong>Docente:</strong> Cristian Eduardo Medina Cespedes<br>
+      <strong>Fecha:</strong> 26 de junio de 2026<br><br>
+      <strong>Integrantes:</strong><br>
+      Daniel Ignacio Betancourt Jerez<br>
+      Rodrigo Del Tránsito Muñoz Catalán<br>
+      Moisés Alonso Salinas Castro
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: RESUMEN EJECUTIVO -->
+<div class="slide" data-index="1">
+  <h2>1. Resumen Ejecutivo</h2>
+  <p class="desc">Se evaluaron <strong>355 tests</strong> distribuidos en tres capas (backend, frontend y lambdas serverless), todos superando el umbral del <strong>60% de cobertura</strong> exigido por la rúbrica.</p>
+  <table>
+    <tr><th>Componente</th><th>Tests</th><th>Cobertura</th><th>Estado</th></tr>
+    <tr><td>Backend (FastAPI)</td><td>168</td><td>88%</td><td><span class="tag tag-green">✅</span></td></tr>
+    <tr><td>Frontend (React)</td><td>177</td><td>82%</td><td><span class="tag tag-green">✅</span></td></tr>
+    <tr><td>Lambda upload-proxy</td><td>2</td><td>~90%</td><td><span class="tag tag-green">✅</span></td></tr>
+    <tr><td>Lambda usuarios</td><td>2</td><td>~85%</td><td><span class="tag tag-green">✅</span></td></tr>
+    <tr><td>Lambda incidencias</td><td>2</td><td>~85%</td><td><span class="tag tag-green">✅</span></td></tr>
+    <tr><td>Lambda notificaciones</td><td>2</td><td>~90%</td><td><span class="tag tag-green">✅</span></td></tr>
+    <tr><td>Lambda sns-to-grafana</td><td>2</td><td>~85%</td><td><span class="tag tag-green">✅</span></td></tr>
+    <tr style="border-top:2px solid var(--accent)"><td><strong>TOTAL</strong></td><td><strong>355</strong></td><td><strong>≥82%</strong></td><td><span class="tag tag-green">✅</span></td></tr>
+  </table>
+  <p class="desc" style="margin-top:8px">Todos los componentes superan el <strong>60% de cobertura mínimo</strong> exigido por la rúbrica.</p>
+</div>
+
+<!-- SLIDE 3: MÉTRICAS -->
+<div class="slide" data-index="2">
+  <h2>2. Métricas de Cobertura</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Backend (FastAPI) — 88%</h3>
+      <table>
+        <tr><th>Módulo</th><th>Cobertura</th></tr>
+        <tr><td>Routers — public</td><td>100%</td></tr>
+        <tr><td>Routers — alerts</td><td>100%</td></tr>
+        <tr><td>Routers — bff</td><td>100%</td></tr>
+        <tr><td>Routers — reports</td><td>100%</td></tr>
+        <tr><td>password_reset</td><td>75%</td></tr>
+        <tr><td>admin</td><td>39%</td></tr>
+        <tr><td>auth</td><td>57%</td></tr>
+        <tr><td>bootstrap</td><td>31%</td></tr>
+        <tr><td>circuit_breaker.py</td><td>96%</td></tr>
+        <tr><td>factories/</td><td>96%</td></tr>
+        <tr><td>s3_service.py</td><td>100%</td></tr>
+        <tr><td>seed.py</td><td>98%</td></tr>
+        <tr style="border-top:2px solid var(--accent)"><td><strong>Overall</strong></td><td><strong>88%</strong></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Frontend (React) — 82%</h3>
+      <table>
+        <tr><th>Módulo</th><th>Cobertura</th></tr>
+        <tr><td>Páginas (pages)</td><td>85%</td></tr>
+        <tr><td>Componentes UI</td><td>97%</td></tr>
+        <tr><td>Utilidades (util)</td><td>99%</td></tr>
+        <tr><td>Mapbox Strategy</td><td>100%</td></tr>
+        <tr><td>api.ts</td><td>51%</td></tr>
+        <tr style="border-top:2px solid var(--accent)"><td><strong>Overall</strong></td><td><strong>82%</strong></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: HERRAMIENTAS -->
+<div class="slide" data-index="3">
+  <h2>3. Herramientas de Testing</h2>
+  <p class="desc">Stack de testing especializado por capa: pytest con mocking AWS, Vitest + Testing Library para frontend, y pytest para lambdas serverless.</p>
+  <table>
+    <tr><th>Capa</th><th>Herramienta</th><th>Configuración</th></tr>
+    <tr><td>Backend</td><td>pytest 8.3 + pytest-cov 7.1</td><td>ec2/api/pytest.ini</td></tr>
+    <tr><td>Backend (mocks)</td><td>unittest.mock + moto</td><td>conftest.py</td></tr>
+    <tr><td>Frontend</td><td>Vitest 1.6 + Testing Library</td><td>frontend/vite.config.ts</td></tr>
+    <tr><td>Frontend (mocks)</td><td>jsdom 29, MSW</td><td>setup.ts</td></tr>
+    <tr><td>Coverage</td><td>pytest-cov (HTML) / v8 (HTML)</td><td>--cov-report=html</td></tr>
+    <tr><td>Lambdas</td><td>pytest + unittest.mock</td><td>lambda/*/test_*.py</td></tr>
+  </table>
+  <div class="grid-3" style="margin-top:16px">
+    <div class="card"><div class="stat green">168</div><p>Tests Backend</p></div>
+    <div class="card"><div class="stat accent">177</div><p>Tests Frontend</p></div>
+    <div class="card"><div class="stat orange">10</div><p>Tests Lambda</p></div>
+  </div>
+</div>
+
+<!-- SLIDE 5: BACKEND B1 -->
+<div class="slide" data-index="4">
+  <h2>4. Backend — B1: Login + 2FA (OTP)</h2>
+  <p class="desc">Valida el flujo de autenticación con verificación en dos pasos. Cuando un usuario tiene 2FA habilitado, el login devuelve un temp_token; luego se verifica el código OTP almacenado en <code>_otp_store</code> (server-side) para entregar el JWT definitivo.</p>
+  <span class="file">ec2/api/tests/test_auth.py</span>
+  <pre><span class="kw">def</span> <span class="fn">test_login_with_2fa_returns_temp_token</span>(<span class="built">self</span>, client, mock_dynamodb, db_connection):
+    mock_users, _ = mock_dynamodb
+    mock_users.query.return_value = {
+        <span class="str">'Items'</span>: [{<span class="str">'user_id'</span>: <span class="str">'2fa-user-id'</span>, <span class="str">'email'</span>: <span class="str">'admin2fa@test.cl'</span>,
+                  <span class="str">'password_hash'</span>: VALID_HASH, <span class="str">'rol'</span>: <span class="str">'ADMIN'</span>}]
+    }
+    <span class="kw">with</span> <span class="built">patch</span>(<span class="str">'routers.auth.send_otp_email'</span>) <span class="kw">as</span> mock_email:
+        response = client.<span class="built">post</span>(<span class="str">"/login"</span>, json={<span class="str">"email"</span>: <span class="str">"admin2fa@test.cl"</span>, <span class="str">"password"</span>: <span class="str">"testpass123"</span>})
+    <span class="kw">assert</span> response.status_code == <span class="num">200</span>
+    <span class="kw">assert</span> response.json()[<span class="str">"two_factor_required"</span>] <span class="kw">is</span> <span class="built">True</span>
+    <span class="kw">assert</span> <span class="str">"temp_token"</span> <span class="kw">in</span> response.json()</pre>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <strong style="color:var(--red)">🧪 Negativo:</strong> Código OTP inválido (000000) es rechazado con 401 — último filtro antes del JWT de acceso.
+  </div>
+  <p class="result">✅ 4/4 tests pasan</p>
+</div>
+
+<!-- SLIDE 6: BACKEND B2 -->
+<div class="slide" data-index="5">
+  <h2>4. Backend — B2: Circuit Breaker</h2>
+  <p class="desc">Evalúa el patrón Circuit Breaker para APIs externas (FIRMS, OWM, CONAF). Tras N fallos consecutivos el circuito se abre y ejecuta el fallback sin llamar al servicio real.</p>
+  <span class="file">ec2/api/tests/test_circuit_breaker.py</span>
+  <pre><span class="kw">async def</span> <span class="fn">test_opens_after_threshold_failures</span>():
+    cb = CircuitBreaker(<span class="str">"test"</span>, failure_threshold=<span class="num">2</span>, recovery_timeout=<span class="num">60.0</span>)
+    <span class="kw">async def</span> <span class="fn">fail</span>(): <span class="kw">raise</span> <span class="built">Exception</span>(<span class="str">"fail"</span>)
+
+    <span class="kw">with</span> <span class="built">pytest</span>.raises(<span class="built">Exception</span>): <span class="kw">await</span> cb.call(fail)  <span class="cm"># fallo 1 → still CLOSED</span>
+    <span class="kw">assert</span> cb.state == CircuitState.CLOSED
+
+    <span class="kw">with</span> <span class="built">pytest</span>.raises(<span class="built">Exception</span>): <span class="kw">await</span> cb.call(fail)  <span class="cm"># fallo 2 → OPEN</span>
+    <span class="kw">assert</span> cb.state == CircuitState.OPEN</pre>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <strong style="color:var(--red)">🧪 Negativo:</strong> Circuito abierto rechaza llamadas incluso exitosas hasta que expira el recovery_timeout. Evita cascadas de fallos.
+  </div>
+  <p class="result">✅ 6/6 tests pasan</p>
+</div>
+
+<!-- SLIDE 7: BACKEND B3 -->
+<div class="slide" data-index="6">
+  <h2>4. Backend — B3: BFF Dashboard</h2>
+  <p class="desc">Prueba el endpoint BFF que agrega datos de clima (OpenWeatherMap), focos satelitales (NASA FIRMS) y estadísticas de reportes en una sola respuesta para el equipo de emergencia.</p>
+  <span class="file">ec2/api/tests/test_bff.py</span>
+  <pre><span class="kw">def</span> <span class="fn">test_bff_dashboard_with_data</span>(<span class="built">self</span>, client, db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute(<span class="str">"INSERT INTO reports ..."</span>, (<span class="str">"r1"</span>, <span class="str">"u1"</span>, <span class="str">"FORESTAL"</span>, <span class="str">"ACTIVO"</span>, ...))
+    cursor.execute(<span class="str">"INSERT INTO weather_readings ..."</span>, (-<span class="num">33.45</span>, -<span class="num">70.67</span>, <span class="str">"Metropolitana"</span>, <span class="num">25.0</span>, <span class="num">60</span>, <span class="num">5.0</span>, ...))
+    cursor.execute(<span class="str">"INSERT INTO firms_hotspots ..."</span>, (-<span class="num">33.5</span>, -<span class="num">70.5</span>, <span class="num">300.0</span>, <span class="num">50.0</span>, <span class="str">"high"</span>, ...))
+    db_connection.commit()
+
+    response = client.<span class="built">get</span>(<span class="str">"/bff/dashboard"</span>)
+    <span class="kw">assert</span> response.status_code == <span class="num">200</span>
+    data = response.json()
+    <span class="kw">assert</span> data[<span class="str">"stats"</span>][<span class="str">"total_reportes"</span>] == <span class="num">2</span>
+    <span class="kw">assert</span> data[<span class="str">"weather"</span>][<span class="str">"temperature"</span>] == <span class="num">25.0</span></pre>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <strong style="color:var(--red)">🧪 Negativo:</strong> Dashboard sin datos retorna estructura vacía pero válida (200), no un 500.
+  </div>
+  <p class="result">✅ 5/5 tests pasan</p>
+</div>
+
+<!-- SLIDE 8: BACKEND B4-B6 -->
+<div class="slide" data-index="7">
+  <h2>4. Backend — B4: Upload, B5: Password Reset, B6: Admin</h2>
+  <div class="grid-2">
+    <div>
+      <h3>B4 — Upload imagen → S3</h3>
+      <p class="desc" style="font-size:13px">Proxy de subida: recibe JPEG/PNG en base64, lo decodifica, almacena en S3 y devuelve la URL.</p>
+      <pre style="font-size:11px"><span class="kw">def</span> <span class="fn">test_upload_image_jpeg</span>(<span class="built">self</span>, client, mock_lambda_service):
+    response = client.<span class="built">post</span>(<span class="str">"/reports/upload"</span>, files={
+        <span class="str">"file"</span>: (<span class="str">"test.jpg"</span>, io.BytesIO(<span class="str">b'\xff\xd8\xff\xe0'</span>), <span class="str">"image/jpeg"</span>)
+    })
+    <span class="kw">assert</span> response.status_code == <span class="num">200</span>
+    <span class="kw">assert</span> <span class="str">"foto_url"</span> <span class="kw">in</span> response.json()</pre>
+      <p class="result">✅ 4/4</p>
+    </div>
+    <div>
+      <h3>B5 — Password Reset con OTP</h3>
+      <p class="desc" style="font-size:13px">Flujo 3 pasos: solicitud → OTP email → nueva contraseña. Mock de Mailtrap SMTP.</p>
+      <pre style="font-size:11px"><span class="kw">def</span> <span class="fn">test_reset_password_with_valid_otp_updates_password</span>(<span class="built">self</span>, client, db_connection):
+    <span class="cm"># forgot-password → recibe OTP → reset-password</span>
+    <span class="kw">with</span> <span class="built">patch</span>(<span class="str">'routers.password_reset.send_otp_email'</span>) <span class="kw">as</span> mock_email:
+        client.<span class="built">post</span>(<span class="str">"/auth/forgot-password"</span>, json={<span class="str">"email"</span>: <span class="str">"reset2@test.cl"</span>})
+        otp = mock_email.call_args[<span class="num">0</span>][<span class="num">1</span>]
+        response = client.<span class="built">post</span>(<span class="str">"/auth/reset-password"</span>, json={
+            <span class="str">"email"</span>: <span class="str">"reset2@test.cl"</span>, <span class="str">"otp"</span>: otp, <span class="str">"password"</span>: <span class="str">"NuevaPass123!"</span>
+        })
+    <span class="kw">assert</span> response.status_code == <span class="num">200</span></pre>
+      <p class="result">✅ 4/4</p>
+    </div>
+  </div>
+  <div style="margin-top:8px">
+    <h3>B6 — Admin cambiar estado de reportes</h3>
+    <p class="desc" style="font-size:13px">Solo ADMIN puede cambiar estado (PENDIENTE→ACTIVO→CONTROLADO→EXTINGUIDO). VECINO recibe 403.</p>
+    <p class="result">✅ 4/4 tests pasan</p>
+  </div>
+</div>
+
+<!-- SLIDE 9: FRONTEND F1 -->
+<div class="slide" data-index="8">
+  <h2>5. Frontend — F1: Login + OTP 2FA</h2>
+  <p class="desc">Simula login con 2FA activado. Verifica que la UI muestre el campo de código de verificación cuando el backend responde con <code>two_factor_required: true</code>.</p>
+  <span class="file">frontend/src/__tests__/Login.test.tsx</span>
+  <pre>it(<span class="str">"should submit OTP and call login2FA"</span>, <span class="kw">async</span> () =&gt; {
+  mockAPILogin.mockResolvedValue({
+    two_factor_required: <span class="built">true</span>,
+    temp_token: <span class="str">'temp-token-123'</span>
+  })
+  mockAPILogin2FA.mockResolvedValue({ token: <span class="str">'final-jwt'</span>, user: { email: <span class="str">'admin@test.cl'</span>, rol: <span class="str">'ADMIN'</span> }})
+  renderWithProviders(<span class="op">&lt;</span>Login <span class="op">/&gt;</span>)
+
+  <span class="kw">await</span> userEvent.type(screen.getByPlaceholderText(<span class="str">'correo@ejemplo.com'</span>), <span class="str">'admin@test.cl'</span>)
+  <span class="kw">await</span> userEvent.type(screen.getByPlaceholderText(<span class="str">'••••••••'</span>), <span class="str">'adminpass'</span>)
+  fireEvent.click(screen.getByText(<span class="str">'Iniciar Sesión'</span>))
+
+  <span class="kw">await</span> waitFor(() =&gt; {
+    expect(screen.getByText(<span class="str">'Verificación en dos pasos'</span>)).toBeDefined()
+  })</pre>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <strong style="color:var(--red)">🧪 Negativo:</strong> Login con 2FA muestra campo OTP — sin esta transición, usuarios con 2FA no podrían completar el login.
+  </div>
+  <p class="result">✅ 8/8 tests pasan</p>
+</div>
+
+<!-- SLIDE 10: FRONTEND F2 -->
+<div class="slide" data-index="9">
+  <h2>5. Frontend — F2: Mapa + markers coloreados</h2>
+  <p class="desc">Comprueba que el mapa renderice marcadores georreferenciados con color según estado (ACTIVO, PENDIENTE, CONTROLADO, EXTINGUIDO).</p>
+  <span class="file">frontend/src/__tests__/MapboxStrategy.test.tsx</span>
+  <pre>it(<span class="str">"renders all estado types in marker dot color"</span>, () =&gt; {
+  <span class="kw">const</span> focos: FocoData[] = [
+    sampleFoco({ id: <span class="str">'a'</span>, estado: <span class="str">'ACTIVO'</span> }),
+    sampleFoco({ id: <span class="str">'b'</span>, estado: <span class="str">'PENDIENTE'</span> }),
+    sampleFoco({ id: <span class="str">'c'</span>, estado: <span class="str">'CONTROLADO'</span> }),
+    sampleFoco({ id: <span class="str">'d'</span>, estado: <span class="str">'EXTINGUIDO'</span> }),
+    sampleFoco({ id: <span class="str">'e'</span>, estado: <span class="str">'UNKNOWN'</span> }),
+  ]
+  renderStrategy(defaultProps({ focos }))
+  expect(screen.getAllByTestId(<span class="str">'mock-marker'</span>)).toHaveLength(<span class="num">5</span>)
+})</pre>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <strong style="color:var(--red)">🧪 Negativo:</strong> Popup se oculta al deseleccionar — sin esto, el popup quedaría abierto bloqueando el mapa.
+  </div>
+  <p class="result">✅ 19/19 tests pasan</p>
+</div>
+
+<!-- SLIDE 11: FRONTEND F3-F4 -->
+<div class="slide" data-index="10">
+  <h2>5. Frontend — F3: Reporte y F4: AdminPage</h2>
+  <div class="grid-2">
+    <div>
+      <h3>F3 — Reporte con foto + GPS + submit</h3>
+      <p class="desc" style="font-size:13px">Flujo completo: GPS → tipo incendio → descripción → foto → envío → redirección a confirmación.</p>
+      <pre style="font-size:11px">it(<span class="str">"submits report as authenticated user"</span>, <span class="kw">async</span> () =&gt; {
+  API.createReport = vi.fn().mockResolvedValue({ report_id: <span class="str">'456'</span> })
+  mockGeolocation(<span class="built">true</span>, { lat: -<span class="num">33.46</span>, lng: -<span class="num">70.68</span> })
+  <span class="kw">await</span> renderReporte()
+  fireEvent.click(screen.getByText(<span class="str">'Obtener Mi Ubicación'</span>))
+  <span class="kw">await</span> waitFor(() =&gt; expect(screen.getByText(<span class="str">/✅ Ubicación/</span>)).toBeDefined())
+  <span class="kw">await</span> userEvent.type(screen.getByPlaceholderText(<span class="str">'Describe lo que observas...'</span>), <span class="str">'Humo cerca del cerro'</span>)
+  fireEvent.click(screen.getByText(<span class="str">'Enviar Reporte'</span>))
+  <span class="kw">await</span> waitFor(() =&gt; {
+    expect(API.createReport).toHaveBeenCalledWith(<span class="str">'valid-token'</span>, {
+      tipo: <span class="str">'FORESTAL'</span>, latitud: -<span class="num">33.46</span>, longitud: -<span class="num">70.68</span>, ...
+    })
+  })
+})</pre>
+      <p class="result">✅ 13/13</p>
+    </div>
+    <div>
+      <h3>F4 — AdminPage gestionar reportes</h3>
+      <p class="desc" style="font-size:13px">Panel admin: tabla con reportes, dropdown de estado, solo visible para rol ADMIN.</p>
+      <pre style="font-size:11px">it(<span class="str">"should render reports tab with data"</span>, <span class="kw">async</span> () =&gt; {
+  mockAPIGetReports.mockResolvedValue({
+    reports: [
+      { report_id: <span class="str">'r1'</span>, tipo: <span class="str">'FORESTAL'</span>, estado: <span class="str">'ACTIVO'</span>, ... },
+      { report_id: <span class="str">'r2'</span>, tipo: <span class="str">'URBANO'</span>, estado: <span class="str">'PENDIENTE'</span>, ... },
+    ], total: <span class="num">2</span>
+  })
+  renderWithProviders(<span class="op">&lt;</span>AdminPage <span class="op">/&gt;</span>)
+  <span class="kw">await</span> waitFor(() =&gt; {
+    expect(screen.getByText(<span class="str">'Incendio en cerro'</span>)).toBeDefined()
+    expect(screen.getByText(<span class="str">'Casa en llamas'</span>)).toBeDefined()
+  })
+})</pre>
+      <p class="result">✅ 2/2</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12: FRONTEND F5-F6 -->
+<div class="slide" data-index="11">
+  <h2>5. Frontend — F5: ForgotPassword y F6: OfflineBanner</h2>
+  <div class="grid-2">
+    <div>
+      <h3>F5 — ForgotPassword 3 pasos</h3>
+      <p class="desc" style="font-size:13px">Paso 1: email → Paso 2: OTP + nueva contraseña → Paso 3: confirmación.</p>
+      <pre style="font-size:11px">it(<span class="str">"should show success after valid OTP and matching passwords"</span>, <span class="kw">async</span> () =&gt; {
+  mockAPIForgot.mockResolvedValue({ message: <span class="str">'Código enviado'</span> })
+  mockAPIReset.mockResolvedValue({ message: <span class="str">'Contraseña actualizada correctamente'</span> })
+  renderWithProviders(<span class="op">&lt;</span>ForgotPassword <span class="op">/&gt;</span>)
+  <span class="kw">await</span> userEvent.type(screen.getByPlaceholderText(<span class="str">'correo@ejemplo.com'</span>), <span class="str">'user@test.cl'</span>)
+  fireEvent.click(screen.getByText(<span class="str">'Enviar Código de Verificación'</span>))
+  <span class="cm">// ... fill OTP + passwords ...</span>
+  <span class="kw">await</span> waitFor(() =&gt; {
+    expect(mockAPIReset).toHaveBeenCalledWith(<span class="str">'user@test.cl'</span>, <span class="str">'123456'</span>, <span class="str">'NewPass123'</span>, <span class="built">undefined</span>)
+    expect(screen.getByText(<span class="str">'Contraseña actualizada'</span>)).toBeDefined()
+  })
+})</pre>
+      <p class="result">✅ 3/3</p>
+    </div>
+    <div>
+      <h3>F6 — OfflineBanner + reconexión</h3>
+      <p class="desc" style="font-size:13px">Al perder conexión se muestra banner "Sin conexión". Al recuperarla, se oculta automáticamente.</p>
+      <pre style="font-size:11px">it(<span class="str">"should react to offline event"</span>, () =&gt; {
+  Object.defineProperty(navigator, <span class="str">'onLine'</span>, { value: <span class="built">true</span>, ... })
+  <span class="kw">const</span> { container } = render(<span class="op">&lt;</span>OfflineBanner <span class="op">/&gt;</span>)
+  expect(container.innerHTML).toBe(<span class="str">''</span>)
+  act(() =&gt; { window.dispatchEvent(<span class="kw">new</span> Event(<span class="str">'offline'</span>)) })
+  expect(screen.getByText(<span class="str">/Sin conexión/</span>)).toBeDefined()
+})</pre>
+      <p class="result">✅ 5/5</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13: APIs MOCKEADAS -->
+<div class="slide" data-index="12">
+  <h2>6. APIs y Servicios Externos Mockeados</h2>
+  <p class="desc">9 servicios/API externos mockeados en los tests, desde Mailtrap SMTP hasta DynamoDB y API Gateway.</p>
+  <table>
+    <tr><th>#</th><th>Servicio/API</th><th>Integración</th><th>Archivo test</th></tr>
+    <tr><td><strong>S1</strong></td><td>Mailtrap SMTP</td><td>OTP 2FA + password reset</td><td>test_auth.py, test_password_reset.py</td></tr>
+    <tr><td><strong>S2</strong></td><td>Cloudflare Worker</td><td>Proxy PWA → API Gateway</td><td>Login.test.tsx, Reporte.test.tsx</td></tr>
+    <tr><td><strong>S3</strong></td><td>NASA FIRMS</td><td>Focos activos satelitales</td><td>test_public.py</td></tr>
+    <tr><td><strong>S4</strong></td><td>OpenWeatherMap</td><td>Clima dashboard público</td><td>test_public.py</td></tr>
+    <tr><td><strong>S5</strong></td><td>CONAF / CIREN</td><td>Datos incendios forestales</td><td>test_public.py</td></tr>
+    <tr><td><strong>S6</strong></td><td>Mapbox GL JS</td><td>Mapas interactivos</td><td>MapboxStrategy.test.tsx</td></tr>
+    <tr><td><strong>S7</strong></td><td>S3 (AWS)</td><td>Almacenamiento imágenes</td><td>test_upload.py, test_services.py, Lambdas</td></tr>
+    <tr><td><strong>S8</strong></td><td>DynamoDB (AWS)</td><td>Persistencia usuarios/reportes</td><td>test_repositories.py</td></tr>
+    <tr><td><strong>S9</strong></td><td>API Gateway (AWS)</td><td>Entry point único</td><td>test_auth.py</td></tr>
+  </table>
+</div>
+
+<!-- SLIDE 14: LAMBDAS -->
+<div class="slide" data-index="13">
+  <h2>7. Microservicios Lambda (5)</h2>
+  <p class="desc">Cada Lambda tiene 2 tests: caso exitoso y caso de error, totalizando 10 tests con ~85-90% de cobertura.</p>
+  <table>
+    <tr><th>Lambda</th><th>Función</th><th>Tests</th></tr>
+    <tr><td><strong>upload-proxy</strong></td><td>Recibe imagen base64 → decodifica → almacena en S3 con nombre único</td><td>2</td></tr>
+    <tr><td><strong>ms-usuarios</strong></td><td>Login/registro unificado contra DynamoDB con bcrypt</td><td>2</td></tr>
+    <tr><td><strong>ms-incidencias</strong></td><td>CRUD reportes: listar, filtrar, crear, actualizar estado</td><td>2</td></tr>
+    <tr><td><strong>ms-notificaciones</strong></td><td>Publica alertas en SNS Topic desde reportes</td><td>2</td></tr>
+    <tr><td><strong>sns-to-grafana</strong></td><td>Lee alertas desde SNS y crea annotations en Grafana</td><td>2</td></tr>
+  </table>
+  <div class="grid-3" style="margin-top:12px">
+    <div class="card"><h4>upload-proxy</h4><pre style="font-size:11px;margin:4px 0 0">test_upload_jpeg_success<br>test_png_content_type</pre></div>
+    <div class="card"><h4>ms-usuarios</h4><pre style="font-size:11px;margin:4px 0 0">test_login_success<br>test_register_auto</pre></div>
+    <div class="card"><h4>ms-incidencias</h4><pre style="font-size:11px;margin:4px 0 0">test_list_reports<br>test_create_report</pre></div>
+    <div class="card"><h4>ms-notificaciones</h4><pre style="font-size:11px;margin:4px 0 0">test_publish_alert<br>test_sns_error</pre></div>
+    <div class="card"><h4>sns-to-grafana</h4><pre style="font-size:11px;margin:4px 0 0">test_annotation_created<br>test_missing_fields</pre></div>
+  </div>
+</div>
+
+<!-- SLIDE 15: PATRONES -->
+<div class="slide" data-index="14">
+  <h2>8. Patrones de Diseño</h2>
+  <p class="desc">6 patrones de diseño implementados y verificados mediante tests unitarios.</p>
+  <div class="pattern-list">
+    <div class="pattern-item"><div><div class="name">BFF</div><div class="type">Arquitectónico</div></div><span class="tests">5 tests</span></div>
+    <div class="pattern-item"><div><div class="name">Circuit Breaker</div><div class="type">Comportamiento</div></div><span class="tests">6 tests</span></div>
+    <div class="pattern-item"><div><div class="name">Factory Method</div><div class="type">Creacional</div></div><span class="tests">5 tests</span></div>
+    <div class="pattern-item"><div><div class="name">Strategy (Mapas)</div><div class="type">Comportamiento</div></div><span class="tests">19 tests</span></div>
+    <div class="pattern-item"><div><div class="name">Observer (Toast)</div><div class="type">Comportamiento</div></div><span class="tests">5 tests</span></div>
+    <div class="pattern-item"><div><div class="name">Composite (UI)</div><div class="type">Estructural</div></div><span class="tests">3 tests</span></div>
+  </div>
+</div>
+
+<!-- SLIDE 16: CONCLUSIÓN -->
+<div class="slide slide-title" data-index="15">
+  <div>
+    <h1 style="font-size:36px">10. Conclusión</h1>
+    <p class="subtitle" style="font-size:18px;max-width:600px;margin:16px auto">
+      Sistema con cobertura de pruebas sólida y homogénea en todas sus capas.
+    </p>
+    <div class="grid-3" style="max-width:600px;margin:16px auto;text-align:left">
+      <div class="card"><div class="stat green">88%</div><p>Backend</p></div>
+      <div class="card"><div class="stat accent">82%</div><p>Frontend</p></div>
+      <div class="card"><div class="stat orange">~85%</div><p>Lambdas</p></div>
+    </div>
+    <p class="desc" style="max-width:600px;margin:0 auto;font-size:14px">
+      355 pruebas unitarias que pasan en su totalidad. SonarCloud con calificación A en seguridad, confiabilidad, mantenibilidad y revisión de seguridad, con 0 Code Smells. Stack 100% reproducible desde el repositorio.
+    </p>
+    <div class="badge" style="background:var(--accent);color:#fff;margin-top:24px">📊 355 tests • 88% backend • 82% frontend • 10 lambdas</div>
+  </div>
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <div class="nav-info">
+    <span id="slideNum">1</span> / <span id="slideTotal">16</span> &nbsp;·&nbsp; <span id="slideTitle">Portada</span>
+  </div>
+  <div class="nav-buttons">
+    <button class="nav-btn" id="prevBtn" onclick="prevSlide()">◀ Anterior</button>
+    <button class="nav-btn" id="nextBtn" onclick="nextSlide()">Siguiente ▶</button>
+  </div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+const titles = [
+  'Portada','1. Resumen Ejecutivo','2. Métricas de Cobertura','3. Herramientas de Testing',
+  '4. B1 — Login + 2FA','4. B2 — Circuit Breaker','4. B3 — BFF Dashboard','4. B4-B6 — Upload / Reset / Admin',
+  '5. F1 — Login + OTP','5. F2 — Mapa + Markers','5. F3-F4 — Reporte / AdminPage','5. F5-F6 — Forgot / Offline',
+  '6. APIs Mockeadas','7. Lambdas (5)','8. Patrones de Diseño','10. Conclusión'
+];
+let current = 0;
+
+document.getElementById('slideTotal').textContent = total;
+
+function showSlide(idx) {
+  slides.forEach(s => s.classList.remove('active'));
+  slides[idx].classList.add('active');
+  current = idx;
+  document.getElementById('slideNum').textContent = idx + 1;
+  document.getElementById('slideTitle').textContent = titles[idx] || '';
+  document.getElementById('prevBtn').disabled = idx === 0;
+  document.getElementById('nextBtn').disabled = idx === total - 1;
+  document.getElementById('progressFill').style.width = ((idx + 1) / total * 100) + '%';
+  window.scrollTo(0,0);
+}
+
+function nextSlide() { if(current < total - 1) showSlide(current + 1) }
+function prevSlide() { if(current > 0) showSlide(current - 1) }
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+  if(e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

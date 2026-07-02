@@ -1,28 +1,9 @@
-[
-  {
-    "name": "SnsToGrafanaAnnotation",
-    "description": "Crear annotation en Grafana desde evento SNS (requiere GRAFANA_TOKEN valido)",
-    "event": {
-      "Records": [
-        {
-          "Sns": {
-            "Message": "{\"text\":\"Incendio activo en Valle del Sol\",\"tags\":[\"sistema\",\"incendio\",\"urgente\"],\"timestamp\":\"2026-06-24T12:00:00\"}"
-          }
-        }
-      ]
+{
+  "Records": [
+    {
+      "Sns": {
+        "Message": "{\"text\":\"Incendio activo en Valle del Sol\",\"tags\":[\"sistema\",\"incendio\",\"urgente\"],\"timestamp\":\"2026-06-24T12:00:00\"}"
+      }
     }
-  },
-  {
-    "name": "MalformedMessage",
-    "description": "Mensaje SNS mal formado debe retornar 500",
-    "event": {
-      "Records": [
-        {
-          "Sns": {
-            "Message": "not-valid-json"
-          }
-        }
-      ]
-    }
-  }
-]
+  ]
+}
