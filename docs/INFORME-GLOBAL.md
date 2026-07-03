@@ -34,18 +34,18 @@
 
 ## 1. Resumen Ejecutivo
 
-Plataforma PWA de gestión táctica de incendios forestales y urbanos para la Municipalidad de Valle del Sol. Permite a ciudadanos reportar incidentes, visualizar focos activos en un mapa interactivo, coordinar recursos de emergencia, monitorear datos climáticos y satelitales (NASA FIRMS), todo con autenticación JWT con 2FA, dashboard táctico en Grafana con datasource SQLite nativo, y despliegue CI/CD automatizado mediante GitHub Actions y Docker.
+Plataforma PWA de gestión táctica de incendios forestales y urbanos para la Municipalidad de Valle del Sol. Permite a ciudadanos reportar incidentes, visualizar focos activos en un mapa interactivo, coordinar recursos de emergencia, monitorear datos climáticos y satelitales (NASA FIRMS), todo con autenticación JWT con 2FA, dashboard táctico en Grafana (en migración de datasource SQLite nativo a Infinity JSON API via RDS PostgreSQL), y despliegue CI/CD automatizado mediante GitHub Actions y Docker.
 
 | Componente | Tests | Cobertura | Estado |
 |-----------|:-----:|:---------:|:------:|
-| Backend (FastAPI) | 168 | 88% | ✅ |
-| Frontend (React) | 177 | 82% | ✅ |
+| Backend (FastAPI) | 167 | 88% | ✅ |
+| Frontend (React) | 172 | 82% | ✅ |
 | Lambda upload-proxy | 2 | ~90% | ✅ |
 | Lambda ms-usuarios | 2 | ~85% | ✅ |
 | Lambda ms-incidencias | 2 | ~85% | ✅ |
 | Lambda ms-notificaciones | 2 | ~90% | ✅ |
 | Lambda sns-to-grafana | 2 | ~85% | ✅ |
-| **TOTAL** | **355** | **≥82%** | ✅ |
+| **TOTAL** | **349** | **≥82%** | ✅ |
 
 Todos los componentes superan el **60% de cobertura mínimo** exigido por la rúbrica.
 
@@ -97,7 +97,7 @@ Desarrollar una PWA que permita a ciudadanos reportar incendios y al equipo de e
 **Sobre calidad y automatización:**
 - Automatizar el despliegue mediante CI/CD con GitHub Actions, Docker y deploy automatizado a EC2 con healthchecks.
 - Alcanzar calificación A en las 4 dimensiones de SonarCloud (Security, Reliability, Maintainability, Security Review) con 0 Code Smells.
-- Implementar 355 tests unitarios (168 backend, 177 frontend, 10 lambdas) con cobertura mínima del 82% y 3 patrones de diseño verificables (BFF, Circuit Breaker, Factory Method).
+- Implementar 349 tests unitarios (167 backend, 172 frontend, 10 lambdas) con cobertura mínima del 82% y 3 patrones de diseño verificables (BFF, Circuit Breaker, Factory Method).
 - Incorporar 3 workflows adicionales (restart-grafana, audit, fix-permissions) para operaciones post-deploy.
 - Integrar datos satelitales NASA FIRMS, climáticos OpenWeatherMap y forestales CONAF/CIREN como fuentes externas en los dashboards.
 
@@ -190,7 +190,7 @@ _Referencias técnicas: FastAPI [1] como framework BFF, Cloudflare DNS [13] para
 2. La PWA se comunica vía **API Gateway** (DNS-only por Cloudflare, sin proxy HTTP que corrompa binarios).
 3. API Gateway enruta a los **5 microservicios Lambda** (auth, reports, alerts, upload) o al **endpoint HTTP_PROXY** que llega a EC2.
 4. En **EC2**, nginx hace reverse proxy al **FastAPI** (BFF) que orquesta datos desde:
-   - **SQLite**: reportes, alertas, auditoría, 2FA, notificaciones (para Grafana + admin).
+    - **SQLite** → **RDS PostgreSQL (en migración)**: reportes, alertas, auditoría, 2FA, notificaciones (para Grafana + admin).
    - **DynamoDB**: usuarios y reportes (persistencia primaria para Lambdas).
    - **S3**: imágenes de reportes subidas vía Lambda.
    - **APIs externas**: NASA FIRMS (focos activos satelitales), OpenWeatherMap (clima), CONAF/CIREN (datos forestales), **Mapbox GL JS** (mapas base e interacción geoespacial en frontend [16]).
@@ -202,7 +202,7 @@ _Referencias técnicas: FastAPI [1] como framework BFF, Cloudflare DNS [13] para
 | Decisión | Justificación |
 |----------|---------------|
 | API Gateway como entry point único | Simplifica la seguridad y el ruteo centralizado |
-| Dual DynamoDB + SQLite | LabRole de AWS Academy no permite escritura DynamoDB desde EC2; Grafana requiere SQLite como datasource |
+| Dual DynamoDB + SQLite → RDS PostgreSQL | LabRole de AWS Academy no permite escritura DynamoDB desde EC2; Grafana requiere SQLite como datasource (migrando a Infinity JSON API con PostgreSQL Jul 2026) |
 | BFF (Backend for Frontend) | Abstrae complejidad del backend, agrega datos de múltiples fuentes, evita exponer arquitectura interna al frontend |
 | 5 Lambdas separadas | Escalabilidad individual, aislamiento de fallos, despliegue independiente |
 | FastAPI vs Django/Flask | Asíncrono, tipado, genera OpenAPI automáticamente, ideal para BFF |
@@ -246,7 +246,7 @@ _Referencias técnicas: React 18 [7], TypeScript [8], Vite [26], Tailwind CSS [2
 | PWA | Service Worker con soporte offline |
 | Testing | Vitest 1.6 + Testing Library + jsdom |
 | Despliegue | Cloudflare Pages (auto-deploy desde GitHub) |
-| **Tests** | **177 tests, 82% cobertura** |
+| **Tests** | **172 tests, 82% cobertura** |
 
 **Páginas ciudadanas (9 de las 10 páginas del frontend):**
 
@@ -389,7 +389,7 @@ Panel de administración dentro de la misma PWA, accesible solo para usuarios co
 | Auth | JWT HS256 con bcrypt, OTP 2FA en JWT, backup codes, bootstrap de emergencia |
 | Patrones | Repository (DynamoDB), Circuit Breaker, Factory Method, BFF |
 | Testing | pytest 8.3 + pytest-cov 7.1 + unittest.mock |
-| **Tests** | **168 tests, 88% cobertura** |
+| **Tests** | **167 tests, 88% cobertura** |
 
 **Endpoints del Backend (45 total: 37 en routers + 8 directos en main.py):**
 
@@ -492,14 +492,14 @@ _Referencias técnicas: pytest [17] para testing backend, Vitest [27] para testi
 
 | Componente | Tests | Cobertura | Estado |
 |-----------|:-----:|:---------:|:------:|
-| Backend (FastAPI) | 168 | 88% | ✅ |
-| Frontend (React) | 177 | 82% | ✅ |
+| Backend (FastAPI) | 167 | 88% | ✅ |
+| Frontend (React) | 172 | 82% | ✅ |
 | Lambda upload-proxy | 2 | ~90% | ✅ |
 | Lambda ms-usuarios | 2 | ~85% | ✅ |
 | Lambda ms-incidencias | 2 | ~85% | ✅ |
 | Lambda ms-notificaciones | 2 | ~90% | ✅ |
 | Lambda sns-to-grafana | 2 | ~85% | ✅ |
-| **TOTAL** | **355** | **≥82%** | ✅ |
+| **TOTAL** | **349** | **≥82%** | ✅ |
 
 ### 6.2 Herramientas
 
@@ -811,7 +811,7 @@ En julio 2026 se realizó la migración de SQLite (base de datos local embebida 
 
 | Fase | Duración | Descripción |
 |------|----------|-------------|
-| FASE 1 | 2 días | RDS, Security Group, schema DDL |
+| FASE 1 | 1 día | RDS, Security Group, schema DDL, secrets CI/CD |
 | FASE 2 | 1 día | Reconciliación datos huérfanos (DynamoDB → SQLite) |
 | FASE 3 | 3 días | Dual-write + migración endpoints API |
 | FASE 4 | 3-4 días | Migración Grafana a Infinity + CI/CD Lambdas (opcional) |

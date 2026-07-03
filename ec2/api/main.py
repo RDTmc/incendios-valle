@@ -242,6 +242,12 @@ def init_db():
 
 init_db()
 
+from database_pg import init_pg_schema
+try:
+    init_pg_schema()
+except Exception:
+    pass
+
 
 def seed_resources():
     conn = get_db_connection()

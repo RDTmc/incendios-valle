@@ -1,7 +1,7 @@
 # Plan de Migración: SQLite → RDS PostgreSQL
 
-**Inicio:** 26 Jun 2026  
-**Entrega:** 9 Jul 2026 (13 días)  
+**Inicio:** 02 Jul 2026  
+**Entrega:** 9 Jul 2026 (8 días restantes)  
 **Presupuesto AWS:** $36.6 disponibles de $50  
 
 ## Objetivo
@@ -11,8 +11,8 @@ Reemplazar SQLite como base de datos local del contenedor FastAPI por una instan
 ## Cronograma
 
 ```
-FASE 1 — Preparación (días 1-2)      ← estamos aquí
-FASE 2 — Reconciliación datos (día 3)
+FASE 1 — Preparación (días 1-2)      ✅ COMPLETADO
+FASE 2 — Reconciliación datos (día 3)  ← estamos aquí
 FASE 3 — Dual-write + endpoints (días 4-6)
 FASE 4 — Opción B: Grafana + CI/CD Lambdas (días 7-10)
 FASE 5 — Deprecar SQLite + tests + docs (días 11-13)
@@ -20,9 +20,9 @@ FASE 5 — Deprecar SQLite + tests + docs (días 11-13)
 
 ---
 
-## FASE 1 — Preparación (días 1-2)
+## FASE 1 — Preparación (días 1-2) ✅ COMPLETADO
 
-### Día 1 — Crear RDS
+### Día 1 — Crear RDS ✅
 
 ```bash
 # 1. Crear Security Group para RDS
@@ -51,14 +51,14 @@ aws rds create-db-instance \
   --backup-retention-period 0
 ```
 
-### Día 2 — Dependencias + esquema
+### Día 2 — Dependencias + esquema ✅
 
-1. Agregar `psycopg2-binary` a `ec2/api/requirements.txt`
-2. Crear `ec2/api/database_pg.py`:
+1. ✅ Agregar `psycopg2-binary` a `ec2/api/requirements.txt`
+2. ✅ Crear `ec2/api/database_pg.py`:
    - `ConnectionPool` con `psycopg2.pool.ThreadedConnectionPool`
    - `get_pg_connection()` (context manager)
    - `init_pg_schema()` con DDL PostgreSQL (10 tablas)
-3. Inyectar variables de entorno en container:
+3. ✅ Inyectar variables de entorno en container:
    - `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, `PG_DATABASE`
 
 ---
@@ -218,7 +218,7 @@ class TestPostgresMigration:
 
 ## Checklist de validación pre-entrega
 
-- [ ] RDS PostgreSQL funciona y responde consultas desde EC2
+- [x] RDS PostgreSQL funciona y responde consultas desde EC2
 - [ ] Script reconciliación ejecutado: datos DynamoDB ≈ datos SQLite
 - [ ] Dual-write: ambas BD reciben los mismos datos
 - [ ] Los 30+ endpoints de la API leen de PostgreSQL

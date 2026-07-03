@@ -6,7 +6,7 @@
 
 El sistema implementa una arquitectura híbrida de microservicios: backend FastAPI [1] en EC2 como BFF, 5 funciones serverless AWS Lambda [2] orquestadas por API Gateway, y frontend PWA [3] desplegado en Cloudflare Pages. El pipeline CI/CD en GitHub Actions [4] automatiza tests, SonarCloud scan, Docker build y deploy a EC2.
 
-La persistencia es dual: DynamoDB como primaria (Lambdas) y SQLite como datasource nativo para Grafana [5], con sincronización manual vía endpoint `/sync`. Imágenes almacenadas en S3.
+La persistencia es dual: DynamoDB como primaria (Lambdas) y SQLite como datasource nativo para Grafana [5], con migración activa a RDS PostgreSQL y datasource Infinity JSON API (Jul 2026). Imágenes almacenadas en S3.
 
 ### 1.2 Seguridad Integral
 
@@ -21,7 +21,7 @@ La persistencia es dual: DynamoDB como primaria (Lambdas) y SQLite como datasour
 |---------|:-----:|
 | Security / Reliability / Maintainability | A (1.0) — SonarCloud |
 | Code Smells | 0 |
-| Tests | 355 (168 backend + 177 frontend + 10 lambdas) |
+| Tests | 349 (167 backend + 172 frontend + 10 lambdas) |
 | Cobertura | 88% backend / 82% frontend |
 
 Patrones implementados: BFF, Circuit Breaker, Factory Method, Strategy (mapas), Observer (notificaciones), Composite (UI).
@@ -52,7 +52,7 @@ Métricas de servidor EC2 vía Prometheus + Grafana: CPU, memoria, disco, red, m
 
 ### 2.5 Stack 100% Open Source
 
-React + TypeScript + Vite + Tailwind (frontend), Python + FastAPI + SQLite (backend), Grafana + Prometheus (observabilidad), AWS Free Tier (infraestructura). Replicable por otros municipios.
+React + TypeScript + Vite + Tailwind (frontend), Python + FastAPI + PostgreSQL/RDS (backend), Grafana + Prometheus (observabilidad), AWS Free Tier (infraestructura). Replicable por otros municipios.
 
 ---
 
