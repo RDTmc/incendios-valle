@@ -2,7 +2,9 @@
 
 ## Fase actual
 
-**FASE 1-3 completadas + auditoría docs (23-24 Jun 2026).** Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reliability Rating A, Security Review A, Maintainability A, Code Smells 0, build Cloudflare verde. Coverage overall: **≥82%** (backend 88%, frontend 82%). 349 tests (167 backend + 172 frontend + 10 lambdas), todos verdes. CI/CD pipeline verde en última ejecución. Docs sincronizados con repo y deploy real.
+**Migración SQLite → RDS PostgreSQL activa (Jul 2026).** FASE 1-2 completadas. FASE 3 Día 4 hecho: dual-write SQLite + PostgreSQL funcionando. 0 tests rotos (161/161 pass). Siguiente: FASE 3 Día 5 — migrar endpoints de lectura a PostgreSQL.
+
+Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reliability Rating A, Security Review A, Maintainability A, Code Smells 0, build Cloudflare verde. Coverage overall: **≥82%** (backend 88%, frontend 82%). 349 tests (167 backend + 172 frontend + 10 lambdas), todos verdes. CI/CD pipeline verde en última ejecución. Docs sincronizados con repo y deploy real.
 
 ## Último análisis SonarCloud (post-backend routers 100%)
 
@@ -50,6 +52,39 @@
 - **Worker versionado**: `cloudflare/worker.js` (deploy manual fuera de CI/CD)
 - **Diagrama arquitectura**: PNG renderizado desde Mermaid (59KB, 1200px)
 - **Auditoría docs**: INFORME-GLOBAL, CONCLUSION, AUDITORIA_INFORME sincronizados con repo real
+- **FASE 2 — Reconciliación DynamoDB→SQLite**: 9 usuarios + 69 reports reconciliados, admin user_id alineado entre DynamoDB y SQLite
+- **FASE 3 Día 4 — Dual-write**: `sync_to_postgres()` creado en dependencies.py, replica automática a PostgreSQL vía `ON CONFLICT DO UPDATE SET`. Graceful fallback si psycopg2 no está instalado
+
+## Últimos cambios — FASE 1: Migración SQLite → RDS PostgreSQL (02 Jul 2026)
+
+- RDS PostgreSQL 18.3 creado (db.t3.micro, 20GB gp3, subnet pública)
+- Security Group `incendios-rds-sg` con inbound PostgreSQL desde SG de EC2
+- `ec2/api/database_pg.py` creado: pool de conexiones (ThreadedConnectionPool) + DDL PostgreSQL (10 tablas)
+- `psycopg2-binary==2.9.9` agregado a requirements.txt
+- CI/CD actualizado: 5 secrets PG (HOST, PORT, USER, PASSWORD, DATABASE) inyectados vía SSH
+- `refresh_api.sh` actualizado: preserva PG vars en rewrite de .env
+- `docker-compose.yml` actualizado: env vars PG + yesoreyeram-infinity-datasource en Grafana
+- `ec2/.env.example` actualizado con valores de referencia PG
+- `database_pg.py` maneja graceful fallback si PG no está configurado (no rompe tests locales)
+- Pipeline CI/CD verde post-deploy
+
+## Últimos cambios — FASE 2: Reconciliación + FASE 3 Día 4: Dual-write (02 Jul 2026)
+
+### FASE 2 — Reconciliación DynamoDB → SQLite
+- Script `ec2/api/scripts/reconcile_dynamodb_to_sqlite.py` creado y ejecutado en EC2
+- **9 usuarios** reconciliados de 30 en DynamoDB (faltaban en SQLite)
+- **69 reports** reconciliados de 92 en DynamoDB
+- Admin user_id alineado: SQLite `42b967f7-...` → `81d02e8d-...` (coincide con DynamoDB)
+- 3 usuarios `vecino@valledelsol.cl` con email duplicado en DynamoDB — no reconciliables por UNIQUE constraint, impacto cero
+- Script de investigación `investigate_missing_users.py` para auditoría
+
+### FASE 3 Día 4 — Capa de escritura dual (PostgreSQL)
+- `dependencies.py`: agregada `sync_to_postgres()` con `ON CONFLICT ... DO UPDATE SET` para usuarios y reports
+- `sync_to_sqlite()` ahora llama a `sync_to_postgres()` después de escribir en SQLite
+- `database_pg.py`: import condicional de `psycopg2` para no romper tests locales (graceful fallback si no está instalado)
+- `get_pool()` verifica `HAS_PSYCOPG2` antes de crear pool
+- **161/161 tests backend pasan** (0 rotos)
+- Los datos nuevos ahora fluyen: DynamoDB → SQLite → PostgreSQL
 
 ## Últimos cambios — FASE 1: Auditoría + Documentación + Secrets (23 Jun 2026)
 
@@ -166,13 +201,27 @@
 - Columna SQL incorrecta: `id` → `report_id`
 - Sync DynamoDB después de UPDATE SQLite
 
-## Lo que NO está hecho
+## Lo que NO está hecho / En progreso
 
-- 1 Reliability Issue (Medium) remanente — aceptado
+### Migración SQLite → RDS PostgreSQL (FASES 2-5 pendientes)
+
+- ⬜ Script reconciliación DynamoDB → SQLite (datos huérfanos de Lambdas)
+- ⬜ Dual-write: sync_to_sqlite() + sync_to_postgres()
+- ⬜ Migrar 30+ endpoints públicos/admin/auth a PostgreSQL
+- ⬜ Migrar Grafana a Infinity datasource + reconvertir 13 paneles
+- ⬜ CI/CD Lambda upload-proxy automatizado
+- ⬜ Deprecar SQLite (sync, backup, volumen, frser-plugin)
+- ⬜ 3 tests PostgreSQL
+
+### Deuda técnica documentada
+
+- VPC privada + NAT Gateway (ver `docs/DEUDA_TECNICA.md`)
+- Alta disponibilidad (Multi-AZ RDS, ASG EC2)
+- AWS WAF, Secrets Manager, VPC Flow Logs
+- Lambdas deploy manual (decisión: planificado FASE 4)
+- Cloudflare Worker deploy manual (decisión: no irá a CI/CD)
 - Dashboard Grafana — Diseño UI Fase 2 (tipografía, colores, layout)
-- Lambdas: deploy manual (NO irán a CI/CD — decisión tomada)
-- Cloudflare Worker: deploy manual (NO irá a CI/CD — decisión tomada)
-- Sincronización automatizada DynamoDB → SQLite (hoy es manual vía endpoint `/sync`)
+- 1 Reliability Issue (Medium) remanente — aceptado
 
 ## Tests
 

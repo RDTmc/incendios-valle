@@ -1,8 +1,15 @@
 import os
 import json
-from psycopg2.pool import ThreadedConnectionPool
-from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
+
+try:
+    from psycopg2.pool import ThreadedConnectionPool
+    from psycopg2.extras import RealDictCursor
+    HAS_PSYCOPG2 = True
+except ImportError:
+    ThreadedConnectionPool = None
+    RealDictCursor = None
+    HAS_PSYCOPG2 = False
 
 PG_HOST = os.environ.get("PG_HOST", "")
 PG_PORT = int(os.environ.get("PG_PORT", "5432"))
@@ -18,7 +25,7 @@ def is_pg_configured():
 def get_pool():
     global _pool
     if _pool is None:
-        if not is_pg_configured():
+        if not is_pg_configured() or not HAS_PSYCOPG2:
             return None
         _pool = ThreadedConnectionPool(
             minconn=1,

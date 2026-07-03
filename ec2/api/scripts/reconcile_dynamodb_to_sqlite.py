@@ -15,7 +15,7 @@ Salida:
 import sys
 import os
 
-DB_PATH = os.environ.get('DB_PATH', '/data/incendios.db')
+DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
 
 
 def get_db_connection():

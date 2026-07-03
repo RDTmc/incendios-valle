@@ -1,0 +1,11 @@
+import sqlite3, os
+DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
+conn = sqlite3.connect(DB_PATH)
+cur = conn.cursor()
+cur.execute("UPDATE users SET user_id=? WHERE email=?", ("81d02e8d-375c-40b9-9f1e-968be9a2c5ae", "admin@valledelsol.cl"))
+conn.commit()
+print(f"Actualizado: {cur.rowcount} fila(s)")
+cur.execute("SELECT user_id, email, rol FROM users WHERE email='admin@valledelsol.cl'")
+r = cur.fetchone()
+print(f"Ahora: user_id={r[0]}, email={r[1]}, rol={r[2]}")
+conn.close()
