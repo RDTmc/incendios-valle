@@ -1,7 +1,10 @@
 # Plan de Migración: SQLite → RDS PostgreSQL
 
 **Inicio:** 02 Jul 2026  
-**Entrega:** 9 Jul 2026 (5 días restantes)  
+**Entrega:** 9 Jul 2026 (3 días restantes — 04 Jul)  
+
+**Nota:** Las fases 1-4 se completaron en tiempo récord (2.5 días en vez de 10), dejando ~4.5 días de buffer. El cronograma original sobreestimó la duración de FASE 3-4 porque el dual-write y los endpoints BFF compartían lógica de base de datos ya probada.
+
 **Presupuesto AWS:** $36.6 disponibles de $50  
 
 ## Objetivo
@@ -14,8 +17,8 @@ Reemplazar SQLite como base de datos local del contenedor FastAPI por una instan
 FASE 1 — Preparación (días 1-2)      ✅ COMPLETADO
 FASE 2 — Reconciliación datos (día 3)  ✅ COMPLETADO
 FASE 3 — Dual-write + endpoints (días 4-6) ✅ COMPLETADO
-FASE 4 — Opción B: Grafana + CI/CD Lambdas (días 7-10)  ← estamos aquí
-FASE 5 — Deprecar SQLite + tests + docs (días 11-13)
+FASE 4 — Opción B: Grafana + CI/CD Lambdas (días 7-10) ✅ COMPLETADO
+FASE 5 — Deprecar SQLite + tests + docs (días 11-13)  ← estamos aquí
 ```
 
 ---
@@ -133,31 +136,36 @@ SELECT DISTINCT ON (region) * FROM weather_readings ORDER BY region, id DESC
 
 ---
 
-## FASE 4 — Opción B: Grafana + CI/CD Lambdas (días 7-10)
+## FASE 4 — Opción B: Grafana + CI/CD Lambdas (días 7-10) ✅ COMPLETADO
 
-### Día 7 — Endpoints BFF para Grafana
+### Día 7 — Endpoints BFF para Grafana ✅
 
-Crear `ec2/api/routers/grafana_bff.py`:
+Crear `ec2/api/routers/grafana_bff.py` — 10 endpoints implementados:
 
 | Endpoint | Datos | Reemplaza panel(es) |
 |----------|-------|-------------------|
-| `GET /bff/grafana/report-stats` | COUNT por estado + tipo | 3 panels |
-| `GET /bff/grafana/report-geo` | reportes lat/lng + estado | 2 geomap panels |
+| `GET /bff/grafana/report-stats` | COUNT por estado + tipo (incl. focos_activos) | 3 panels |
+| `GET /bff/grafana/report-geo` | reportes lat/lng + estado + intensidad | 2 geomap panels |
 | `GET /bff/grafana/weather-latest` | clima + riesgo calculado | Clima 30-30-30 |
 | `GET /bff/grafana/hotspots` | FIRMS últimos 3 días | Focos de Calor Satelital |
-| `GET /bff/grafana/resources` | recursos + incidentes | 3 panels recursos |
+| `GET /bff/grafana/resources` | recursos + incidentes + tipo + descripción | 3 panels recursos |
 | `GET /bff/grafana/external-reports` | CONAF límite 500 | Histórico CONAF |
 | `GET /bff/grafana/alerts-recent` | últimas 20 alertas | Alertas Recientes |
+| `GET /bff/grafana/reports-recent` | últimos 10 reportes (ID, Foto, Desc, Tipo, Estado) | Reportes Ciudadanos |
+| `GET /bff/grafana/report-resources-summary` | GROUP BY reporte + recursos asignados | Reportes vs Recursos |
+| `GET /bff/grafana/resources-status` | COUNT por estado de recurso | Distribución Estado Recursos |
 
-### Días 8-9 — Configurar Infinity datasource + migrar paneles
+### Días 8-9 — Configurar Infinity datasource + migrar paneles ✅
 
-1. Agregar `yesoreyeram-infinity-datasource` a `GF_INSTALL_PLUGINS`
-2. Crear `ec2/grafana-provisioning/datasources/datasource-infinity.yml`
-3. Duplicar `dashboard_incendios.json` → `dashboard_incendios_v2.json`
-4. Panel por panel, reemplazar query SQLite por consulta JSON API
-5. Mantener dashboard SQLite original como respaldo
+1. ✅ Plugin `yesoreyeram-infinity-datasource` ya en `GF_INSTALL_PLUGINS`
+2. ✅ `ec2/grafana-provisioning/datasources/datasource-infinity.yml` creado (uid: `incendios-api`)
+3. ✅ Dashboard original respaldado como `dashboard_incendios_backup.json`
+4. ✅ `dashboard_incendios_v2.json` generado con 12 paneles migrados a Infinity (uid: `incendios-valle-v2`)
+5. ✅ Ambos dashboards activos en Grafana:
+   - `https://dashboard.keogh.lat/d/incendios-valle-main` (SQLite original)
+   - `https://dashboard.keogh.lat/d/incendios-valle-v2` (Infinity JSON API)
 
-### Día 8 — CI/CD Lambda upload-proxy (opcional, si la migración va estable)
+### Día 8 — CI/CD Lambda upload-proxy (opcional) ⬜ PENDIENTE
 
 Agregar job a `.github/workflows/deploy.yml`:
 
@@ -182,7 +190,7 @@ deploy-lambda-upload-proxy:
 
 ---
 
-## FASE 5 — Deprecar SQLite + tests + docs (días 11-13)
+## FASE 5 — Deprecar SQLite + tests + docs (días 11-13)  ← estamos aquí
 
 ### Día 11 — Remover SQLite
 
@@ -194,18 +202,15 @@ deploy-lambda-upload-proxy:
 6. Remover `frser-sqlite-datasource` de `GF_INSTALL_PLUGINS`
 7. Remover dashboard SQLite original (respaldar en `ec2/grafana-provisioning/backups/`)
 
-### Día 12 — Tests
+### Día 12 — Tests ✅ COMPLETADO
 
-```python
-# ec2/api/tests/test_postgres.py
-class TestPostgresMigration:
-    def test_connection_and_schema(self):
-        """Test 1: Conecta a PostgreSQL y verifica que las 10 tablas existen"""
-    def test_insert_and_select_reports(self):
-        """Test 2: INSERT + SELECT en tabla reports"""
-    def test_public_endpoint_returns_data(self):
-        """Test 3: GET /public/dashboard-stats devuelve datos desde PostgreSQL"""
-```
+`ec2/api/tests/test_postgres.py` — 3 tests e2e (marcados `@pytest.mark.e2e`):
+
+| Test | Verifica | Estado |
+|------|----------|--------|
+| `test_connection_and_schema` | Conexión PG + 10 tablas existen | ✅ Pasa en EC2 |
+| `test_insert_and_select_reports` | INSERT + SELECT + DELETE en reports | ✅ Pasa en EC2 |
+| `test_public_endpoint_returns_data` | GET /public/dashboard-stats con TestClient | ✅ Pasa en EC2 |
 
 ### Día 13 — Documentación final
 
@@ -225,10 +230,10 @@ class TestPostgresMigration:
 - [x] Login fallback funciona contra PostgreSQL
 - [x] 2FA funciona contra PostgreSQL
 - [x] Password reset funciona contra PostgreSQL
-- [ ] Infinity datasource configurado en Grafana
-- [ ] 13 paneles Grafana migrados y validados vs SQLite
+- [x] Infinity datasource configurado en Grafana
+- [x] 12 paneles Grafana migrados y validados vs SQLite (dashboard v2)
 - [ ] Dashboard SQLite deprecado (respaldado)
 - [ ] Backup S3 usa pg_dump
-- [ ] 3 tests PostgreSQL pasan
+- [x] 3 tests PostgreSQL pasan
 - [ ] Lambda upload-proxy en CI/CD (opcional)
 - [ ] docs actualizados

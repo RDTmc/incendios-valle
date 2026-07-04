@@ -21,7 +21,7 @@ La persistencia es dual: DynamoDB como primaria (Lambdas) y SQLite como datasour
 |---------|:-----:|
 | Security / Reliability / Maintainability | A (1.0) — SonarCloud |
 | Code Smells | 0 |
-| Tests | 349 (167 backend + 172 frontend + 10 lambdas) |
+| Tests | 353 (171 backend + 172 frontend + 10 lambdas) |
 | Cobertura | 88% backend / 82% frontend |
 
 Patrones implementados: BFF, Circuit Breaker, Factory Method, Strategy (mapas), Observer (notificaciones), Composite (UI).

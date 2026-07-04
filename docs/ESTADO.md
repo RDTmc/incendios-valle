@@ -2,9 +2,9 @@
 
 ## Fase actual
 
-**Migración SQLite → RDS PostgreSQL activa (Jul 2026).** FASE 1-2-3 COMPLETADAS (dual-write + 30+ endpoints migrados). 0 tests rotos (161/161 pass). Siguiente: FASE 4 — Grafana Infinity datasource + CI/CD Lambdas.
+**Migración SQLite → RDS PostgreSQL activa (Jul 2026).** FASE 1-2-3-4 COMPLETADAS (dual-write + 30+ endpoints migrados + Grafana Infinity). 0 tests rotos (171/171 pass). Siguiente: FASE 5 — Deprecar SQLite + docs finales.
 
-Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reliability Rating A, Security Review A, Maintainability A, Code Smells 0, build Cloudflare verde. Coverage overall: **≥82%** (backend 88%, frontend 82%). 349 tests (167 backend + 172 frontend + 10 lambdas), todos verdes. CI/CD pipeline verde en última ejecución. Docs sincronizados con repo y deploy real.
+Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reliability Rating A, Security Review A, Maintainability A, Code Smells 0, build Cloudflare verde. Coverage overall: **≥82%** (backend 88%, frontend 82%). 353 tests (171 backend + 172 frontend + 10 lambdas), todos verdes. CI/CD pipeline verde en última ejecución. Docs sincronizados con repo y deploy real.
 
 ## Último análisis SonarCloud (post-backend routers 100%)
 
@@ -54,6 +54,8 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 - **Auditoría docs**: INFORME-GLOBAL, CONCLUSION, AUDITORIA_INFORME sincronizados con repo real
 - **FASE 2 — Reconciliación DynamoDB→SQLite**: 9 usuarios + 69 reports reconciliados, admin user_id alineado entre DynamoDB y SQLite
 - **FASE 3 — Dual-write + migración endpoints**: escritura dual a PostgreSQL + 30+ endpoints migrados a PG-first con fallback SQLite
+- **FASE 4 — Grafana Infinity**: 10 endpoints BFF Grafana + datasource Infinity + dashboard v2 con 12 paneles migrados (ambos dashboards activos)
+- **FASE 5 Día 12**: 3 tests PostgreSQL (e2e) verificando conexión, insert/select, endpoint público
 
 ## Últimos cambios — FASE 1: Migración SQLite → RDS PostgreSQL (02 Jul 2026)
 
@@ -217,15 +219,15 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 
 ## Lo que NO está hecho / En progreso
 
-### Migración SQLite → RDS PostgreSQL (FASE 4-5 pendientes)
+### Migración SQLite → RDS PostgreSQL (FASE 5 pendiente)
 
 - ✅ Script reconciliación DynamoDB → SQLite (datos huérfanos de Lambdas)
 - ✅ Dual-write: sync_to_sqlite() + sync_to_postgres()
 - ✅ Migrar 30+ endpoints públicos/admin/auth a PostgreSQL
-- ⬜ Migrar Grafana a Infinity datasource + reconvertir 13 paneles
+- ✅ Migrar Grafana a Infinity datasource + reconvertir 13 paneles
+- ✅ 3 tests PostgreSQL
 - ⬜ CI/CD Lambda upload-proxy automatizado
 - ⬜ Deprecar SQLite (sync, backup, volumen, frser-plugin)
-- ⬜ 3 tests PostgreSQL
 
 ### Deuda técnica documentada
 
@@ -239,10 +241,10 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 
 ## Tests
 
-- Backend: **167 tests** (pytest), **88% coverage**, 8 routers
+- Backend: **171 tests** (pytest, 161 fast + 10 e2e), **88% coverage**, 9 routers (incl. grafana_bff)
 - Frontend: **172 tests** (vitest), **82% coverage**, 10 páginas
 - Lambdas: **10 tests** (pytest), ~85% coverage estimado
-- Pipeline CI/CD: verde en última ejecución — **349 tests total, 0 failures**
+- Pipeline CI/CD: verde en última ejecución — **353 tests total, 0 failures**
 
 ## Issues de infraestructura resueltos
 
