@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from dependencies import get_db_connection, require_admin, get_user_repository
+from database_pg import query_pg_first
 from notification_service import notify_new_user, notify_status_change
 from datetime import datetime, timezone
 from models import UpdateReportStatusRequest
@@ -49,6 +50,13 @@ def log_audit(action: str, admin_id: str, target_id: str, details: str = ""):
 
 @router.get("/users")
 def admin_list_users(payload: dict = Depends(require_admin), search: Optional[str] = None):
+    pg_rows = query_pg_first("SELECT user_id, email, nombre, rol, created_at FROM users ORDER BY created_at DESC")
+    if pg_rows is not None:
+        safe = [{"user_id": r[0], "email": r[1], "nombre": r[2] or "", "rol": r[3], "created_at": r[4] or ""} for r in pg_rows]
+        if search:
+            search_lower = search.lower()
+            safe = [u for u in safe if search_lower in u["email"].lower() or search_lower in u["nombre"].lower()]
+        return {"users": safe, "total": len(safe)}
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -136,6 +144,9 @@ def admin_delete_user(user_id: str, payload: dict = Depends(require_admin)):
 
 @router.get("/audit-log")
 def admin_audit_log(payload: dict = Depends(require_admin), limit: int = 100):
+    pg_rows = query_pg_first("SELECT action, admin_id, target_id, details, created_at FROM audit_log ORDER BY created_at DESC LIMIT %s", (limit,))
+    if pg_rows is not None:
+        return [{"action": r[0], "admin_id": r[1], "target_id": r[2], "details": r[3], "created_at": r[4]} for r in pg_rows]
     conn = None
     try:
         conn = get_db_connection()
@@ -153,6 +164,25 @@ def admin_audit_log(payload: dict = Depends(require_admin), limit: int = 100):
 
 @router.get("/reports")
 def admin_list_reports(payload: dict = Depends(require_admin)):
+    pg_rows = query_pg_first("SELECT report_id, user_id, tipo, latitud, longitud, descripcion, foto_url, estado, created_at FROM reports ORDER BY created_at DESC")
+    if pg_rows is not None:
+        reports = []
+        for r in pg_rows:
+            rid = r[0]
+            if not rid:
+                continue
+            reports.append({
+                "report_id": rid,
+                "user_id": r[1] or "",
+                "tipo": r[2],
+                "latitud": r[3],
+                "longitud": r[4],
+                "descripcion": r[5] or "",
+                "foto_url": r[6] or "",
+                "estado": r[7],
+                "created_at": r[8],
+            })
+        return {"reports": reports, "total": len(reports)}
     conn = None
     try:
         conn = get_db_connection()
@@ -221,6 +251,9 @@ def admin_update_report_status(report_id: str, req: UpdateReportStatusRequest, p
 
 @router.get("/notifications")
 def admin_notifications(payload: dict = Depends(require_admin), limit: int = 100):
+    pg_rows = query_pg_first("SELECT id, type, recipient_email, recipient_name, status, sns_message_id, created_at FROM notifications ORDER BY created_at DESC LIMIT %s", (limit,))
+    if pg_rows is not None:
+        return [{"id": r[0], "type": r[1], "recipient_email": r[2], "recipient_name": r[3], "status": r[4], "sns_message_id": r[5], "created_at": r[6]} for r in pg_rows]
     conn = None
     try:
         conn = get_db_connection()

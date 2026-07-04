@@ -50,6 +50,11 @@ def _init_2fa_table():
 
 
 def _get_2fa_config(user_id: str) -> dict | None:
+    from database_pg import query_pg_first
+    pg_row = query_pg_first("SELECT user_id, enabled, backup_codes FROM admin_2fa WHERE user_id = %s", (user_id,), fetch='one')
+    if pg_row is not None:
+        codes = json.loads(pg_row[2]) if pg_row[2] else []
+        return {"user_id": pg_row[0], "enabled": bool(pg_row[1]), "backup_codes": codes}
     conn = None
     try:
         conn = get_db_connection()
@@ -139,23 +144,41 @@ def login(req: LoginRequest):
                 except Exception:
                     raise HTTPException(status_code=401, detail="Credenciales inválidas")
         else:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT user_id, email, nombre, rol, created_at, password_hash FROM users WHERE email = ?", (req.email,))
-            row = cursor.fetchone()
-            conn.close()
-            if not row:
-                raise HTTPException(status_code=401, detail="Credenciales inválidas")
-            if not row[5] or not bcrypt.checkpw(req.password.encode(), row[5].encode()):
-                raise HTTPException(status_code=401, detail="Credenciales inválidas")
-            user = {
-                "user_id": row[0],
-                "email": row[1],
-                "nombre": row[2] or "",
-                "rol": row[3],
-                "created_at": row[4] or "",
-            }
-            from_db = "sqlite"
+            from database_pg import query_pg_first
+            pg_row = query_pg_first(
+                "SELECT user_id, email, nombre, rol, created_at, password_hash FROM users WHERE email = %s",
+                (req.email,), fetch='one'
+            )
+            if pg_row and pg_row[5]:
+                if bcrypt.checkpw(req.password.encode(), pg_row[5].encode()):
+                    user = {
+                        "user_id": pg_row[0],
+                        "email": pg_row[1],
+                        "nombre": pg_row[2] or "",
+                        "rol": pg_row[3],
+                        "created_at": pg_row[4] or "",
+                    }
+                    from_db = "postgres"
+                else:
+                    raise HTTPException(status_code=401, detail="Credenciales inválidas")
+            else:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT user_id, email, nombre, rol, created_at, password_hash FROM users WHERE email = ?", (req.email,))
+                row = cursor.fetchone()
+                conn.close()
+                if not row:
+                    raise HTTPException(status_code=401, detail="Credenciales inválidas")
+                if not row[5] or not bcrypt.checkpw(req.password.encode(), row[5].encode()):
+                    raise HTTPException(status_code=401, detail="Credenciales inválidas")
+                user = {
+                    "user_id": row[0],
+                    "email": row[1],
+                    "nombre": row[2] or "",
+                    "rol": row[3],
+                    "created_at": row[4] or "",
+                }
+                from_db = "sqlite"
 
         _init_2fa_table()
         twofa = _get_2fa_config(user['user_id'])

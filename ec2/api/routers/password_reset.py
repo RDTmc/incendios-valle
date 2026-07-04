@@ -31,24 +31,29 @@ def forgot_password(req: ForgotPasswordRequest):
     otp = _generate_otp()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
 
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT user_id, email FROM users WHERE email = ?", (req.email,))
-        user = cursor.fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="Email no registrado")
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=500, detail="Error al verificar usuario")
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
+    from database_pg import query_pg_first
+    pg_user = query_pg_first("SELECT user_id, email FROM users WHERE email = %s", (req.email,), fetch='one')
+    if pg_user is not None:
+        pass
+    else:
+        conn = None
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id, email FROM users WHERE email = ?", (req.email,))
+            user = cursor.fetchone()
+            if not user:
+                raise HTTPException(status_code=404, detail="Email no registrado")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=500, detail="Error al verificar usuario")
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     _reset_otp_store[req.email] = {
         "otp": otp,
