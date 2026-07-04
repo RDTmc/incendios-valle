@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import Optional
 from dependencies import get_db_connection
+from database_pg import query_pg_first
 
 router = APIRouter(tags=["alerts"])
 
@@ -9,6 +10,16 @@ router = APIRouter(tags=["alerts"])
     500: {"description": "Error fetching alerts"},
 })
 def list_alerts(read: Optional[str] = None, limit: int = 50):
+    if read:
+        pg_rows = query_pg_first("SELECT * FROM alerts WHERE read = %s ORDER BY created_at DESC LIMIT %s", (int(read), limit))
+    else:
+        pg_rows = query_pg_first("SELECT * FROM alerts ORDER BY created_at DESC LIMIT %s", (limit,))
+    if pg_rows is not None:
+        return [{
+            "id": r[0], "alert_type": r[1], "message": r[2],
+            "report_id": r[3], "latitud": r[4], "longitud": r[5],
+            "source": r[6], "read": bool(r[7]), "created_at": r[8],
+        } for r in pg_rows]
     conn = None
     try:
         conn = get_db_connection()

@@ -8,6 +8,47 @@ sys.path.insert(0, '/app')
 
 DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
 
+TABLES = {
+    'users': {
+        'columns': ['user_id', 'email', 'nombre', 'rol', 'password_hash', 'created_at'],
+        'conflict': 'user_id',
+        'update': ['email', 'nombre', 'rol'],
+    },
+    'reports': {
+        'columns': ['report_id', 'user_id', 'tipo', 'latitud', 'longitud', 'geohash', 'descripcion', 'foto_url', 'estado', 'created_at', 'updated_at'],
+        'conflict': 'report_id',
+        'update': ['estado', 'updated_at'],
+    },
+    'alerts': {
+        'columns': ['alert_type', 'message', 'report_id', 'latitud', 'longitud', 'source', 'read', 'created_at'],
+        'conflict': None,
+    },
+    'external_reports': {
+        'columns': ['source', 'nombre', 'region', 'comuna', 'provincia', 'superficie', 'causa', 'latitud', 'longitud', 'fh_inicio', 'fh_extinci', 'temporada'],
+        'conflict': None,
+    },
+    'firms_hotspots': {
+        'columns': ['latitude', 'longitude', 'brightness', 'frp', 'confidence', 'satellite', 'acq_date', 'acq_time', 'daynight', 'source'],
+        'conflict': None,
+    },
+    'weather_readings': {
+        'columns': ['lat', 'lon', 'region', 'temperature', 'humidity', 'wind_speed', 'wind_direction', 'weather_desc', 'pressure'],
+        'conflict': None,
+    },
+    'incident_resources': {
+        'columns': ['report_id', 'tipo_recurso', 'cantidad', 'unidad', 'estado'],
+        'conflict': None,
+    },
+    'notifications': {
+        'columns': ['type', 'recipient_email', 'recipient_name', 'message', 'status', 'sns_message_id'],
+        'conflict': None,
+    },
+    'audit_log': {
+        'columns': ['action', 'admin_id', 'target_id', 'details', 'created_at'],
+        'conflict': None,
+    },
+}
+
 def backfill():
     from database_pg import get_pg_connection, is_pg_configured
     if not is_pg_configured():
@@ -25,51 +66,45 @@ def backfill():
             return
         pgc = pg.cursor()
 
-        cur.execute("SELECT * FROM users")
-        users = [dict(r) for r in cur.fetchall()]
-        for u in users:
-            pgc.execute("""
-                INSERT INTO users (user_id, email, nombre, rol, password_hash, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (user_id) DO UPDATE SET
-                    email = EXCLUDED.email,
-                    nombre = EXCLUDED.nombre,
-                    rol = EXCLUDED.rol
-            """, (u['user_id'], u.get('email'), u.get('nombre'),
-                  u.get('rol', 'VECINO'), u.get('password_hash', ''),
-                  u.get('created_at')))
+        for table_name, cfg in TABLES.items():
+            cols = cfg['columns']
+            placeholders = ', '.join(['%s'] * len(cols))
+            col_names = ', '.join(cols)
+            conflict = cfg.get('conflict')
 
-        cur.execute("SELECT * FROM reports")
-        reports = [dict(r) for r in cur.fetchall()]
-        skipped = 0
-        for r in reports:
-            rid = r.get('report_id')
-            if not rid:
-                skipped += 1
-                continue
-            pgc.execute("""
-                INSERT INTO reports (report_id, user_id, tipo, latitud, longitud, geohash, descripcion, foto_url, estado, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (report_id) DO UPDATE SET
-                    estado = EXCLUDED.estado,
-                    updated_at = EXCLUDED.updated_at
-            """, (rid, r.get('user_id', 'ANONIMO'), r.get('tipo', 'FORESTAL'),
-                  r.get('latitud', '0'), r.get('longitud', '0'), r.get('geohash', ''),
-                  r.get('descripcion', ''), r.get('foto_url', ''),
-                  r.get('estado', 'PENDIENTE'), r.get('created_at'), r.get('updated_at')))
+            cur.execute(f"SELECT {col_names} FROM {table_name}")
+            rows = [dict(r) for r in cur.fetchall()]
 
-        pg.commit()
+            synced = 0
+            skipped = 0
+            for row in rows:
+                rid = row.get(conflict) if conflict else True
+                if conflict and not rid:
+                    skipped += 1
+                    continue
+                vals = tuple(row.get(c, '') for c in cols)
+                if conflict and cfg.get('update'):
+                    update_set = ', '.join(f"{c} = EXCLUDED.{c}" for c in cfg['update'])
+                    sql = f"""
+                        INSERT INTO {table_name} ({col_names})
+                        VALUES ({placeholders})
+                        ON CONFLICT ({conflict}) DO UPDATE SET {update_set}
+                    """
+                else:
+                    sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders}) ON CONFLICT DO NOTHING"
+                try:
+                    pgc.execute(sql, vals)
+                    synced += 1
+                except Exception as e:
+                    skipped += 1
 
-        pgc.execute("SELECT COUNT(*) FROM users")
-        pg_users = pgc.fetchone()[0]
-        pgc.execute("SELECT COUNT(*) FROM reports")
-        pg_reports = pgc.fetchone()[0]
+            pg.commit()
+            pgc.execute(f"SELECT COUNT(*) FROM {table_name}")
+            total = pgc.fetchone()[0]
+            print(f"  {table_name:22s}: {synced:4d} sincronizados, {total:4d} en PG  ({skipped} saltados)")
 
     sq.close()
-
-    print(f"Backfill completado:")
-    print(f"  Users:   {len(users)} sincronizados, {pg_users} en PG")
-    print(f"  Reports: {len(reports)} sincronizados ({skipped} sin report_id), {pg_reports} en PG")
+    print(f"\nBackfill completado.")
 
 if __name__ == "__main__":
     backfill()

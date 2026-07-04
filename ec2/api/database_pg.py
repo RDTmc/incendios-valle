@@ -187,3 +187,24 @@ def init_pg_schema():
                 )
             """)
             conn.commit()
+
+
+def query_pg_first(pg_sql: str, params: tuple = (), fetch: str = 'all'):
+    """
+    Execute a query on PostgreSQL. Returns list of tuples if successful,
+    or None if PG is not available (caller falls back to SQLite).
+    """
+    if not is_pg_configured() or not HAS_PSYCOPG2:
+        return None
+    try:
+        with get_pg_connection() as conn:
+            if conn is None:
+                return None
+            with conn.cursor() as cur:
+                cur.execute(pg_sql, params)
+                if fetch == 'one':
+                    return cur.fetchone()
+                return cur.fetchall()
+    except Exception as e:
+        print(f"[pg_query] Error (fallback to SQLite): {e}")
+        return None
