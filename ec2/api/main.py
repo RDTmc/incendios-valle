@@ -27,6 +27,7 @@ from routers.alerts import router as alerts_router
 from routers.admin import router as admin_router
 from routers.password_reset import router as password_reset_router
 from routers.bootstrap import router as bootstrap_router
+from routers.grafana_bff import router as grafana_bff_router
 from dependencies import verify_token, verify_token_optional, sync_to_sqlite
 from models import SyncRequest, ExternalReportRequest
 
@@ -59,6 +60,7 @@ app.include_router(alerts_router)
 app.include_router(admin_router)
 app.include_router(password_reset_router)
 app.include_router(bootstrap_router)
+app.include_router(grafana_bff_router)
 
 
 def get_dynamodb_resource():
