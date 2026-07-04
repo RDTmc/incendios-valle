@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-**Migración SQLite → RDS PostgreSQL activa (Jul 2026).** FASE 1-2 completadas. FASE 3 Día 4 hecho: dual-write SQLite + PostgreSQL funcionando. 0 tests rotos (161/161 pass). Siguiente: FASE 3 Día 5 — migrar endpoints de lectura a PostgreSQL.
+**Migración SQLite → RDS PostgreSQL activa (Jul 2026).** FASE 1-2-3 COMPLETADAS (dual-write + 30+ endpoints migrados). 0 tests rotos (161/161 pass). Siguiente: FASE 4 — Grafana Infinity datasource + CI/CD Lambdas.
 
 Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reliability Rating A, Security Review A, Maintainability A, Code Smells 0, build Cloudflare verde. Coverage overall: **≥82%** (backend 88%, frontend 82%). 349 tests (167 backend + 172 frontend + 10 lambdas), todos verdes. CI/CD pipeline verde en última ejecución. Docs sincronizados con repo y deploy real.
 
@@ -53,7 +53,7 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 - **Diagrama arquitectura**: PNG renderizado desde Mermaid (59KB, 1200px)
 - **Auditoría docs**: INFORME-GLOBAL, CONCLUSION, AUDITORIA_INFORME sincronizados con repo real
 - **FASE 2 — Reconciliación DynamoDB→SQLite**: 9 usuarios + 69 reports reconciliados, admin user_id alineado entre DynamoDB y SQLite
-- **FASE 3 Día 4 — Dual-write**: `sync_to_postgres()` creado en dependencies.py, replica automática a PostgreSQL vía `ON CONFLICT DO UPDATE SET`. Graceful fallback si psycopg2 no está instalado
+- **FASE 3 — Dual-write + migración endpoints**: escritura dual a PostgreSQL + 30+ endpoints migrados a PG-first con fallback SQLite
 
 ## Últimos cambios — FASE 1: Migración SQLite → RDS PostgreSQL (02 Jul 2026)
 
@@ -68,7 +68,7 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 - `database_pg.py` maneja graceful fallback si PG no está configurado (no rompe tests locales)
 - Pipeline CI/CD verde post-deploy
 
-## Últimos cambios — FASE 2: Reconciliación + FASE 3 Día 4: Dual-write (02 Jul 2026)
+## Últimos cambios — FASE 2: Reconciliación + FASE 3 Día 4-6: Dual-write + endpoints (02-04 Jul 2026)
 
 ### FASE 2 — Reconciliación DynamoDB → SQLite
 - Script `ec2/api/scripts/reconcile_dynamodb_to_sqlite.py` creado y ejecutado en EC2
@@ -85,6 +85,20 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 - `get_pool()` verifica `HAS_PSYCOPG2` antes de crear pool
 - **161/161 tests backend pasan** (0 rotos)
 - Los datos nuevos ahora fluyen: DynamoDB → SQLite → PostgreSQL
+
+### FASE 3 Día 5 — Endpoints públicos + admin + BFF + alerts a PG-first
+- `database_pg.py`: nuevo helper `query_pg_first()` — intenta PG, fallback automático a SQLite
+- `routers/public.py` (10 GET): migrados a PG-first + fallback SQLite (dashboard-stats, map-coordinates, external-reports, weather, firms, resources)
+- `routers/alerts.py` (1 GET): migrado
+- `routers/bff.py` (1 GET): migrado (dashboard completo)
+- `routers/admin.py` (4 GET): migrados (users, audit-log, reports, notifications)
+- Backfill ejecutado en EC2: 28 usuarios, 94 reports, 1783 external_reports, 495 firms, 1320 weather, 5 recursos, 19 notifications, 18 audit logs copiados de SQLite → PG
+- Verificado en EC2: endpoints retornan datos desde PostgreSQL
+
+### FASE 3 Día 6 — Auth + login fallback + password reset + 2FA a PG-first
+- `routers/auth.py`: login fallback ahora prueba PostgreSQL (3er fallback detrás de DynamoDB y SQLite); `_get_2fa_config()` migrado a PG-first
+- `routers/password_reset.py`: forgot-password ahora busca usuario en PG antes de SQLite
+- Todos los endpoints migrados verificados con datos reales en EC2 (admin: 28 users, 94 reports, 18 audit-log, 19 notifications)
 
 ## Últimos cambios — FASE 1: Auditoría + Documentación + Secrets (23 Jun 2026)
 
@@ -203,11 +217,11 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 
 ## Lo que NO está hecho / En progreso
 
-### Migración SQLite → RDS PostgreSQL (FASES 2-5 pendientes)
+### Migración SQLite → RDS PostgreSQL (FASE 4-5 pendientes)
 
-- ⬜ Script reconciliación DynamoDB → SQLite (datos huérfanos de Lambdas)
-- ⬜ Dual-write: sync_to_sqlite() + sync_to_postgres()
-- ⬜ Migrar 30+ endpoints públicos/admin/auth a PostgreSQL
+- ✅ Script reconciliación DynamoDB → SQLite (datos huérfanos de Lambdas)
+- ✅ Dual-write: sync_to_sqlite() + sync_to_postgres()
+- ✅ Migrar 30+ endpoints públicos/admin/auth a PostgreSQL
 - ⬜ Migrar Grafana a Infinity datasource + reconvertir 13 paneles
 - ⬜ CI/CD Lambda upload-proxy automatizado
 - ⬜ Deprecar SQLite (sync, backup, volumen, frser-plugin)

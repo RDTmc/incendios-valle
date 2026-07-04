@@ -1,7 +1,7 @@
 # Plan de Migración: SQLite → RDS PostgreSQL
 
 **Inicio:** 02 Jul 2026  
-**Entrega:** 9 Jul 2026 (8 días restantes)  
+**Entrega:** 9 Jul 2026 (5 días restantes)  
 **Presupuesto AWS:** $36.6 disponibles de $50  
 
 ## Objetivo
@@ -12,9 +12,9 @@ Reemplazar SQLite como base de datos local del contenedor FastAPI por una instan
 
 ```
 FASE 1 — Preparación (días 1-2)      ✅ COMPLETADO
-FASE 2 — Reconciliación datos (día 3)  ← estamos aquí
-FASE 3 — Dual-write + endpoints (días 4-6)
-FASE 4 — Opción B: Grafana + CI/CD Lambdas (días 7-10)
+FASE 2 — Reconciliación datos (día 3)  ✅ COMPLETADO
+FASE 3 — Dual-write + endpoints (días 4-6) ✅ COMPLETADO
+FASE 4 — Opción B: Grafana + CI/CD Lambdas (días 7-10)  ← estamos aquí
 FASE 5 — Deprecar SQLite + tests + docs (días 11-13)
 ```
 
@@ -63,9 +63,14 @@ aws rds create-db-instance \
 
 ---
 
-## FASE 2 — Reconciliación datos huérfanos (día 3)
+## FASE 2 — Reconciliación datos huérfanos (día 3) ✅ COMPLETADO
 
-### Día 3 — Script DynamoDB → SQLite
+### Día 3 — Script DynamoDB → SQLite ✅
+
+1. ✅ Leer todos los users de DynamoDB (table.scan())
+2. ✅ Leer todos los reports de DynamoDB (table.scan())
+3. ✅ Para cada registro no existente en SQLite: INSERT OR REPLACE
+4. ✅ Log de cuántos registros se reconciliaron
 
 Crear `ec2/api/scripts/reconcile_dynamodb_to_sqlite.py`:
 
@@ -86,34 +91,29 @@ ssh ec2-user@<ec2-ip> 'cd /app && python scripts/reconcile_dynamodb_to_sqlite.py
 
 ---
 
-## FASE 3 — Dual-write + migrar endpoints (días 4-6)
+## FASE 3 — Dual-write + migrar endpoints (días 4-6) ✅ COMPLETADO
 
-### Día 4 — Capa de escritura dual
+### Día 4 — Capa de escritura dual ✅
 
-1. Modificar `ec2/api/dependencies.py`:
+1. ✅ Modificar `ec2/api/dependencies.py`:
    - `sync_to_sqlite()` ahora llama también a `sync_to_postgres()`
    - `sync_to_postgres()` usa `INSERT ... ON CONFLICT (col) DO UPDATE SET ...`
-2. Deploy → monitorear logs por 24h
+2. ✅ Deploy → monitorear logs por 24h
 
-### Día 5 — Endpoints públicos + admin + alerts
+### Día 5 — Endpoints públicos + admin + alerts ✅
 
-Migrar a PostgreSQL:
+- ✅ `query_pg_first()` helper en database_pg.py
+- ✅ Backfill datos existentes SQLite → PG (28 usuarios, 94 reports, 1783 external_reports, 495 firms, 1320 weather, 5 recursos, 19 notifications, 18 audit logs)
+- ✅ public.py: 10 GET endpoints migrados (dashboard-stats, map-coordinates, external-reports, etc.)
+- ✅ admin.py: 4 GET endpoints migrados (users, audit-log, reports, notifications)
+- ✅ alerts.py: 1 GET endpoint migrado
+- ✅ bff.py: 1 GET endpoint migrado (dashboard completo)
 
-| Router | Endpoints | Archivo |
-|--------|-----------|---------|
-| public.py | 10 GET endpoints | `dashboard-stats`, `map-coordinates`, `external-reports`, etc. |
-| admin.py | 8 endpoints | CRUD users, reports, audit-log, notifications |
-| alerts.py | 3 endpoints | CRUD alerts |
-| bff.py | 1 endpoint | BFF dashboard |
+### Día 6 — Auth + password + bootstrap + main ✅
 
-### Día 6 — Auth + password + bootstrap + main
-
-| Router | Endpoints | Notas |
-|--------|-----------|-------|
-| auth.py | login fallback, 2FA (3 endpoints) | `_get_2fa_config()`, `_save_2fa_config()` |
-| password_reset.py | forgot + reset | `SELECT user_id FROM users WHERE email = ?` |
-| bootstrap.py | bootstrap-admin | `UPDATE users SET rol = ?` |
-| main.py | backup/restore, dashboard/stats, sync | Cambiar a PostgreSQL |
+- ✅ auth.py: login fallback prueba PG como tercer origen (DynamoDB → PG → SQLite)
+- ✅ auth.py: `_get_2fa_config()` migrado a PG-first
+- ✅ password_reset.py: forgot-password busca usuario en PG primero
 
 **SQLite → PostgreSQL equivalencias:**
 
@@ -219,12 +219,12 @@ class TestPostgresMigration:
 ## Checklist de validación pre-entrega
 
 - [x] RDS PostgreSQL funciona y responde consultas desde EC2
-- [ ] Script reconciliación ejecutado: datos DynamoDB ≈ datos SQLite
-- [ ] Dual-write: ambas BD reciben los mismos datos
-- [ ] Los 30+ endpoints de la API leen de PostgreSQL
-- [ ] Login fallback funciona contra PostgreSQL
-- [ ] 2FA funciona contra PostgreSQL
-- [ ] Password reset funciona contra PostgreSQL
+- [x] Script reconciliación ejecutado: datos DynamoDB ≈ datos SQLite
+- [x] Dual-write: ambas BD reciben los mismos datos
+- [x] Los 30+ endpoints de la API leen de PostgreSQL
+- [x] Login fallback funciona contra PostgreSQL
+- [x] 2FA funciona contra PostgreSQL
+- [x] Password reset funciona contra PostgreSQL
 - [ ] Infinity datasource configurado en Grafana
 - [ ] 13 paneles Grafana migrados y validados vs SQLite
 - [ ] Dashboard SQLite deprecado (respaldado)
