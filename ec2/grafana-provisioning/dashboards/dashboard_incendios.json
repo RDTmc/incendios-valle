@@ -93,8 +93,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -312,14 +312,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/weather-latest",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT w1.region AS \"Region\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "format": "table"
         }
       ],
       "title": "Clima 30-30-30",
@@ -327,8 +324,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -383,14 +380,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY estado ORDER BY \"Cantidad\" DESC",
+          "format": "table"
         }
       ],
       "title": "Estatus de Reportes",
@@ -398,8 +392,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -600,14 +594,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-geo",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT report_id, CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, descripcion, created_at FROM reports WHERE latitud IS NOT NULL AND longitud IS NOT NULL AND CAST(latitud AS REAL) != 0 AND CAST(longitud AS REAL) != 0 ORDER BY created_at DESC",
+          "format": "table"
         }
       ],
       "title": "Focos por Estado",
@@ -615,8 +606,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -864,14 +855,20 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-geo",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT report_id, CAST(latitud AS REAL) AS lat, CAST(longitud AS REAL) AS lng, tipo, estado, descripcion, created_at FROM reports WHERE latitud IS NOT NULL AND longitud IS NOT NULL AND CAST(latitud AS REAL) != 0 AND CAST(longitud AS REAL) != 0 ORDER BY created_at DESC",
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
+          },
+          "rawSql": "SELECT r.latitud AS lat, r.longitud AS lng, ir.tipo_recurso AS \"Recurso\", ir.estado AS \"Estado\", ir.cantidad AS \"Cant\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.tipo AS \"Tipo\", r.descripcion AS \"Direccion\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id WHERE r.latitud IS NOT NULL AND r.latitud != '' AND r.longitud IS NOT NULL AND r.longitud != '' ORDER BY ir.created_at DESC",
+          "format": "table"
         }
       ],
       "title": "Focos por Estado",
@@ -879,8 +876,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -985,14 +982,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/reports-recent",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT report_id AS \"ID\", COALESCE(NULLIF(foto_url, ''), '') AS \"Imagen\", descripcion AS \"Descripcion\", tipo AS \"Tipo\", estado AS \"Estado\", created_at AS \"Fecha\" FROM reports ORDER BY created_at DESC LIMIT 10",
+          "format": "table"
         }
       ],
       "title": "Reportes Ciudadanos",
@@ -1000,8 +994,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -1058,14 +1052,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT COALESCE(NULLIF(tipo, ''), 'SIN TIPO') AS \"Tipo\", COUNT(*) AS \"Cantidad\" FROM reports GROUP BY \"Tipo\" ORDER BY \"Cantidad\" DESC",
+          "format": "table"
         }
       ],
       "title": "Distribuci\u00c3\u00b3n Tipo de Incendio",
@@ -1073,8 +1064,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -1279,14 +1270,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/resources",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT ir.estado AS \"Estado\", ir.tipo_recurso AS \"Recurso\", ir.cantidad AS \"Cant\", r.tipo AS \"Tipo Incendio\", r.estado AS \"Incendio\", SUBSTR(ir.report_id, 1, 8) AS \"Reporte\", r.descripcion AS \"Ubicacion\", ir.created_at AS \"Asignado\" FROM incident_resources ir LEFT JOIN reports r ON ir.report_id = r.report_id ORDER BY ir.created_at DESC LIMIT 20",
+          "format": "table"
         }
       ],
       "title": "Recursos por Incidente",
@@ -1294,8 +1282,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -1450,14 +1438,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/hotspots",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Satelite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE acq_date >= (NOW() - INTERVAL '3 days')::date ORDER BY acq_date DESC",
+          "format": "table"
         }
       ],
       "title": "Focos de Calor Satelital ",
@@ -1465,8 +1450,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -1557,14 +1542,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/external-reports",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT latitud AS lat, longitud AS lng, nombre, region, comuna, CAST(COALESCE(superficie, 0) AS REAL) AS superficie, COALESCE(NULLIF(causa, ''), 'Sin dato') AS causa, COALESCE(NULLIF(fh_inicio, ''), 'Sin fecha') AS fh_inicio FROM external_reports ORDER BY fh_inicio DESC LIMIT 500",
+          "format": "table"
         }
       ],
       "title": "Hist\u00c3\u00b3rico CONAF",
@@ -1572,8 +1554,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -1684,14 +1666,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-resources-summary",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT SUBSTR(r.report_id, 1, 8) AS \"Reporte\", r.estado AS \"Incendio\", r.tipo AS \"Tipo\", CASE WHEN COUNT(ir.id) = 0 THEN 'Pendiente' ELSE 'Asignado' END AS \"Evaluacion\", COUNT(ir.id) AS \"Recursos\", COALESCE(STRING_AGG(DISTINCT ir.estado, ', ' ORDER BY ir.estado), '') AS \"Estados\" FROM reports r LEFT JOIN incident_resources ir ON r.report_id = ir.report_id GROUP BY r.report_id, r.estado, r.tipo ORDER BY r.created_at DESC",
+          "format": "table"
         }
       ],
       "title": "Reportes vs Recursos Asignados",
@@ -1699,8 +1678,8 @@
     },
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -1755,14 +1734,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/resources-status",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT ir.estado AS \"Estado\", COUNT(*) AS \"Cantidad\" FROM incident_resources ir GROUP BY ir.estado ORDER BY \"Cantidad\" DESC",
+          "format": "table"
         }
       ],
       "title": "Distribuci\u00c3\u00b3n de Estado de Recursos",

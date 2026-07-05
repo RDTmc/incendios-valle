@@ -58,7 +58,7 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: "dashboard.keogh.lat"
       GF_SERVER_ROOT_URL: "https://dashboard.keogh.lat/dashboard/"
-      GF_INSTALL_PLUGINS: "yesoreyeram-infinity-datasource"
+      # GF_INSTALL_PLUGINS: ya no requiere Infinity — todos los paneles usan PostgreSQL directo (06 Jul 2026)
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
       - /home/ec2-user/grafana-provisioning:/etc/grafana/provisioning
