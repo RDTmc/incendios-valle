@@ -87,7 +87,8 @@
           "queryType": "json",
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET"
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Focos Activos",
@@ -319,8 +320,9 @@
           },
           "queryType": "json",
           "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/resources",
-          "method": "GET"
+          "url": "http://incendios-api:8000/bff/grafana/weather-latest",
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Clima 30-30-30",
@@ -390,7 +392,8 @@
           "queryType": "json",
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET"
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Estatus de Reportes",
@@ -606,7 +609,8 @@
           "queryType": "json",
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-geo",
-          "method": "GET"
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Focos por Estado",
@@ -868,8 +872,9 @@
           },
           "queryType": "json",
           "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/external-reports",
-          "method": "GET"
+          "url": "http://incendios-api:8000/bff/grafana/report-geo",
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Focos por Estado",
@@ -988,8 +993,9 @@
           },
           "queryType": "json",
           "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-geo",
-          "method": "GET"
+          "url": "http://incendios-api:8000/bff/grafana/reports-recent",
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Reportes Ciudadanos",
@@ -1060,8 +1066,9 @@
           },
           "queryType": "json",
           "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/weather-latest",
-          "method": "GET"
+          "url": "http://incendios-api:8000/bff/grafana/report-stats",
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Distribuci\u00c3\u00b3n Tipo de Incendio",
@@ -1280,8 +1287,9 @@
           },
           "queryType": "json",
           "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/reports-recent",
-          "method": "GET"
+          "url": "http://incendios-api:8000/bff/grafana/resources",
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Recursos por Incidente",
@@ -1451,7 +1459,8 @@
           "queryType": "json",
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/hotspots",
-          "method": "GET"
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Focos de Calor Satelital ",
@@ -1556,8 +1565,9 @@
           },
           "queryType": "json",
           "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET"
+          "url": "http://incendios-api:8000/bff/grafana/external-reports",
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Hist\u00c3\u00b3rico CONAF",
@@ -1683,7 +1693,8 @@
           "queryType": "json",
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-resources-summary",
-          "method": "GET"
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Reportes vs Recursos Asignados",
@@ -1753,7 +1764,8 @@
           "queryType": "json",
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/resources-status",
-          "method": "GET"
+          "method": "GET",
+          "parser": "simple"
         }
       ],
       "title": "Distribuci\u00c3\u00b3n de Estado de Recursos",
