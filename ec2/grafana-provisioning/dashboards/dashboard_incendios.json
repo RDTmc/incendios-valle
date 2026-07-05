@@ -23,8 +23,8 @@
   "panels": [
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "incendios-api"
+        "type": "grafana-postgresql-datasource",
+        "uid": "pg-incendios"
       },
       "fieldConfig": {
         "defaults": {
@@ -81,14 +81,11 @@
         {
           "refId": "A",
           "datasource": {
-            "type": "yesoreyeram-infinity-datasource",
-            "uid": "incendios-api"
+            "type": "grafana-postgresql-datasource",
+            "uid": "pg-incendios"
           },
-          "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET",
-          "parser": "simple"
+          "rawSql": "SELECT CAST(COUNT(*) AS INTEGER) AS focos_activos FROM reports WHERE estado IN ('ACTIVO', 'PENDIENTE')",
+          "format": "table"
         }
       ],
       "title": "Focos Activos",

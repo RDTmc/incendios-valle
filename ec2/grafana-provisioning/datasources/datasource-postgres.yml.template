@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL RDS
+    type: grafana-postgresql-datasource
+    access: proxy
+    uid: pg-incendios
+    url: __PG_HOST__:__PG_PORT__
+    database: __PG_DATABASE__
+    user: __PG_USER__
+    secureJsonData:
+      password: __PG_PASSWORD__
+    jsonData:
+      sslmode: "require"
+      postgresVersion: 1500
