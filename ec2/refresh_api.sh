@@ -42,11 +42,9 @@ PG_PASSWORD=${PG_PASSWORD_ACTUAL}
 PG_DATABASE=${PG_DATABASE_ACTUAL}
 ENVEOF
 
-echo -e "\n--- Backup SQLite a S3 ---"
-aws s3 cp /home/ec2-user/incendios-data/api/incendios.db \
-  s3://$S3_BUCKET/backups/incendios-latest.db 2>/dev/null || true
-aws s3 cp /home/ec2-user/incendios-data/api/incendios.db \
-  s3://$S3_BUCKET/backups/incendios-$(date +%Y%m%d-%H%M%S).db 2>/dev/null || true
+echo -e "\n--- Backup PostgreSQL a S3 (pg_dump) ---"
+PGPASSWORD=$PG_PASSWORD_ACTUAL pg_dump -h $PG_HOST_ACTUAL -U $PG_USER_ACTUAL -d $PG_DATABASE_ACTUAL \
+  --no-owner --no-acl | gzip | aws s3 cp - s3://$S3_BUCKET/backups/incendios-pg-$(date +%Y%m%d).sql.gz 2>/dev/null || true
 
 echo -e "\n--- Backup Grafana interno a S3 (solo backup, no restore) ---"
 aws s3 cp /home/ec2-user/incendios-data/grafana/grafana.db \
@@ -55,18 +53,8 @@ aws s3 cp /home/ec2-user/incendios-data/grafana/grafana.db \
 echo -e "\n Descargando nueva imagen de API desde Docker Hub..."
 docker-compose pull api
 
-echo -e "\n--- Restore SQLite desde S3 (solo API, NO sobrescribir grafana.db) ---"
-aws s3 cp s3://$S3_BUCKET/backups/incendios-latest.db \
-  /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
-echo -e "\n--- Fijando permisos de BD para que API (uid 472) pueda leer/escribir ---"
-# El aws s3 cp puede dejar el archivo con permisos solo lectura.
-# Forzamos ownership + permisos explicitos para que la API pueda escribir.
-sudo chown 472:472 /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
-sudo chmod 664 /home/ec2-user/incendios-data/api/incendios.db 2>/dev/null || true
-# Datos de Grafana (internos)
-sudo chown 472:472 /home/ec2-user/incendios-data/grafana/grafana.db 2>/dev/null || true
+echo -e "\n--- Fijando permisos ---"
 sudo chown 472:472 /home/ec2-user/incendios-data/grafana 2>/dev/null || true
-# BD compartida SQLite (API escribe, Grafana lee — ambos como uid 472)
 sudo chown -R 472:472 /home/ec2-user/incendios-data/api 2>/dev/null || true
 sudo chmod 775 /home/ec2-user/incendios-data/api 2>/dev/null || true
 

@@ -8,9 +8,7 @@ import bcrypt
 import jwt
 import os
 import uuid
-import sqlite3
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from lambda_service import upload_image
 import httpx
 import asyncio
@@ -83,195 +81,13 @@ def get_report_repository() -> ReportRepository:
     return ReportRepository(get_reports_table())
 
 
-DB_PATH = os.environ.get('DB_PATH', "/app/data/incendios.db")
 SYNC_TOKEN = os.environ['SYNC_TOKEN']
-
-Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-try:
-    os.chmod(Path(DB_PATH).parent, 0o755)  # NOSONAR — necesario para que Grafana (UID 472) acceda al directorio SQLite
-except OSError:
-    pass
-
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH, timeout=5)
-    conn.execute("PRAGMA journal_mode=WAL")
-    return conn
-
-
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id TEXT PRIMARY KEY,
-            email TEXT UNIQUE,
-            nombre TEXT,
-            rol TEXT,
-            created_at TEXT
-        )
-    ''')
-    try:
-        cursor.execute('''ALTER TABLE users ADD COLUMN password_hash TEXT''')
-    except Exception:
-        pass
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reports (
-            report_id TEXT PRIMARY KEY,
-            user_id TEXT,
-            tipo TEXT,
-            latitud TEXT,
-            longitud TEXT,
-            geohash TEXT,
-            descripcion TEXT,
-            foto_url TEXT DEFAULT '',
-            estado TEXT,
-            created_at TEXT,
-            updated_at TEXT
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS external_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            source TEXT DEFAULT 'CIREN',
-            nombre TEXT,
-            region TEXT,
-            comuna TEXT,
-            provincia TEXT,
-            superficie REAL,
-            causa TEXT,
-            latitud REAL,
-            longitud REAL,
-            fh_inicio TEXT,
-            fh_extinci TEXT,
-            temporada TEXT,
-            fetched_at TEXT DEFAULT (datetime('now')),
-            UNIQUE(source, nombre, fh_inicio, latitud, longitud)
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS incident_resources (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            report_id TEXT NOT NULL,
-            tipo_recurso TEXT NOT NULL,
-            cantidad INTEGER DEFAULT 1,
-            unidad TEXT DEFAULT '',
-            estado TEXT DEFAULT 'ASIGNADO',
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now')),
-            FOREIGN KEY (report_id) REFERENCES reports(report_id)
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS firms_hotspots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            latitude REAL,
-            longitude REAL,
-            brightness REAL,
-            frp REAL,
-            confidence TEXT,
-            satellite TEXT,
-            acq_date TEXT,
-            acq_time INTEGER,
-            daynight TEXT,
-            source TEXT,
-            fetched_at TEXT DEFAULT (datetime('now')),
-            UNIQUE(latitude, longitude, acq_date, acq_time, satellite)
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS weather_readings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            lat REAL,
-            lon REAL,
-            region TEXT,
-            temperature REAL,
-            humidity INTEGER,
-            wind_speed REAL,
-            wind_direction REAL,
-            weather_desc TEXT,
-            pressure INTEGER,
-            fetched_at TEXT DEFAULT (datetime('now'))
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS alerts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            alert_type TEXT NOT NULL DEFAULT 'INFO',
-            message TEXT NOT NULL,
-            report_id TEXT DEFAULT '',
-            latitud REAL DEFAULT 0,
-            longitud REAL DEFAULT 0,
-            source TEXT DEFAULT 'system',
-            read INTEGER DEFAULT 0,
-            created_at TEXT DEFAULT (datetime('now'))
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS audit_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            action TEXT NOT NULL,
-            admin_id TEXT NOT NULL,
-            target_id TEXT,
-            details TEXT DEFAULT '',
-            created_at TEXT NOT NULL
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT NOT NULL,
-            recipient_email TEXT NOT NULL,
-            recipient_name TEXT DEFAULT '',
-            message TEXT NOT NULL,
-            status TEXT DEFAULT 'sent',
-            sns_message_id TEXT DEFAULT '',
-            created_at TEXT DEFAULT (datetime('now'))
-        )
-    ''')
-    try:
-        cursor.execute("ALTER TABLE reports ADD COLUMN foto_url TEXT DEFAULT ''")
-    except sqlite3.OperationalError:
-        pass
-    conn.commit()
-    conn.close()
-    try:
-        os.chmod(DB_PATH, 0o644)  # NOSONAR — lectura para Grafana (UID 472), escritura solo para app
-        os.chmod(Path(DB_PATH).parent, 0o755)  # NOSONAR — necesario para que Grafana acceda al directorio
-    except OSError:
-        pass
-
-
-init_db()
 
 from database_pg import init_pg_schema
 try:
     init_pg_schema()
 except Exception:
     pass
-
-
-def seed_resources():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM incident_resources")
-    if cursor.fetchone()[0] == 0:
-        resources = [
-            ("test-qa-singular-12345", "BOMBEROS", 2, "CB-1, CB-2"),
-            ("test-qa-singular-12345", "VEHICULO", 1, "V-101"),
-            ("test-qa-singular-12345", "BRIGADA", 1, "Brigada Forestal Este"),
-            ("43c0b7b0-4828-47fb-a298-973d27b9f1d9", "BOMBEROS", 1, "CB-3"),
-            ("43c0b7b0-4828-47fb-a298-973d27b9f1d9", "CAMION_CISTERNA", 1, "CC-501"),
-        ]
-        cursor.executemany(
-            "INSERT INTO incident_resources (report_id, tipo_recurso, cantidad, unidad) VALUES (?, ?, ?, ?)",
-            resources
-        )
-        conn.commit()
-    conn.close()
-
-
-seed_resources()
 
 
 def encode_geohash(lat: float, lon: float) -> str:
@@ -370,109 +186,6 @@ def sync_from_lambda(req: SyncRequest, x_sync_token: Annotated[str, Header()]):
     return {"status": "synced", "operation": req.operation, "result": result}
 
 
-S3_BACKUP_PATH = "/app/data/backups"
-SEED_PATH = "/app/data/seed.json"
-
-
-def backup_sqlite_to_s3():
-    import subprocess
-    try:
-        bucket = os.environ.get('AWS_S3_BUCKET', 'incendios-valle-sol')
-        subprocess.run(
-            ["aws", "s3", "cp", DB_PATH,
-             f"s3://{bucket}/backups/incendios-latest.db"],
-            capture_output=True, timeout=30
-        )
-        subprocess.run(
-            ["aws", "s3", "cp", DB_PATH,
-             f"s3://{bucket}/backups/incendios-$(date +%Y%m%d-%H%M%S).db"],
-            capture_output=True, timeout=30
-        )
-        print("[S3] Backup completado")
-    except Exception as e:
-        print(f"[S3] Backup error: {e}")
-
-
-def restore_sqlite_from_s3():
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM external_reports")
-        count = cursor.fetchone()[0]
-    finally:
-        conn.close()
-    if count > 0:
-        print("[S3] BD ya tiene datos, no se restaura")
-        return
-    import subprocess
-    try:
-        bucket = os.environ.get('AWS_S3_BUCKET', 'incendios-valle-sol')
-        result = subprocess.run(
-            ["aws", "s3", "cp", f"s3://{bucket}/backups/incendios-latest.db", DB_PATH],
-            capture_output=True, timeout=30
-        )
-        if result.returncode == 0:
-            print("[S3] BD restaurada desde S3")
-    except Exception as e:
-        print(f"[S3] Restore error: {e}")
-
-
-def export_external_reports_seed():
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT nombre, region, comuna, provincia, superficie, causa, latitud, longitud, fh_inicio, fh_extinci, temporada FROM external_reports ORDER BY fh_inicio DESC LIMIT 50")
-        rows = cursor.fetchall()
-        if rows:
-            seed = [{
-                "nombre": r[0], "region": r[1], "comuna": r[2],
-                "provincia": r[3], "superficie": r[4], "causa": r[5],
-                "latitud": r[6], "longitud": r[7],
-                "fh_inicio": r[8], "fh_extinci": r[9], "temporada": r[10]
-            } for r in rows if r[0]]
-            with open(SEED_PATH, "w") as f:
-                json.dump(seed, f, indent=2, ensure_ascii=False)
-            print(f"[SEED] Exportados {len(seed)} registros a seed.json")
-    except Exception as e:
-        print(f"[SEED] Export error: {e}")
-    finally:
-        if conn is not None:
-            conn.close()
-
-
-def load_seed_if_empty():
-    if not os.path.exists(SEED_PATH):
-        return
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM external_reports")
-    if cursor.fetchone()[0] > 0:
-        conn.close()
-        return
-    try:
-        with open(SEED_PATH) as f:
-            seed = json.load(f)
-        for row in seed:
-            cursor.execute("""
-                INSERT OR IGNORE INTO external_reports
-                (source, nombre, region, comuna, provincia, superficie, causa,
-                 latitud, longitud, fh_inicio, fh_extinci, temporada)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                "CIREN", row.get("nombre"), row.get("region"),
-                row.get("comuna"), row.get("provincia"),
-                row.get("superficie"), row.get("causa"),
-                row.get("latitud"), row.get("longitud"),
-                row.get("fh_inicio"), row.get("fh_extinci"),
-                row.get("temporada"),
-            ))
-        conn.commit()
-        print(f"[SEED] Cargados {len(seed)} registros desde seed.json")
-    except Exception as e:
-        print(f"[SEED] Load error: {e}")
-    conn.close()
-
 
 async def fetch_ciren_data():
     url = (
@@ -492,40 +205,39 @@ async def fetch_ciren_data():
 
     try:
         data = await breaker.call(fetch)
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            inserted = 0
-            for feature in data.get("features", []):
-                attrs = feature.get("attributes", {})
-                geo = feature.get("geometry", {})
-                lng = geo.get("x")
-                lat = geo.get("y")
-                if lat is None or lng is None:
-                    continue
-                cursor.execute("""
-                    INSERT OR IGNORE INTO external_reports
-                    (source, nombre, region, comuna, provincia, superficie, causa,
-                     latitud, longitud, fh_inicio, fh_extinci, temporada)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    "CIREN",
-                    attrs.get("nombre"), attrs.get("region"),
-                    attrs.get("comuna"), attrs.get("provincia"),
-                    attrs.get("superficie"), attrs.get("causa_gene"),
-                    lat, lng,
-                    attrs.get("fh_inicio"), attrs.get("fh_extinci"),
-                    attrs.get("temporada"),
-                ))
-                if cursor.rowcount > 0:
-                    inserted += 1
-            conn.commit()
-        finally:
-            conn.close()
+        from database_pg import get_pg_connection
+        with get_pg_connection() as conn:
+            if conn is not None:
+                with conn.cursor() as cur:
+                    inserted = 0
+                    for feature in data.get("features", []):
+                        attrs = feature.get("attributes", {})
+                        geo = feature.get("geometry", {})
+                        lng = geo.get("x")
+                        lat = geo.get("y")
+                        if lat is None or lng is None:
+                            continue
+                        cur.execute("""
+                            INSERT INTO external_reports
+                            (source, nombre, region, comuna, provincia, superficie, causa,
+                             latitud, longitud, fh_inicio, fh_extinci, temporada)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (source, nombre, fh_inicio, latitud, longitud) DO NOTHING
+                        """, (
+                            "CIREN",
+                            attrs.get("nombre"), attrs.get("region"),
+                            attrs.get("comuna"), attrs.get("provincia"),
+                            attrs.get("superficie"), attrs.get("causa_gene"),
+                            lat, lng,
+                            attrs.get("fh_inicio"), attrs.get("fh_extinci"),
+                            attrs.get("temporada"),
+                        ))
+                        if cur.rowcount > 0:
+                            inserted += 1
+                    conn.commit()
+            else:
+                inserted = 0
         print(f"[CIREN] Fetched: {len(data.get('features', []))} features, {inserted} new")
-        if inserted > 0:
-            export_external_reports_seed()
-            backup_sqlite_to_s3()
     except Exception as e:
         print(f"[CIREN] Error: {e}")
 
@@ -561,30 +273,32 @@ async def fetch_firms_hotspots():
         try:
             r = await breaker.call(fetch)
             reader = csv.DictReader(io.StringIO(r.text))
-            conn = get_db_connection()
-            try:
-                cursor = conn.cursor()
-                inserted = 0
-                for item in reader:
-                    cursor.execute("""
-                        INSERT OR IGNORE INTO firms_hotspots
-                        (latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        item.get("latitude"), item.get("longitude"),
-                        item.get("bright_ti4") or item.get("brightness"),
-                        item.get("frp"),
-                        str(item.get("confidence", "")),
-                        item.get("satellite", ""),
-                        item.get("acq_date", ""),
-                        item.get("acq_time"),
-                        item.get("daynight", ""), source
-                    ))
-                    if cursor.rowcount > 0:
-                        inserted += 1
-                conn.commit()
-            finally:
-                conn.close()
+            from database_pg import get_pg_connection
+            with get_pg_connection() as conn:
+                if conn is not None:
+                    with conn.cursor() as cur:
+                        inserted = 0
+                        for item in reader:
+                            cur.execute("""
+                                INSERT INTO firms_hotspots
+                                (latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (latitude, longitude, acq_date, acq_time, satellite) DO NOTHING
+                            """, (
+                                item.get("latitude"), item.get("longitude"),
+                                item.get("bright_ti4") or item.get("brightness"),
+                                item.get("frp"),
+                                str(item.get("confidence", "")),
+                                item.get("satellite", ""),
+                                item.get("acq_date", ""),
+                                item.get("acq_time"),
+                                item.get("daynight", ""), source
+                            ))
+                            if cur.rowcount > 0:
+                                inserted += 1
+                        conn.commit()
+                else:
+                    inserted = 0
             print(f"[FIRMS] {source}: {inserted} new hotpots")
         except Exception as e:
             print(f"[FIRMS] Error {source}: {e}")
@@ -622,25 +336,24 @@ async def fetch_weather_data():
 
         try:
             data = await breaker.call(fetch)
-            conn = get_db_connection()
-            try:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO weather_readings
-                    (lat, lon, region, temperature, humidity, wind_speed, wind_direction, weather_desc, pressure)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    zone['lat'], zone['lon'], zone['region'],
-                    data.get("main", {}).get("temp"),
-                    data.get("main", {}).get("humidity"),
-                    data.get("wind", {}).get("speed"),
-                    data.get("wind", {}).get("deg"),
-                    data.get("weather", [{}])[0].get("description", ""),
-                    data.get("main", {}).get("pressure"),
-                ))
-                conn.commit()
-            finally:
-                conn.close()
+            from database_pg import get_pg_connection
+            with get_pg_connection() as conn:
+                if conn is not None:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            INSERT INTO weather_readings
+                            (lat, lon, region, temperature, humidity, wind_speed, wind_direction, weather_desc, pressure)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (
+                            zone['lat'], zone['lon'], zone['region'],
+                            data.get("main", {}).get("temp"),
+                            data.get("main", {}).get("humidity"),
+                            data.get("wind", {}).get("speed"),
+                            data.get("wind", {}).get("deg"),
+                            data.get("weather", [{}])[0].get("description", ""),
+                            data.get("main", {}).get("pressure"),
+                        ))
+                        conn.commit()
             w = data.get("main", {})
             print(f"[OWM] {zone['region']}: {w.get('temp')}°C, {w.get('humidity')}% humedad")
         except Exception as e:
@@ -657,8 +370,6 @@ async def periodic_fetch_weather():
 @app.on_event("startup")
 async def start_background_tasks():
     await asyncio.sleep(5)
-    restore_sqlite_from_s3()
-    load_seed_if_empty()
     for fn in (periodic_fetch_ciren, periodic_fetch_firms, periodic_fetch_weather):
         task = asyncio.create_task(fn())
         _background_tasks.add(task)
@@ -684,26 +395,31 @@ async def trigger_external_fetch(authorization: Annotated[Optional[str], Header(
 def receive_external_report(req: ExternalReportRequest, authorization: Annotated[Optional[str], Header()] = None):
     if not authorization or authorization.replace("Bearer ", "") != SYNC_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
+    from database_pg import get_pg_connection
     try:
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT OR IGNORE INTO external_reports
-                (source, nombre, region, comuna, provincia, superficie, causa,
-                 latitud, longitud, fh_inicio, fh_extinci, temporada)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                req.source, req.nombre, req.region, req.comuna, req.provincia,
-                req.superficie, req.causa,
-                req.latitud, req.longitud,
-                req.fh_inicio, req.fh_extinci, req.temporada
-            ))
-            conn.commit()
-            new_id = cursor.lastrowid
-            return {"status": "inserted", "id": new_id}
-        finally:
-            conn.close()
+        with get_pg_connection() as conn:
+            if conn is None:
+                raise HTTPException(status_code=503, detail="Database unavailable")
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO external_reports
+                    (source, nombre, region, comuna, provincia, superficie, causa,
+                     latitud, longitud, fh_inicio, fh_extinci, temporada)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (source, nombre, fh_inicio, latitud, longitud) DO NOTHING
+                    RETURNING id
+                """, (
+                    req.source, req.nombre, req.region, req.comuna, req.provincia,
+                    req.superficie, req.causa,
+                    req.latitud, req.longitud,
+                    req.fh_inicio, req.fh_extinci, req.temporada
+                ))
+                row = cur.fetchone()
+                conn.commit()
+                new_id = row[0] if row else None
+                return {"status": "inserted", "id": new_id}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[sync] Error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -713,22 +429,11 @@ def receive_external_report(req: ExternalReportRequest, authorization: Annotated
     500: {"description": "Internal server error"},
 })
 def get_dashboard_stats(payload: Annotated[dict, Depends(verify_token)]):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM reports")
-        total = cursor.fetchone()[0]
-        cursor.execute("SELECT estado, COUNT(*) FROM reports GROUP BY estado")
-        by_estado = {row[0]: row[1] for row in cursor.fetchall()}
-        cursor.execute("SELECT tipo, COUNT(*) FROM reports GROUP BY tipo")
-        by_tipo = {row[0]: row[1] for row in cursor.fetchall()}
-        return {
-            "total": total,
-            "by_estado": by_estado,
-            "by_tipo": by_tipo
-        }
-    except Exception as e:
-        print(f"[dashboard] stats error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    finally:
-        conn.close()
+    from database_pg import query_pg_first
+    total_row = query_pg_first("SELECT COUNT(*) FROM reports", fetch='one')
+    total = total_row[0] if total_row else 0
+    by_estado_rows = query_pg_first("SELECT estado, COUNT(*) FROM reports GROUP BY estado")
+    by_estado = {r[0]: r[1] for r in by_estado_rows} if by_estado_rows else {}
+    by_tipo_rows = query_pg_first("SELECT tipo, COUNT(*) FROM reports GROUP BY tipo")
+    by_tipo = {r[0]: r[1] for r in by_tipo_rows} if by_tipo_rows else {}
+    return {"total": total, "by_estado": by_estado, "by_tipo": by_tipo}

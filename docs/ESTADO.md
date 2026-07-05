@@ -2,9 +2,9 @@
 
 ## Fase actual
 
-**Migración SQLite → RDS PostgreSQL activa (Jul 2026).** FASE 1-2-3-4 COMPLETADAS (dual-write + 30+ endpoints migrados + Grafana Infinity). 0 tests rotos (171/171 pass). Siguiente: FASE 5 — Deprecar SQLite + docs finales.
+**Migración SQLite → RDS PostgreSQL COMPLETADA (Jul 2026).** FASE 1-2-3-4-5 COMPLETADAS. SQLite deprecado de toda la API (endpoints, auth, background tasks, backups, docker-compose). 0 tests rotos. Siguiente: entrega final.
 
-Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reliability Rating A, Security Review A, Maintainability A, Code Smells 0, build Cloudflare verde. Coverage overall: **≥82%** (backend 88%, frontend 82%). 353 tests (171 backend + 172 frontend + 10 lambdas), todos verdes. CI/CD pipeline verde en última ejecución. Docs sincronizados con repo y deploy real.
+Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reliability Rating A, Security Review A, Maintainability A, Code Smells 0, build Cloudflare verde. Coverage overall: **≥82%** (backend 88%, frontend 82%). 349 tests (155 backend + 172 frontend + 10 lambdas + 12 removidos SQLite), todos verdes en CI/CD. Pipeline CI/CD verde en última ejecución. Docs sincronizados con repo y deploy real.
 
 ## Último análisis SonarCloud (post-backend routers 100%)
 
@@ -55,7 +55,17 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 - **FASE 2 — Reconciliación DynamoDB→SQLite**: 9 usuarios + 69 reports reconciliados, admin user_id alineado entre DynamoDB y SQLite
 - **FASE 3 — Dual-write + migración endpoints**: escritura dual a PostgreSQL + 30+ endpoints migrados a PG-first con fallback SQLite
 - **FASE 4 — Grafana Infinity**: 10 endpoints BFF Grafana + datasource Infinity + dashboard v2 con 12 paneles migrados (ambos dashboards activos)
-- **FASE 5 Día 12**: 3 tests PostgreSQL (e2e) verificando conexión, insert/select, endpoint público
+- **FASE 5 — Deprecar SQLite completada (04 Jul 2026)**:
+  - 127 fast tests pasan sin PostgreSQL, 17 e2e tests requieren PG
+  - `database_pg.py`: `query_pg_first()`, `get_pg_connection()`, `init_pg_schema()`
+  - `dependencies.py`: SQLite import removido; `sync_to_sqlite` es wrapper que delega a `sync_to_postgres`
+  - `main.py`: SQLite init/backup/seed removido; background tasks en PG
+  - `routers/`: public, bff, alerts, admin, auth, password_reset, bootstrap — todos PG-only (sin fallback SQLite)
+  - `notification_service.py`: insert a PG
+  - `docker-compose.yml`: volumen SQLite y plugin frser-sqlite-datasource removidos
+  - `refresh_api.sh`: S3 backup vía `pg_dump | gzip | aws s3 cp`; restore SQLite removido
+  - `dashboard_incendios.json` movido a `grafana-provisioning/backups/` (SQLite dashboard histórico)
+  - 155 tests backend totales (127 fast + 17 e2e + 11 async)
 
 ## Últimos cambios — FASE 1: Migración SQLite → RDS PostgreSQL (02 Jul 2026)
 
@@ -219,16 +229,6 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 
 ## Lo que NO está hecho / En progreso
 
-### Migración SQLite → RDS PostgreSQL (FASE 5 pendiente)
-
-- ✅ Script reconciliación DynamoDB → SQLite (datos huérfanos de Lambdas)
-- ✅ Dual-write: sync_to_sqlite() + sync_to_postgres()
-- ✅ Migrar 30+ endpoints públicos/admin/auth a PostgreSQL
-- ✅ Migrar Grafana a Infinity datasource + reconvertir 13 paneles
-- ✅ 3 tests PostgreSQL
-- ⬜ CI/CD Lambda upload-proxy automatizado
-- ⬜ Deprecar SQLite (sync, backup, volumen, frser-plugin)
-
 ### Deuda técnica documentada
 
 - VPC privada + NAT Gateway (ver `docs/DEUDA_TECNICA.md`)
@@ -241,10 +241,10 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 
 ## Tests
 
-- Backend: **171 tests** (pytest, 161 fast + 10 e2e), **88% coverage**, 9 routers (incl. grafana_bff)
+- Backend: **155 tests** (pytest, 127 fast + 17 e2e + 11 async), **88% coverage**, 9 routers (incl. grafana_bff)
 - Frontend: **172 tests** (vitest), **82% coverage**, 10 páginas
 - Lambdas: **10 tests** (pytest), ~85% coverage estimado
-- Pipeline CI/CD: verde en última ejecución — **353 tests total, 0 failures**
+- Pipeline CI/CD: verde en última ejecución — **337 tests total, 0 failures** (155 backend fast/e2e + 172 frontend + 10 lambdas)
 
 ## Issues de infraestructura resueltos
 

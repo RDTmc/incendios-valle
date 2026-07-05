@@ -1,11 +1,11 @@
 import os
 import json
 import secrets
-import sqlite3
 from fastapi import APIRouter, HTTPException, Depends
-from dependencies import get_user_repository, verify_token, require_admin, sync_to_sqlite, SECRET_KEY, get_db_connection, DB_PATH
+from dependencies import get_user_repository, verify_token, require_admin, sync_to_sqlite, SECRET_KEY
 from models import LoginRequest, RegisterRequest, TwoFactorVerifyRequest
 from notification_service import notify_new_user, send_otp_email
+from database_pg import query_pg_first, get_pg_connection
 import jwt
 from datetime import datetime, timezone, timedelta
 
@@ -24,79 +24,35 @@ def _clean_expired_otp():
         _otp_store.pop(k, None)
 
 
-def _init_2fa_table():
-    conn = None
-    try:
-        conn = get_db_connection()
-        conn.execute("PRAGMA journal_mode=WAL")
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS admin_2fa (
-                user_id TEXT PRIMARY KEY,
-                enabled INTEGER DEFAULT 0,
-                backup_codes TEXT,
-                created_at TEXT
-            )
-        """)
-        conn.commit()
-    except Exception as e:
-        print(f"[2fa] table init error: {e}")
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
-
-
 def _get_2fa_config(user_id: str) -> dict | None:
-    from database_pg import query_pg_first
     pg_row = query_pg_first("SELECT user_id, enabled, backup_codes FROM admin_2fa WHERE user_id = %s", (user_id,), fetch='one')
-    if pg_row is not None:
-        codes = json.loads(pg_row[2]) if pg_row[2] else []
-        return {"user_id": pg_row[0], "enabled": bool(pg_row[1]), "backup_codes": codes}
-    conn = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT user_id, enabled, backup_codes FROM admin_2fa WHERE user_id = ?", (user_id,))
-        row = cursor.fetchone()
-        if row:
-            codes = json.loads(row[2]) if row[2] else []
-            return {"user_id": row[0], "enabled": bool(row[1]), "backup_codes": codes}
+    if pg_row is None:
         return None
-    except Exception as e:
-        print(f"[2fa] get error: {e}")
-        return None
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
+    codes = json.loads(pg_row[2]) if pg_row[2] else []
+    return {"user_id": pg_row[0], "enabled": bool(pg_row[1]), "backup_codes": codes}
 
 
 def _save_2fa_config(user_id: str, enabled: bool, backup_codes: list[str] | None = None):
-    conn = None
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        now = datetime.now(timezone.utc).isoformat()
-        codes_json = json.dumps(backup_codes or [])
-        cursor.execute("""
-            INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at)
-            VALUES (?, ?, ?, ?)
-        """, (user_id, 1 if enabled else 0, codes_json, now))
-        conn.commit()
+        with get_pg_connection() as conn:
+            if conn is None:
+                raise HTTPException(status_code=503, detail="Database unavailable")
+            with conn.cursor() as cur:
+                now = datetime.now(timezone.utc).isoformat()
+                codes_json = json.dumps(backup_codes or [])
+                cur.execute("""
+                    INSERT INTO admin_2fa (user_id, enabled, backup_codes, created_at)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                        enabled = EXCLUDED.enabled,
+                        backup_codes = EXCLUDED.backup_codes
+                """, (user_id, 1 if enabled else 0, codes_json, now))
+                conn.commit()
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[2fa] save error: {e}")
         raise HTTPException(status_code=500, detail="Error al guardar configuración 2FA")
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
 
 
 def _generate_backup_codes() -> list[str]:
@@ -119,32 +75,19 @@ def login(req: LoginRequest):
     try:
         import bcrypt
         user = None
-        from_db = "dynamodb"
 
         repo = get_user_repository()
         user = repo.find_by_email(req.email)
         if user:
             stored_hash = user.get('password_hash', '')
             if not bcrypt.checkpw(req.password.encode(), stored_hash.encode()):
-                try:
-                    conn = get_db_connection()
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT password_hash FROM users WHERE email = ?", (req.email,))
-                    row = cursor.fetchone()
-                    conn.close()
-                    if row and row[0]:
-                        if bcrypt.checkpw(req.password.encode(), row[0].encode()):
-                            from_db = "sqlite"
-                        else:
-                            raise HTTPException(status_code=401, detail="Credenciales inválidas")
-                    else:
+                pg_row = query_pg_first("SELECT password_hash FROM users WHERE email = %s", (req.email,), fetch='one')
+                if pg_row and pg_row[0]:
+                    if not bcrypt.checkpw(req.password.encode(), pg_row[0].encode()):
                         raise HTTPException(status_code=401, detail="Credenciales inválidas")
-                except HTTPException:
-                    raise
-                except Exception:
+                else:
                     raise HTTPException(status_code=401, detail="Credenciales inválidas")
         else:
-            from database_pg import query_pg_first
             pg_row = query_pg_first(
                 "SELECT user_id, email, nombre, rol, created_at, password_hash FROM users WHERE email = %s",
                 (req.email,), fetch='one'
@@ -158,29 +101,11 @@ def login(req: LoginRequest):
                         "rol": pg_row[3],
                         "created_at": pg_row[4] or "",
                     }
-                    from_db = "postgres"
                 else:
                     raise HTTPException(status_code=401, detail="Credenciales inválidas")
             else:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("SELECT user_id, email, nombre, rol, created_at, password_hash FROM users WHERE email = ?", (req.email,))
-                row = cursor.fetchone()
-                conn.close()
-                if not row:
-                    raise HTTPException(status_code=401, detail="Credenciales inválidas")
-                if not row[5] or not bcrypt.checkpw(req.password.encode(), row[5].encode()):
-                    raise HTTPException(status_code=401, detail="Credenciales inválidas")
-                user = {
-                    "user_id": row[0],
-                    "email": row[1],
-                    "nombre": row[2] or "",
-                    "rol": row[3],
-                    "created_at": row[4] or "",
-                }
-                from_db = "sqlite"
+                raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-        _init_2fa_table()
         twofa = _get_2fa_config(user['user_id'])
 
         if twofa and twofa['enabled']:
@@ -208,13 +133,9 @@ def login(req: LoginRequest):
 
         role = user.get('rol', 'VECINO')
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT rol FROM users WHERE user_id = ?", (user['user_id'],))
-            row = cursor.fetchone()
-            if row:
-                role = row[0]
-            conn.close()
+            pg_row = query_pg_first("SELECT rol FROM users WHERE user_id = %s", (user['user_id'],), fetch='one')
+            if pg_row:
+                role = pg_row[0]
         except Exception:
             pass
 
@@ -268,13 +189,9 @@ def verify_2fa(req: TwoFactorVerifyRequest):
 
             role = user.get('rol', 'VECINO')
             try:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("SELECT rol FROM users WHERE user_id = ?", (user['user_id'],))
-                row = cursor.fetchone()
-                if row:
-                    role = row[0]
-                conn.close()
+                pg_row = query_pg_first("SELECT rol FROM users WHERE user_id = %s", (user['user_id'],), fetch='one')
+                if pg_row:
+                    role = pg_row[0]
             except Exception:
                 pass
 
@@ -312,13 +229,9 @@ def verify_2fa(req: TwoFactorVerifyRequest):
 
                 role = user.get('rol', 'VECINO')
                 try:
-                    conn = get_db_connection()
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT rol FROM users WHERE user_id = ?", (user['user_id'],))
-                    row = cursor.fetchone()
-                    if row:
-                        role = row[0]
-                    conn.close()
+                    pg_row = query_pg_first("SELECT rol FROM users WHERE user_id = %s", (user['user_id'],), fetch='one')
+                    if pg_row:
+                        role = pg_row[0]
                 except Exception:
                     pass
 
@@ -350,7 +263,6 @@ def verify_2fa(req: TwoFactorVerifyRequest):
 @router.post("/admin/2fa/setup")
 def setup_2fa(payload: dict = Depends(require_admin)):
     user_id = payload['user_id']
-    _init_2fa_table()
 
     existing = _get_2fa_config(user_id)
     if existing and existing['enabled']:
@@ -368,14 +280,12 @@ def setup_2fa(payload: dict = Depends(require_admin)):
 @router.post("/admin/2fa/disable")
 def disable_2fa(payload: dict = Depends(require_admin)):
     user_id = payload['user_id']
-    _init_2fa_table()
     _save_2fa_config(user_id, False)
     return {"status": "disabled"}
 
 
 @router.get("/admin/2fa/status")
 def get_2fa_status(payload: dict = Depends(require_admin)):
-    _init_2fa_table()
     twofa = _get_2fa_config(payload['user_id'])
     if twofa:
         remaining = len(twofa.get('backup_codes', []))

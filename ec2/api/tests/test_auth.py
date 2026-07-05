@@ -141,10 +141,10 @@ class TestAuth:
         response = client.post("/register", json={"email": "test@test.cl", "password": "Test1234!", "nombre": "Test"})
         assert response.status_code == 500
 
-    # ── B1: Login + 2FA OTP en JWT ──────────────────────────────────────
+    # ── B1: Login + 2FA ─────────────────────────────────────
 
     @pytest.mark.fast
-    def test_login_with_2fa_returns_temp_token(self, client, mock_dynamodb, db_connection):
+    def test_login_with_2fa_returns_temp_token(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
             'Items': [{
@@ -155,18 +155,12 @@ class TestAuth:
                 'nombre': 'Admin 2FA'
             }]
         }
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
-                       ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
-        cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
-                       ('2fa-user-id', 1, '[]', '2026-01-01T00:00:00'))
-        db_connection.commit()
-
         with patch('routers.auth.send_otp_email') as mock_email:
-            response = client.post("/login", json={
-                "email": "admin2fa@test.cl",
-                "password": "testpass123"
-            })
+            with patch('routers.auth._get_2fa_config', return_value={"user_id": "2fa-user-id", "enabled": True, "backup_codes": []}):
+                response = client.post("/login", json={
+                    "email": "admin2fa@test.cl",
+                    "password": "testpass123"
+                })
 
         assert response.status_code == 200
         data = response.json()
@@ -178,7 +172,7 @@ class TestAuth:
         assert len(otp_arg) == 6
 
     @pytest.mark.fast
-    def test_temp_token_does_not_contain_otp(self, client, mock_dynamodb, db_connection):
+    def test_temp_token_does_not_contain_otp(self, client, mock_dynamodb):
         import jwt
         from routers.auth import _otp_store
 
@@ -192,18 +186,13 @@ class TestAuth:
                 'nombre': 'Admin 2FA'
             }]
         }
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
-                       ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
-        cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
-                       ('2fa-user-id', 1, '[]', '2026-01-01T00:00:00'))
-        db_connection.commit()
 
         with patch('routers.auth.send_otp_email'):
-            response = client.post("/login", json={
-                "email": "admin2fa@test.cl",
-                "password": "testpass123"
-            })
+            with patch('routers.auth._get_2fa_config', return_value={"user_id": "2fa-user-id", "enabled": True, "backup_codes": []}):
+                response = client.post("/login", json={
+                    "email": "admin2fa@test.cl",
+                    "password": "testpass123"
+                })
 
         assert response.status_code == 200
         temp_token = response.json()["temp_token"]
@@ -218,7 +207,7 @@ class TestAuth:
         _otp_store.clear()
 
     @pytest.mark.fast
-    def test_verify_2fa_with_valid_otp_returns_jwt(self, client, mock_dynamodb, db_connection):
+    def test_verify_2fa_with_valid_otp_returns_jwt(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
             'Items': [{
@@ -238,19 +227,14 @@ class TestAuth:
                 'created_at': '2026-01-01T00:00:00'
             }
         }
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
-                       ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
-        cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
-                       ('2fa-user-id', 1, '[]', '2026-01-01T00:00:00'))
-        db_connection.commit()
 
         with patch('routers.auth._generate_otp', return_value='123456'):
             with patch('routers.auth.send_otp_email'):
-                login_resp = client.post("/login", json={
-                    "email": "admin2fa@test.cl",
-                    "password": "testpass123"
-                })
+                with patch('routers.auth._get_2fa_config', return_value={"user_id": "2fa-user-id", "enabled": True, "backup_codes": []}):
+                    login_resp = client.post("/login", json={
+                        "email": "admin2fa@test.cl",
+                        "password": "testpass123"
+                    })
 
         assert login_resp.status_code == 200
         temp_token = login_resp.json()["temp_token"]
@@ -267,7 +251,7 @@ class TestAuth:
         assert data["user"]["email"] == "admin2fa@test.cl"
 
     @pytest.mark.fast
-    def test_verify_2fa_with_invalid_otp_returns_401(self, client, mock_dynamodb, db_connection):
+    def test_verify_2fa_with_invalid_otp_returns_401(self, client, mock_dynamodb):
         mock_users, _ = mock_dynamodb
         mock_users.query.return_value = {
             'Items': [{
@@ -278,18 +262,13 @@ class TestAuth:
                 'nombre': 'Admin 2FA'
             }]
         }
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
-                       ('2fa-user-id', 'admin2fa@test.cl', 'Admin 2FA', 'ADMIN', '2026-01-01T00:00:00'))
-        cursor.execute("INSERT OR REPLACE INTO admin_2fa (user_id, enabled, backup_codes, created_at) VALUES (?, ?, ?, ?)",
-                       ('2fa-user-id', 1, '["AAAA-BBBB"]', '2026-01-01T00:00:00'))
-        db_connection.commit()
 
         with patch('routers.auth.send_otp_email'):
-            login_resp = client.post("/login", json={
-                "email": "admin2fa@test.cl",
-                "password": "testpass123"
-            })
+            with patch('routers.auth._get_2fa_config', return_value={"user_id": "2fa-user-id", "enabled": True, "backup_codes": []}):
+                login_resp = client.post("/login", json={
+                    "email": "admin2fa@test.cl",
+                    "password": "testpass123"
+                })
 
         assert login_resp.status_code == 200
         temp_token = login_resp.json()["temp_token"]

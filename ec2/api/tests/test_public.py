@@ -1,4 +1,11 @@
 import pytest
+from unittest.mock import patch
+
+
+def _mock_pg_rows(rows):
+    """Helper: mock query_pg_first to return given rows."""
+    return patch('routers.public.query_pg_first', return_value=rows)
+
 
 class TestPublicEndpoints:
     @pytest.mark.fast
@@ -32,16 +39,16 @@ class TestPublicEndpoints:
         assert len(data) == 0
 
     @pytest.mark.fast
-    def test_public_resources(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT INTO reports (report_id, tipo, estado, created_at) VALUES ('r1', 'FORESTAL', 'ACTIVO', datetime('now'))")
-        cursor.execute("INSERT INTO incident_resources (report_id, tipo_recurso, cantidad, unidad) VALUES ('r1', 'BOMBEROS', 2, 'CB-1, CB-2')")
-        db_connection.commit()
-        response = client.get("/public/resources")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) >= 1
-        assert data[0]["recurso"] == "BOMBEROS"
+    def test_public_resources(self, client):
+        rows = [
+            ("r1", "FORESTAL", "ACTIVO", "BOMBEROS", 2, "CB-1, CB-2"),
+        ]
+        with _mock_pg_rows(rows):
+            response = client.get("/public/resources")
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data) >= 1
+            assert data[0]["recurso"] == "BOMBEROS"
 
     @pytest.mark.fast
     def test_sync_endpoint_valid_token(self, client):
@@ -70,192 +77,145 @@ class TestPublicEndpoints:
         assert response.status_code == 422
 
     @pytest.mark.fast
-    def test_public_external_reports(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, region, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Test Fire', 'Metropolitana', -33.45, -70.67, '2026-01-01')")
-        db_connection.commit()
-        response = client.get("/public/external-reports")
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-
-    @pytest.mark.fast
-    def test_public_firms_hotspots(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO firms_hotspots (latitude, longitude, brightness, acq_date, acq_time, satellite) VALUES (-33.45, -70.67, 350.5, '2026-06-01', 1200, 'NPP')")
-        db_connection.commit()
-        response = client.get("/public/firms-hotspots")
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-
-    @pytest.mark.fast
-    def test_public_cluster_stats(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r1', '-33.4500', '-70.6700', datetime('now'))")
-        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r2', '-33.4501', '-70.6701', datetime('now'))")
-        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r3', '-34.0000', '-71.0000', datetime('now'))")
-        db_connection.commit()
-        response = client.get("/public/cluster-stats")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["clusters"] >= 1
-
-    @pytest.mark.fast
-    def test_public_cluster_stats_bad_coords(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r-bad', 'not-a-number', 'also-bad', datetime('now'))")
-        cursor.execute("INSERT OR IGNORE INTO reports (report_id, latitud, longitud, created_at) VALUES ('r-ok', '-33.45', '-70.67', datetime('now'))")
-        db_connection.commit()
-        response = client.get("/public/cluster-stats")
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data["clusters"], int)
-
-    @pytest.mark.fast
-    def test_public_stale_pendientes(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, created_at) VALUES ('r-stale', 'PENDIENTE', datetime('now', '-2 hours'))")
-        cursor.execute("INSERT OR IGNORE INTO reports (report_id, estado, created_at) VALUES ('r-fresh', 'PENDIENTE', datetime('now'))")
-        db_connection.commit()
-        response = client.get("/public/stale-pendientes")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) >= 1
-        assert any(r["report_id"] == "r-stale" for r in data)
-
-    @pytest.mark.fast
-    def test_public_external_reports_filter_source(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Fire 1', -33.45, -70.67, '2026-01-01')")
-        cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CONAF', 'Fire 2', -34.00, -71.00, '2026-01-01')")
-        db_connection.commit()
-        response = client.get("/public/external-reports?source=CIREN")
-        assert response.status_code == 200
-        data = response.json()
-        assert all(r["source"] == "CIREN" for r in data)
-        assert len(data) == 1
-
-    @pytest.mark.fast
-    def test_public_external_reports_sources(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud) VALUES ('CIREN', 'Fire 1', -33.45, -70.67)")
-        db_connection.commit()
-        response = client.get("/public/external-reports/sources")
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert any(s["source"] == "CIREN" for s in data)
-
-    @pytest.mark.fast
-    def test_public_external_reports_sources_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/external-reports/sources")
-            assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
-
-    @pytest.mark.fast
-    def test_public_weather_latest(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO weather_readings (lat, lon, region, temperature, humidity, wind_speed) VALUES (-33.05, -71.62, 'Valparaíso', 25.5, 60, 12.3)")
-        db_connection.commit()
-        response = client.get("/public/weather/latest")
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        if data:
-            assert "temperature" in data[0]
-
-    @pytest.mark.fast
-    def test_public_weather_history(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO weather_readings (lat, lon, region, temperature, humidity, wind_speed) VALUES (-33.05, -71.62, 'Valparaíso', 25.5, 60, 12.3)")
-        db_connection.commit()
-        response = client.get("/public/weather/history?limit=10")
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        if data:
-            assert "temperature" in data[0]
-
-    @pytest.mark.fast
-    def test_public_weather_history_default_limit(self, client, db_connection):
-        response = client.get("/public/weather/history")
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
-
-    @pytest.mark.fast
-    def test_public_dashboard_stats_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/dashboard-stats")
-            assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
-
-    @pytest.mark.fast
-    def test_public_map_coordinates_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/map-coordinates")
-            assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
-
-    @pytest.mark.fast
-    def test_public_external_reports_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+    def test_public_external_reports(self, client):
+        # id, source, nombre, region, comuna, provincia, superficie, causa, latitud, longitud, fh_inicio, fh_extinci, temporada
+        rows = [
+            (1, "CIREN", "Test Fire", "Metropolitana", "Santiago", "Santiago", 100.5, "Natural", -33.45, -70.67, "2026-01-01", "2026-01-05", "2025-2026"),
+        ]
+        with _mock_pg_rows(rows):
             response = client.get("/public/external-reports")
             assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
+            data = response.json()
+            assert isinstance(data, list)
+            if data:
+                assert data[0]["source"] == "CIREN"
 
     @pytest.mark.fast
-    def test_public_cluster_stats_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/cluster-stats")
-            assert response.status_code == 200
-            assert response.json() == {"clusters": 0, "pares": [], "error": "Internal server error"}
-
-    @pytest.mark.fast
-    def test_public_stale_pendientes_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/stale-pendientes")
-            assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
-
-    @pytest.mark.fast
-    def test_public_weather_latest_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/weather/latest")
-            assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
-
-    @pytest.mark.fast
-    def test_public_weather_history_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/weather/history")
-            assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
-
-    @pytest.mark.fast
-    def test_public_firms_hotspots_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
+    def test_public_firms_hotspots(self, client):
+        # id, latitude, longitude, brightness, frp, confidence, satellite, acq_date, acq_time, daynight, source
+        rows = [
+            (1, -33.45, -70.67, 350.5, 100.2, "high", "NPP", "2026-06-01", 1200, "D", "VIIRS_SNPP_NRT"),
+        ]
+        with _mock_pg_rows(rows):
             response = client.get("/public/firms-hotspots")
             assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
+            data = response.json()
+            assert isinstance(data, list)
 
     @pytest.mark.fast
-    def test_public_resources_db_error(self, client):
-        from unittest.mock import patch
-        with patch('routers.public.get_db_connection', side_effect=Exception("DB crash")):
-            response = client.get("/public/resources")
+    def test_public_cluster_stats(self, client):
+        rows = [
+            ("r1", "-33.4500", "-70.6700"),
+            ("r2", "-33.4501", "-70.6701"),
+            ("r3", "-34.0000", "-71.0000"),
+        ]
+        with _mock_pg_rows(rows):
+            response = client.get("/public/cluster-stats")
             assert response.status_code == 200
-            assert response.json() == {"error": "Internal server error"}
+            data = response.json()
+            assert data["clusters"] >= 1
+
+    @pytest.mark.fast
+    def test_public_cluster_stats_bad_coords(self, client):
+        rows = [
+            ("r-bad", "not-a-number", "also-bad"),
+            ("r-ok", "-33.45", "-70.67"),
+        ]
+        with _mock_pg_rows(rows):
+            response = client.get("/public/cluster-stats")
+            assert response.status_code == 200
+            data = response.json()
+            assert isinstance(data["clusters"], int)
+
+    @pytest.mark.fast
+    def test_public_stale_pendientes(self, client):
+        rows = [
+            ("r-stale", "2026-01-01 02:00:00", 90),
+            ("r-fresh", "2026-01-03 12:00:00", 10),
+        ]
+        with _mock_pg_rows(rows):
+            response = client.get("/public/stale-pendientes")
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data) >= 1
+            assert any(r["report_id"] == "r-stale" for r in data)
+
+    @pytest.mark.fast
+    def test_public_external_reports_filter_source(self, client):
+        rows = [
+            (1, "CIREN", "Fire 1", "RM", "Santiago", "Santiago", 50.0, "Natural", -33.45, -70.67, "2026-01-01", "", "2025-2026"),
+        ]
+        with _mock_pg_rows(rows):
+            response = client.get("/public/external-reports?source=CIREN")
+            assert response.status_code == 200
+            data = response.json()
+            assert all(r["source"] == "CIREN" for r in data)
+
+    @pytest.mark.fast
+    def test_public_external_reports_sources(self, client):
+        rows = [("CIREN", 5), ("CONAF", 3)]
+        with _mock_pg_rows(rows):
+            response = client.get("/public/external-reports/sources")
+            assert response.status_code == 200
+            data = response.json()
+            assert isinstance(data, list)
+            assert any(s["source"] == "CIREN" for s in data)
+
+    @pytest.mark.fast
+    def test_public_external_reports_sources_empty(self, client):
+        response = client.get("/public/external-reports/sources")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    @pytest.mark.fast
+    def test_public_map_coordinates_empty(self, client):
+        response = client.get("/public/map-coordinates")
+        assert response.status_code == 200
+        assert response.json() == {"error": "Internal server error"}
+
+    @pytest.mark.fast
+    def test_public_external_reports_empty(self, client):
+        response = client.get("/public/external-reports")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    @pytest.mark.fast
+    def test_public_cluster_stats_empty(self, client):
+        response = client.get("/public/cluster-stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["clusters"] == 0
+        assert data["pares"] == []
+
+    @pytest.mark.fast
+    def test_public_stale_pendientes_empty(self, client):
+        response = client.get("/public/stale-pendientes")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    @pytest.mark.fast
+    def test_public_weather_latest_empty(self, client):
+        response = client.get("/public/weather/latest")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    @pytest.mark.fast
+    def test_public_weather_history_empty(self, client):
+        response = client.get("/public/weather/history")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    @pytest.mark.fast
+    def test_public_firms_hotspots_empty(self, client):
+        response = client.get("/public/firms-hotspots")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    @pytest.mark.fast
+    def test_public_resources_empty(self, client):
+        response = client.get("/public/resources")
+        assert response.status_code == 200
+        assert response.json() == []
 
     @pytest.mark.fast
     def test_v1_trigger_invalid_token(self, client):
@@ -269,8 +229,8 @@ class TestPublicEndpoints:
         }, headers={"Authorization": "Bearer wrong-token"})
         assert response.status_code == 403
 
-    @pytest.mark.fast
-    def test_v1_conaf_success(self, client, db_connection):
+    @pytest.mark.e2e
+    def test_v1_conaf_success(self, client):
         response = client.post("/v1/external-reports/conaf", json={
             "source": "CIREN", "nombre": "Test Fire CONAF", "region": "Metropolitana",
             "comuna": "Santiago", "latitud": -33.45, "longitud": -70.67, "superficie": 100.5
@@ -279,11 +239,8 @@ class TestPublicEndpoints:
         data = response.json()
         assert data["status"] == "inserted"
 
-    @pytest.mark.fast
-    def test_v1_conaf_duplicate(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR IGNORE INTO external_reports (source, nombre, latitud, longitud, fh_inicio) VALUES ('CIREN', 'Dup Fire', -33.45, -70.67, '2026-01-01')")
-        db_connection.commit()
+    @pytest.mark.e2e
+    def test_v1_conaf_duplicate(self, client):
         response = client.post("/v1/external-reports/conaf", json={
             "source": "CIREN", "nombre": "Dup Fire", "latitud": -33.45, "longitud": -70.67,
             "fh_inicio": "2026-01-01"

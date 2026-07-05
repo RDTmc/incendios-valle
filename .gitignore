@@ -236,6 +236,9 @@ ec2/api/debug/
 # Duplicados de dashboards (usar ec2/grafana-provisioning/)
 ec2/grafana-dashboards/
 
+# Backups de dashboards SQLite (histórico, no deployable)
+ec2/grafana-provisioning/backups/
+
 # Lambda en ubicación incorrecta (duplicado de lambda/upload_proxy/)
 ec2/lambda/
 

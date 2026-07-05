@@ -58,10 +58,9 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: "dashboard.keogh.lat"
       GF_SERVER_ROOT_URL: "https://dashboard.keogh.lat/dashboard/"
-      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource"
+      GF_INSTALL_PLUGINS: "yesoreyeram-infinity-datasource"
     volumes:
       - /home/ec2-user/incendios-data/grafana:/var/lib/grafana  # Carpeta aislada para Grafana
-      - /home/ec2-user/incendios-data/api:/data:rw  # BD que escribe la API, Grafana lee
       - /home/ec2-user/grafana-provisioning:/etc/grafana/provisioning
     restart: unless-stopped
 

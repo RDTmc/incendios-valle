@@ -1,10 +1,10 @@
 import secrets
 import bcrypt
 import json
-import sqlite3
 from fastapi import APIRouter, HTTPException
 from models import ForgotPasswordRequest, ResetPasswordRequest
-from dependencies import get_db_connection, SECRET_KEY
+from dependencies import SECRET_KEY
+from database_pg import query_pg_first, get_pg_connection
 from notification_service import send_otp_email
 from datetime import datetime, timezone, timedelta
 
@@ -31,29 +31,9 @@ def forgot_password(req: ForgotPasswordRequest):
     otp = _generate_otp()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
 
-    from database_pg import query_pg_first
     pg_user = query_pg_first("SELECT user_id, email FROM users WHERE email = %s", (req.email,), fetch='one')
-    if pg_user is not None:
-        pass
-    else:
-        conn = None
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT user_id, email FROM users WHERE email = ?", (req.email,))
-            user = cursor.fetchone()
-            if not user:
-                raise HTTPException(status_code=404, detail="Email no registrado")
-        except HTTPException:
-            raise
-        except Exception:
-            raise HTTPException(status_code=500, detail="Error al verificar usuario")
-        finally:
-            if conn is not None:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
+    if pg_user is None:
+        raise HTTPException(status_code=404, detail="Email no registrado")
 
     _reset_otp_store[req.email] = {
         "otp": otp,
@@ -77,65 +57,46 @@ def reset_password(req: ResetPasswordRequest):
         _reset_otp_store.pop(req.email, None)
         raise HTTPException(status_code=400, detail="Código expirado. Solicita uno nuevo.")
 
-    conn = None
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        with get_pg_connection() as conn:
+            if conn is None:
+                raise HTTPException(status_code=503, detail="Database unavailable")
+            with conn.cursor() as cur:
 
-        cursor.execute("SELECT user_id FROM users WHERE email = ?", (req.email,))
-        user = cursor.fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+                cur.execute("SELECT user_id FROM users WHERE email = %s", (req.email,))
+                user = cur.fetchone()
+                if not user:
+                    raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        user_id = user[0]
+                user_id = user[0]
 
-        cursor.execute('''CREATE TABLE IF NOT EXISTS admin_2fa (
-            user_id TEXT PRIMARY KEY,
-            enabled INTEGER DEFAULT 0,
-            backup_codes TEXT DEFAULT '[]'
-        )''')
-        conn.commit()
+                cur.execute("SELECT enabled, backup_codes FROM admin_2fa WHERE user_id = %s", (user_id,))
+                twofa_row = cur.fetchone()
+                twofa_enabled = bool(twofa_row[0]) if twofa_row else False
+                backup_codes = json.loads(twofa_row[1]) if twofa_row and twofa_row[1] else []
 
-        cursor.execute("SELECT enabled, backup_codes FROM admin_2fa WHERE user_id = ?", (user_id,))
-        twofa_row = cursor.fetchone()
-        twofa_enabled = bool(twofa_row[0]) if twofa_row else False
-        backup_codes = json.loads(twofa_row[1]) if twofa_row and twofa_row[1] else []
+                if twofa_enabled:
+                    if req.backup_code:
+                        if req.backup_code not in backup_codes:
+                            raise HTTPException(status_code=400, detail="Código de respaldo inválido")
+                        backup_codes.remove(req.backup_code)
+                    else:
+                        cur.execute("UPDATE admin_2fa SET enabled = 0 WHERE user_id = %s", (user_id,))
+                        conn.commit()
 
-        if twofa_enabled:
-            if req.backup_code:
-                if req.backup_code not in backup_codes:
-                    raise HTTPException(status_code=400, detail="Código de respaldo inválido")
-                backup_codes.remove(req.backup_code)
-            else:
-                cursor.execute("UPDATE admin_2fa SET enabled = 0 WHERE user_id = ?", (user_id,))
+                new_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
+                cur.execute("UPDATE users SET password_hash = %s WHERE user_id = %s", (new_hash, user_id))
+
+                if twofa_enabled and req.backup_code:
+                    remaining = [c for c in backup_codes]
+                    cur.execute("UPDATE admin_2fa SET backup_codes = %s WHERE user_id = %s", (json.dumps(remaining), user_id))
+
                 conn.commit()
+                _reset_otp_store.pop(req.email, None)
 
-        new_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
-
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT", ())
-            conn.commit()
-        except Exception:
-            pass
-
-        cursor.execute("UPDATE users SET password_hash = ? WHERE user_id = ?", (new_hash, user_id))
-
-        if twofa_enabled and req.backup_code:
-            remaining = [c for c in backup_codes]
-            cursor.execute("UPDATE admin_2fa SET backup_codes = ? WHERE user_id = ?", (json.dumps(remaining), user_id))
-
-        conn.commit()
-        _reset_otp_store.pop(req.email, None)
-
-        return {"message": "Contraseña actualizada correctamente"}
+                return {"message": "Contraseña actualizada correctamente"}
     except HTTPException:
         raise
     except Exception as e:
         print(f"[password_reset] Error: {e}")
         raise HTTPException(status_code=500, detail="Error al restablecer contraseña")
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass

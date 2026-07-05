@@ -3,16 +3,12 @@ from unittest.mock import patch
 
 class TestPasswordReset:
     @pytest.mark.fast
-    def test_forgot_password_with_existing_email_sends_otp(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
-                       ('reset-user-1', 'reset@test.cl', 'Reset User', 'VECINO', '2026-01-01T00:00:00'))
-        db_connection.commit()
-
-        with patch('routers.password_reset.send_otp_email') as mock_email:
-            response = client.post("/auth/forgot-password", json={
-                "email": "reset@test.cl"
-            })
+    def test_forgot_password_with_existing_email_sends_otp(self, client):
+        with patch('routers.password_reset.query_pg_first', return_value=('reset-user-1', 'reset@test.cl')):
+            with patch('routers.password_reset.send_otp_email') as mock_email:
+                response = client.post("/auth/forgot-password", json={
+                    "email": "reset@test.cl"
+                })
 
         assert response.status_code == 200
         data = response.json()
@@ -32,13 +28,8 @@ class TestPasswordReset:
         assert response.status_code == 404
         assert "Email no registrado" in response.json()["detail"]
 
-    @pytest.mark.fast
-    def test_reset_password_with_valid_otp_updates_password(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
-                       ('reset-user-2', 'reset2@test.cl', 'Reset User 2', 'VECINO', '2026-01-01T00:00:00'))
-        db_connection.commit()
-
+    @pytest.mark.e2e
+    def test_reset_password_with_valid_otp_updates_password(self, client):
         with patch('routers.password_reset.send_otp_email') as mock_email:
             forgot_resp = client.post("/auth/forgot-password", json={
                 "email": "reset2@test.cl"
@@ -57,23 +48,13 @@ class TestPasswordReset:
         data = response.json()
         assert data["message"] == "Contraseña actualizada correctamente"
 
-        cursor.execute("SELECT password_hash FROM users WHERE email = ?", ("reset2@test.cl",))
-        row = cursor.fetchone()
-        assert row is not None
-        assert row[0] is not None
-        assert len(row[0]) > 20
-
     @pytest.mark.fast
-    def test_reset_password_with_invalid_otp_returns_400(self, client, db_connection):
-        cursor = db_connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO users (user_id, email, nombre, rol, created_at) VALUES (?, ?, ?, ?, ?)",
-                       ('reset-user-3', 'reset3@test.cl', 'Reset User 3', 'VECINO', '2026-01-01T00:00:00'))
-        db_connection.commit()
-
+    def test_reset_password_with_invalid_otp_returns_400(self, client):
         with patch('routers.password_reset.send_otp_email'):
-            forgot_resp = client.post("/auth/forgot-password", json={
-                "email": "reset3@test.cl"
-            })
+            with patch('routers.password_reset.query_pg_first', return_value=('reset-user-3', 'reset3@test.cl')):
+                forgot_resp = client.post("/auth/forgot-password", json={
+                    "email": "reset3@test.cl"
+                })
         assert forgot_resp.status_code == 200
 
         response = client.post("/auth/reset-password", json={

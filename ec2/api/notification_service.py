@@ -1,14 +1,12 @@
 import os
 import json
 import boto3
-import sqlite3
 import http.client
 import ssl
 import urllib.request
 from datetime import datetime, timezone
 
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:us-east-1:887513569063:incendios-alerts')
-DB_PATH = os.environ.get('DB_PATH', '/app/data/incendios.db')
 GRAFANA_INTERNAL = os.environ.get('GRAFANA_INTERNAL', '')
 GRAFANA_TOKEN = os.environ.get('GRAFANA_TOKEN', '')
 MAILTRAP_TOKEN = os.environ.get('MAILTRAP_TOKEN', '')
@@ -155,23 +153,20 @@ def notify_new_user(email: str, nombre: str = "", rol: str = "VECINO") -> dict:
     email_ok = _send_welcome_email(email, nombre, rol)
     mailtrap_status = "sent" if email_ok else "skipped" if not MAILTRAP_TOKEN else "failed"
 
-    # Save to SQLite notifications table
-    conn = None
+    # Save to PostgreSQL notifications table
     try:
-        conn = sqlite3.connect(DB_PATH, timeout=5)
-        conn.execute("PRAGMA journal_mode=WAL")
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO notifications (type, recipient_email, recipient_name, message, status, sns_message_id) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            ("welcome", email, nombre or "", f"{welcome_msg}\n---\nMailtrap: {mailtrap_status}", status, sns_id),
-        )
-        conn.commit()
+        from database_pg import get_pg_connection
+        with get_pg_connection() as conn:
+            if conn is not None:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO notifications (type, recipient_email, recipient_name, message, status, sns_message_id) "
+                        "VALUES (%s, %s, %s, %s, %s, %s)",
+                        ("welcome", email, nombre or "", f"{welcome_msg}\n---\nMailtrap: {mailtrap_status}", status, sns_id),
+                    )
+                    conn.commit()
     except Exception as e:
         print(f"[notifications] DB insert error: {e}")
-    finally:
-        if conn is not None:
-            conn.close()
 
     return {"status": status, "message_id": sns_id}
 
