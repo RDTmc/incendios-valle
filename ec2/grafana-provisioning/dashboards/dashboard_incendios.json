@@ -88,7 +88,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-stats",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Focos Activos",
@@ -126,7 +167,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Región"
+              "options": "Regi\u00c3\u00b3n"
             },
             "properties": [
               {
@@ -322,7 +363,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/resources",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Clima 30-30-30",
@@ -393,7 +475,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-stats",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Estatus de Reportes",
@@ -610,7 +733,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-geo",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Focos por Estado",
@@ -874,7 +1038,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/external-reports",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Focos por Estado",
@@ -995,7 +1200,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-geo",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Reportes Ciudadanos",
@@ -1068,10 +1314,51 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/weather-latest",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
-      "title": "Distribución Tipo de Incendio",
+      "title": "Distribuci\u00c3\u00b3n Tipo de Incendio",
       "type": "piechart"
     },
     {
@@ -1228,7 +1515,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Ubicación"
+              "options": "Ubicaci\u00c3\u00b3n"
             },
             "properties": [
               {
@@ -1289,7 +1576,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/reports-recent",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Recursos por Incidente",
@@ -1336,7 +1664,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Potencia Térmica (MW)"
+                "value": "Potencia T\u00c3\u00a9rmica (MW)"
               },
               {
                 "id": "color",
@@ -1349,7 +1677,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Satélite"
+              "options": "Sat\u00c3\u00a9lite"
             },
             "properties": [
               {
@@ -1460,7 +1788,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/hotspots",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Focos de Calor Satelital ",
@@ -1567,10 +1936,51 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-stats",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
-      "title": "Histórico CONAF",
+      "title": "Hist\u00c3\u00b3rico CONAF",
       "type": "geomap"
     },
     {
@@ -1605,7 +2015,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Evaluación"
+              "options": "Evaluaci\u00c3\u00b3n"
             },
             "properties": [
               {
@@ -1694,7 +2104,48 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/report-resources-summary",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
       "title": "Reportes vs Recursos Asignados",
@@ -1765,10 +2216,51 @@
           "source": "url",
           "url": "http://incendios-api:8000/bff/grafana/resources-status",
           "method": "GET",
-          "parser": "backend"
+          "parser": "backend",
+          "alias": "",
+          "columns": [],
+          "computed_columns": [],
+          "csv_options": {
+            "columns": "",
+            "comment": "",
+            "delimiter": ",",
+            "relax_column_count": false,
+            "skip_empty_lines": false,
+            "skip_lines_with_error": false
+          },
+          "data": "",
+          "dataOverrides": null,
+          "expression": "",
+          "filterExpression": "",
+          "filters": null,
+          "format": "table",
+          "global_query_id": "",
+          "groq": "",
+          "json_options": {
+            "columnar": false,
+            "root_is_not_array": false
+          },
+          "root_selector": "",
+          "seriesCount": 0,
+          "summarizeAlias": "",
+          "summarizeBy": "",
+          "summarizeExpression": "",
+          "type": "json",
+          "uql": "",
+          "url_options": {
+            "body_content_type": "",
+            "body_form": null,
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "",
+            "data": "",
+            "headers": null,
+            "method": "GET",
+            "params": null
+          }
         }
       ],
-      "title": "Distribución de Estado de Recursos",
+      "title": "Distribuci\u00c3\u00b3n de Estado de Recursos",
       "type": "bargauge"
     }
   ],
