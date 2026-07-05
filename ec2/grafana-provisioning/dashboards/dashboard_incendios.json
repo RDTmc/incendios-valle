@@ -105,7 +105,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -380,7 +380,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -492,7 +492,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -750,7 +750,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -1055,7 +1055,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -1217,7 +1217,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -1331,7 +1331,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -1593,7 +1593,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -1805,7 +1805,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -1953,7 +1953,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -2121,7 +2121,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
@@ -2233,7 +2233,7 @@
           "expression": "",
           "filterExpression": "",
           "filters": null,
-          "format": "table",
+          "format": "",
           "global_query_id": "",
           "groq": "",
           "json_options": {
