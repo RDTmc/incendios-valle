@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -79,16 +79,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/report-stats"
         }
       ],
       "title": "Focos Activos",
@@ -126,7 +123,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Regi\u00c3\u00b3n"
+              "options": "Región"
             },
             "properties": [
               {
@@ -313,16 +310,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/resources",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/resources"
         }
       ],
       "title": "Clima 30-30-30",
@@ -384,16 +378,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/report-stats"
         }
       ],
       "title": "Estatus de Reportes",
@@ -601,16 +592,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-geo",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/report-geo"
         }
       ],
       "title": "Focos por Estado",
@@ -865,16 +853,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/external-reports",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/external-reports"
         }
       ],
       "title": "Focos por Estado",
@@ -986,16 +971,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-geo",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/report-geo"
         }
       ],
       "title": "Reportes Ciudadanos",
@@ -1059,19 +1041,16 @@
       },
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/weather-latest",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/weather-latest"
         }
       ],
-      "title": "Distribuci\u00c3\u00b3n Tipo de Incendio",
+      "title": "Distribución Tipo de Incendio",
       "type": "piechart"
     },
     {
@@ -1228,7 +1207,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Ubicaci\u00c3\u00b3n"
+              "options": "Ubicación"
             },
             "properties": [
               {
@@ -1280,16 +1259,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/reports-recent",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/reports-recent"
         }
       ],
       "title": "Recursos por Incidente",
@@ -1336,7 +1312,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Potencia T\u00c3\u00a9rmica (MW)"
+                "value": "Potencia Térmica (MW)"
               },
               {
                 "id": "color",
@@ -1349,7 +1325,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Sat\u00c3\u00a9lite"
+              "options": "Satélite"
             },
             "properties": [
               {
@@ -1451,16 +1427,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/hotspots",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/hotspots"
         }
       ],
       "title": "Focos de Calor Satelital ",
@@ -1558,19 +1531,16 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-stats",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/report-stats"
         }
       ],
-      "title": "Hist\u00c3\u00b3rico CONAF",
+      "title": "Histórico CONAF",
       "type": "geomap"
     },
     {
@@ -1605,7 +1575,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Evaluaci\u00c3\u00b3n"
+              "options": "Evaluación"
             },
             "properties": [
               {
@@ -1685,16 +1655,13 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/report-resources-summary",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/report-resources-summary"
         }
       ],
       "title": "Reportes vs Recursos Asignados",
@@ -1756,19 +1723,16 @@
       "pluginVersion": "10.4.8",
       "targets": [
         {
-          "refId": "A",
           "datasource": {
             "type": "yesoreyeram-infinity-datasource",
             "uid": "incendios-api"
           },
+          "refId": "A",
           "queryType": "json",
-          "source": "url",
-          "url": "http://incendios-api:8000/bff/grafana/resources-status",
-          "method": "GET",
-          "parser": "backend"
+          "url": "http://incendios-api:8000/bff/grafana/resources-status"
         }
       ],
-      "title": "Distribuci\u00c3\u00b3n de Estado de Recursos",
+      "title": "Distribución de Estado de Recursos",
       "type": "bargauge"
     }
   ],
@@ -1809,8 +1773,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Dashboard Incendios - Infinity",
-  "uid": "incendios-valle-v2",
+  "title": "Incendios - Valle del Sol",
+  "uid": "incendios-valle-main",
   "version": 74,
   "weekStart": ""
 }
