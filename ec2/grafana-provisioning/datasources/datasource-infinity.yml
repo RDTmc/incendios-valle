@@ -8,5 +8,4 @@ datasources:
     isDefault: false
     editable: true
     jsonData:
-      global_query_string: "?_format=infinity"
       auth_method: "none"
