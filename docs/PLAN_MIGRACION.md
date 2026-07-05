@@ -232,8 +232,9 @@ deploy-lambda-upload-proxy:
 - [x] Password reset funciona contra PostgreSQL
 - [x] Infinity datasource configurado en Grafana
 - [x] 12 paneles Grafana migrados y validados vs SQLite (dashboard v2)
-- [ ] Dashboard SQLite deprecado (respaldado)
-- [ ] Backup S3 usa pg_dump
+- [x] Dashboard SQLite deprecado (respaldado)
+- [x] Backup S3 usa pg_dump
 - [x] 3 tests PostgreSQL pasan
 - [ ] Lambda upload-proxy en CI/CD (opcional)
-- [ ] docs actualizados
+- [x] docs actualizados (06 Jul 2026 — INC-002 documentado)
+- [ ] Migrar paneles Grafana de Infinity → PostgreSQL directo (12 paneles)

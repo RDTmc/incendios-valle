@@ -78,6 +78,34 @@ Orden de prioridad. NO saltarse pasos sin consultar al usuario.
 - Commit: `a50c910` — CI/CD verde
 - ⚠️ Nota: el script `export_dashboards.sh` tiene output buffer de Python. Para ver progreso en tiempo real, añadir `flush=True` a los prints o ejecutar con `python3 -u`. El export funciona correctamente aunque no se vean mensajes "OK".
 
+## 🔄 EN PROGRESO — Migración Infinity → PostgreSQL directo en Grafana (06 Jul 2026)
+
+### Contexto
+El plugin Infinity v3.10.1 crashea con `can't access property "map", e is null` al procesar datos JSON desde los BFF endpoints. Alternativa: usar el datasource PostgreSQL nativo de Grafana (built-in desde v8.x).
+
+### Panel 1 validado ✅ (commit `ebed222`)
+- Datasource `pg-incendios` creado vía provisioning template
+- Panel 1 (Focos Activos): 78 focos activos visibles, sin errores
+- SQL directo: `SELECT COUNT(*) AS focos_activos FROM reports WHERE estado IN ('ACTIVO','PENDIENTE')`
+
+### Pendiente — Migrar 11 paneles restantes a PostgreSQL directo
+| Panel | Tipo | SQL |
+|-------|------|-----|
+| 2 — Distribución Tipo Incendio | piechart | `SELECT tipo, COUNT(*) FROM reports GROUP BY tipo` |
+| 3 — Estatus de Reportes | bargauge | `SELECT estado, COUNT(*) FROM reports GROUP BY estado` |
+| 4 — Focos por Estado #1 | geomap | `SELECT lat/lng, estado, tipo FROM reports WHERE lat IS NOT NULL` |
+| 5 — Reportes Ciudadanos | table | `SELECT id, imagen, descripcion FROM reports ORDER BY created_at DESC LIMIT 10` |
+| 6 — Recursos por Incidente | table | `SELECT ir.*, r.* FROM incident_resources ir LEFT JOIN reports r` |
+| 7 — Histórico CONAF | geomap | `SELECT lat/lng FROM external_reports ORDER BY fh_inicio DESC LIMIT 500` |
+| 8 — Clima 30-30-30 | table | `SELECT region, temp, hum, wind, riesgo FROM weather_readings ...` |
+| 9 — Focos Satelital | geomap | `SELECT lat/lng, frp FROM firms_hotspots WHERE acq_date >= NOW() - 3d` |
+| 10 — Focos por Estado #2 | geomap | `SELECT lat/lng FROM reports WHERE lat IS NOT NULL` |
+| 11 — Reportes vs Recursos | table | `SELECT r.id, COUNT(ir.id) FROM reports r LEFT JOIN incident_resources ir GROUP BY r.id` |
+| 12 — Estado Recursos | bargauge | `SELECT estado, COUNT(*) FROM incident_resources GROUP BY estado` |
+
+### Nota sobre APIs externas
+Los paneles 7 (CONAF), 8 (Clima), 9 (FIRMS) obtienen datos de APIs externas PERO los datos ya están precargados en tablas PostgreSQL por los background tasks. No requieren llamadas HTTP en tiempo real. El cálculo de riesgo 30-30-30 se puede replicar en SQL con `CASE WHEN`.
+
 ## 🔁 RETROSPECTIVA — Lecciones aprendidas (14 jun 2026)
 
 Esta sección documenta errores recurrentes para revisar ANTES de implementar cualquier cambio futuro.

@@ -227,6 +227,27 @@ Funcionalidad core completa y desplegada. SonarCloud con Security Rating A, Reli
 - Columna SQL incorrecta: `id` → `report_id`
 - Sync DynamoDB después de UPDATE SQLite
 
+## Últimos cambios — FASE 5: Infinity → PostgreSQL directo en Grafana (06 Jul 2026)
+
+### Hallazgo crítico
+El plugin Infinity (`yesoreyeram-infinity-datasource`) introduce 4 capas de transformación:
+```
+Panel → Infinity → HTTP → BFF → ORM → PG → JSON → parser → DataFrame
+```
+El datasource PostgreSQL nativo (`grafana-postgresql-datasource`, built-in) tiene 1 capa:
+```
+Panel → SQL → PostgreSQL → DataFrame
+```
+Mismo path que SQLite funcionaba. **Panel 1 validado exitosamente** con 78 Focos Activos sin errores.
+
+### Cambios
+- Nuevo datasource: `ec2/grafana-provisioning/datasources/datasource-postgres.yml.template`
+- Template se genera en EC2 vía `refresh_api.sh` reemplazando `__PG_PASSWORD__` con el valor real
+- Panel 1 (Focos Activos): migrado de Infinity a PostgreSQL directo con `rawSql`
+- Documentado INC-002 en `docs/INCIDENTES.md`
+- Plan: migrar los 12 paneles a PostgreSQL directo, eliminar Infinity completamente
+- Paneles con datos de APIs externas (FIRMS, OWM, CONAF) también migrables porque los datos ya están precargados en tablas PG por background tasks
+
 ## Lo que NO está hecho / En progreso
 
 ### Deuda técnica documentada
