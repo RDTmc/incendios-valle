@@ -1,4 +1,4 @@
-name: Fix SQLite permissions for Grafana
+name: Fix API data directory permissions
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
-      - name: Set permissions on SQLite DB
+      - name: Set permissions on API data directory
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -15,7 +15,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           timeout: 30s
           script: |
-            sudo chown 472:472 /home/ec2-user/incendios-data/api/incendios.db
-            sudo chmod 664 /home/ec2-user/incendios-data/api/incendios.db
+            sudo chown -R 472:472 /home/ec2-user/incendios-data/api 2>/dev/null || true
+            sudo chmod 775 /home/ec2-user/incendios-data/api 2>/dev/null || true
             echo "OK - permisos corregidos"
-            ls -la /home/ec2-user/incendios-data/api/incendios.db
