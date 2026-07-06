@@ -48,6 +48,10 @@ sed "s|__PG_HOST__|$PG_HOST_ACTUAL|g; s|__PG_PORT__|${PG_PORT_ACTUAL:-5432}|g; s
   > /home/ec2-user/grafana-provisioning/datasources/datasource-postgres.yml && \
   echo "Datasource PostgreSQL generado OK" || echo "WARN: No se pudo generar datasource PostgreSQL"
 
+echo -e "\n--- Limpiando datasources huerfanos en provisioning ---"
+rm -f /home/ec2-user/grafana-provisioning/datasources/datasource-infinity.yml
+rm -f /home/ec2-user/grafana-provisioning/datasources/datasource.yml
+
 echo -e "\n--- Backup PostgreSQL a S3 (pg_dump) ---"
 PGPASSWORD=$PG_PASSWORD_ACTUAL pg_dump -h $PG_HOST_ACTUAL -U $PG_USER_ACTUAL -d $PG_DATABASE_ACTUAL \
   --no-owner --no-acl | gzip | aws s3 cp - s3://$S3_BUCKET/backups/incendios-pg-$(date +%Y%m%d).sql.gz 2>/dev/null || true
