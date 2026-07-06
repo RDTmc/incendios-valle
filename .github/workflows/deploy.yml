@@ -219,9 +219,21 @@ jobs:
               s3://$S3_BUCKET_VAL/backups/grafana-pre-deploy.db 2>/dev/null || echo "Backup skipped"
 
             echo ""
-            echo "--- Reiniciando Grafana para aplicar provisioning ---"
-            docker-compose pull grafana
-            docker-compose up -d --no-deps --force-recreate grafana
+            echo "--- Verificando si cambio provisioning de Grafana ---"
+            PROVISIONING_DIR="/home/ec2-user/grafana-provisioning"
+            CURRENT_HASH=$(find "$PROVISIONING_DIR" -type f \( -name "*.json" -o -name "*.yml" \) -exec sha256sum {} \; 2>/dev/null | sha256sum | cut -d' ' -f1)
+            STORED_HASH_FILE="/home/ec2-user/.grafana_provisioning_hash"
+            STORED_HASH=""
+            [ -f "$STORED_HASH_FILE" ] && STORED_HASH=$(cat "$STORED_HASH_FILE")
+
+            if [ "$CURRENT_HASH" != "$STORED_HASH" ] && [ -n "$CURRENT_HASH" ]; then
+                echo "Provisioning cambiado. Actualizando Grafana..."
+                echo "$CURRENT_HASH" > "$STORED_HASH_FILE"
+                docker-compose pull grafana
+                docker-compose up -d --no-deps --force-recreate grafana
+            else
+                echo "Provisioning sin cambios. Se omite reinicio de Grafana."
+            fi
 
             echo ""
             echo "--- Deploy completado ---"
