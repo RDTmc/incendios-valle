@@ -1441,7 +1441,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "pg-incendios"
           },
-          "rawSql": "SELECT latitude AS lat, longitude AS lng, ROUND(frp::numeric, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Satelite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE acq_date >= (NOW() - INTERVAL '3 days')::date ORDER BY acq_date DESC",
+          "rawSql": "SELECT latitude AS lat, longitude AS lng, ROUND(frp::numeric, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Satelite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE acq_date::date >= (NOW() - INTERVAL '3 days')::date ORDER BY acq_date::date DESC\",
           "format": "table"
         }
       ],
