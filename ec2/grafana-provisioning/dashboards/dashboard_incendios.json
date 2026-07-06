@@ -315,7 +315,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "pg-incendios"
           },
-          "rawSql": "SELECT w1.region AS \"Region\", ROUND(w1.temperature, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND(w1.wind_speed * 3.6, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
+          "rawSql": "SELECT w1.region AS \"Region\", ROUND(w1.temperature::numeric, 1) AS \"Temp\", w1.humidity AS \"Hum\", ROUND((w1.wind_speed * 3.6)::numeric, 0) AS \"Viento\", CASE WHEN w1.temperature > 30 AND w1.humidity < 30 AND w1.wind_speed * 3.6 > 30 THEN 2 WHEN w1.temperature > 25 OR w1.humidity < 40 OR w1.wind_speed * 3.6 > 25 THEN 1 ELSE 0 END AS \"Riesgo\" FROM weather_readings w1 WHERE w1.id = (SELECT MAX(w2.id) FROM weather_readings w2 WHERE w2.region = w1.region) ORDER BY w1.region",
           "format": "table"
         }
       ],
@@ -1441,7 +1441,7 @@
             "type": "grafana-postgresql-datasource",
             "uid": "pg-incendios"
           },
-          "rawSql": "SELECT latitude AS lat, longitude AS lng, ROUND(frp, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Satelite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE acq_date >= (NOW() - INTERVAL '3 days')::date ORDER BY acq_date DESC",
+          "rawSql": "SELECT latitude AS lat, longitude AS lng, ROUND(frp::numeric, 1) AS frp, confidence AS \"Confianza\", satellite AS \"Satelite\", acq_date AS \"Fecha\", source AS \"Fuente\" FROM firms_hotspots WHERE acq_date >= (NOW() - INTERVAL '3 days')::date ORDER BY acq_date DESC",
           "format": "table"
         }
       ],
