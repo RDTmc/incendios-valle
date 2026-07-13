@@ -315,6 +315,7 @@ WEATHER_ZONES = [
     {"region": "Valparaíso", "lat": -33.05, "lon": -71.62},
     {"region": "Metropolitana", "lat": -33.45, "lon": -70.67},
     {"region": "O'Higgins", "lat": -34.17, "lon": -70.74},
+    {"region": "Melipilla", "lat": -33.69, "lon": -71.21},
 ]
 
 
