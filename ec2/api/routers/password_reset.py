@@ -3,7 +3,7 @@ import bcrypt
 import json
 from fastapi import APIRouter, HTTPException
 from models import ForgotPasswordRequest, ResetPasswordRequest
-from dependencies import SECRET_KEY
+from dependencies import SECRET_KEY, get_user_repository, sync_to_sqlite
 from database_pg import query_pg_first, get_pg_connection
 from notification_service import send_otp_email
 from datetime import datetime, timezone, timedelta
@@ -31,9 +31,12 @@ def forgot_password(req: ForgotPasswordRequest):
     otp = _generate_otp()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
 
-    pg_user = query_pg_first("SELECT user_id, email FROM users WHERE email = %s", (req.email,), fetch='one')
-    if pg_user is None:
-        raise HTTPException(status_code=404, detail="Email no registrado")
+    repo = get_user_repository()
+    user = repo.find_by_email(req.email)
+    if user is None:
+        pg_user = query_pg_first("SELECT user_id, email FROM users WHERE email = %s", (req.email,), fetch='one')
+        if pg_user is None:
+            raise HTTPException(status_code=404, detail="Email no registrado")
 
     _reset_otp_store[req.email] = {
         "otp": otp,
@@ -58,17 +61,38 @@ def reset_password(req: ResetPasswordRequest):
         raise HTTPException(status_code=400, detail="Código expirado. Solicita uno nuevo.")
 
     try:
+        repo = get_user_repository()
+        user = repo.find_by_email(req.email)
+        user_id = None
+
+        if user:
+            user_id = user["user_id"]
+        else:
+            pg_user = query_pg_first("SELECT user_id FROM users WHERE email = %s", (req.email,), fetch='one')
+            if pg_user is None:
+                raise HTTPException(status_code=404, detail="Usuario no encontrado")
+            user_id = pg_user[0]
+
+        new_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
+
+        if user:
+            repo.table.update_item(
+                Key={'user_id': user_id},
+                UpdateExpression='SET password_hash = :hash',
+                ExpressionAttributeValues={':hash': new_hash}
+            )
+
+        sync_to_sqlite('users', 'INSERT', {
+            'user_id': user_id,
+            'email': req.email,
+            'password_hash': new_hash,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+        })
+
         with get_pg_connection() as conn:
             if conn is None:
-                raise HTTPException(status_code=503, detail="Database unavailable")
+                raise HTTPException(status_code=503, detail="Database no disponible")
             with conn.cursor() as cur:
-
-                cur.execute("SELECT user_id FROM users WHERE email = %s", (req.email,))
-                user = cur.fetchone()
-                if not user:
-                    raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-                user_id = user[0]
 
                 cur.execute("SELECT enabled, backup_codes FROM admin_2fa WHERE user_id = %s", (user_id,))
                 twofa_row = cur.fetchone()
@@ -84,7 +108,6 @@ def reset_password(req: ResetPasswordRequest):
                         cur.execute("UPDATE admin_2fa SET enabled = 0 WHERE user_id = %s", (user_id,))
                         conn.commit()
 
-                new_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
                 cur.execute("UPDATE users SET password_hash = %s WHERE user_id = %s", (new_hash, user_id))
 
                 if twofa_enabled and req.backup_code:

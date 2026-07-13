@@ -49,6 +49,12 @@ def db_connection():
 def mock_dynamodb():
     table_users = MagicMock()
     table_reports = MagicMock()
+
+    table_users.query.return_value = {'Items': []}
+    table_reports.query.return_value = {'Items': []}
+    table_users.scan.return_value = {'Items': []}
+    table_reports.scan.return_value = {'Items': []}
+
     with patch('main.get_users_table', return_value=table_users) as mu, \
          patch('main.get_reports_table', return_value=table_reports) as mr, \
          patch('dependencies.get_users_table', return_value=table_users), \
