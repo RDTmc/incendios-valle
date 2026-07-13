@@ -324,11 +324,11 @@ export default function AdminPage() {
             <p className="text-red-400 text-sm mb-3">{formError}</p>
           )}
           <div className="space-y-3">
-            <Input label="Email" type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} />
+            <Input label="Email" labelClassName="text-gray-300" type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} />
             {isCreate && (
-              <Input label="Contraseña" type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} />
+              <Input label="Contraseña" labelClassName="text-gray-300" type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} />
             )}
-            <Input label="Nombre" value={formNombre} onChange={e => setFormNombre(e.target.value)} />
+            <Input label="Nombre" labelClassName="text-gray-300" value={formNombre} onChange={e => setFormNombre(e.target.value)} />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Rol</label>
               <select
@@ -341,7 +341,7 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
-            <Button variant="ghost" onClick={closeModal}>Cancelar</Button>
+            <Button variant="ghost" className="!text-gray-300" onClick={closeModal}>Cancelar</Button>
             <Button onClick={handleSave} loading={saving}>
               {isCreate ? 'Crear' : 'Guardar'}
             </Button>
@@ -361,7 +361,7 @@ export default function AdminPage() {
             ¿Eliminar al usuario <strong>{deleteTarget.email}</strong>? Esta acción no se puede deshacer.
           </p>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+            <Button variant="ghost" className="!text-gray-300" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
             <Button variant="danger" onClick={handleDelete} loading={deleting}>Eliminar</Button>
           </div>
         </div>
@@ -370,12 +370,12 @@ export default function AdminPage() {
   }
 
   function renderSortIcon(key: SortKey) {
-    if (sortKey !== key) return <span className="ml-1 text-gray-600">⇅</span>
+    if (sortKey !== key) return <span className="ml-1 text-gray-400">⇅</span>
     return <span className="ml-1">{sortAsc ? '↑' : '↓'}</span>
   }
 
   function renderReportSortIcon(key: ReportSortKey) {
-    if (reportSortKey !== key) return <span className="ml-1 text-gray-600">⇅</span>
+    if (reportSortKey !== key) return <span className="ml-1 text-gray-400">⇅</span>
     return <span className="ml-1">{reportSortAsc ? '↑' : '↓'}</span>
   }
 
@@ -429,7 +429,7 @@ export default function AdminPage() {
                     </td>
                     <td className="py-2 px-3 text-gray-400 text-xs">{formatDate(u.created_at)}</td>
                     <td className="py-2 px-3 flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => openEditModal(u)}>Editar</Button>
+                      <Button variant="ghost" size="sm" className="!text-gray-300" onClick={() => openEditModal(u)}>Editar</Button>
                       <Button variant="ghost" size="sm" className="!text-red-400 hover:!text-red-300" onClick={() => setDeleteTarget(u)}>Eliminar</Button>
                     </td>
                   </tr>
@@ -619,7 +619,7 @@ export default function AdminPage() {
                 ))}
               </tbody>
             </table>
-            <p className="text-xs text-gray-500 mt-2">Total: {reports.length} reporte{reports.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-400 mt-2">Total: {reports.length} reporte{reports.length !== 1 ? 's' : ''}</p>
           </div>
         )}
       </div>
@@ -649,6 +649,7 @@ export default function AdminPage() {
           <Button
             variant={tab === 'users' ? 'primary' : 'ghost'}
             size="sm"
+            className={tab !== 'users' ? '!text-gray-300' : ''}
             onClick={() => setTab('users')}
           >
             Usuarios ({users.length})
@@ -656,6 +657,7 @@ export default function AdminPage() {
           <Button
             variant={tab === 'audit' ? 'primary' : 'ghost'}
             size="sm"
+            className={tab !== 'audit' ? '!text-gray-300' : ''}
             onClick={() => setTab('audit')}
           >
             Auditoría
@@ -663,6 +665,7 @@ export default function AdminPage() {
           <Button
             variant={tab === 'notifications' ? 'primary' : 'ghost'}
             size="sm"
+            className={tab !== 'notifications' ? '!text-gray-300' : ''}
             onClick={() => setTab('notifications')}
           >
             Notificaciones ({notifications.length})
@@ -670,6 +673,7 @@ export default function AdminPage() {
           <Button
             variant={tab === 'reports' ? 'primary' : 'ghost'}
             size="sm"
+            className={tab !== 'reports' ? '!text-gray-300' : ''}
             onClick={() => setTab('reports')}
           >
             Reportes ({reports.length})
@@ -677,6 +681,7 @@ export default function AdminPage() {
           <Button
             variant={tab === 'twofa' ? 'primary' : 'ghost'}
             size="sm"
+            className={tab !== 'twofa' ? '!text-gray-300' : ''}
             onClick={() => setTab('twofa')}
           >
             2FA
@@ -691,7 +696,7 @@ export default function AdminPage() {
       {renderModal()}
       {renderDeleteConfirm()}
 
-      <div className="text-center text-xs text-gray-500 mt-8 px-4">
+      <div className="text-center text-xs text-gray-400 mt-8 px-4">
         Panel de Administración
         <br />
         Sistema de Gestión de Incendios
